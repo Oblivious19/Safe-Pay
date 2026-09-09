@@ -1,9 +1,10 @@
 -- SafePay: simple Oracle schema for the beginner project.
 -- Run this in a new/empty schema only. Do not run it with the old 01-06 scripts.
+-- The IDs begin at realistic demo values. 08 uses these same values.
 -- Password rules are validated in Java before hashing. The password column stores only a hash.
 
-CREATE SEQUENCE seq_user_id START WITH 1 INCREMENT BY 1 NOCACHE NOCYCLE;
-CREATE SEQUENCE seq_account_id START WITH 1 INCREMENT BY 1 NOCACHE NOCYCLE;
+CREATE SEQUENCE seq_user_id START WITH 101 INCREMENT BY 1 NOCACHE NOCYCLE;
+CREATE SEQUENCE seq_account_id START WITH 1000001 INCREMENT BY 1 NOCACHE NOCYCLE;
 CREATE SEQUENCE seq_beneficiary_id START WITH 1 INCREMENT BY 1 NOCACHE NOCYCLE;
 CREATE SEQUENCE seq_transaction_id START WITH 1 INCREMENT BY 1 NOCACHE NOCYCLE;
 CREATE SEQUENCE seq_approval_id START WITH 1 INCREMENT BY 1 NOCACHE NOCYCLE;
