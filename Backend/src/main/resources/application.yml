@@ -1,0 +1,15 @@
+spring:
+  application:
+    name: safepay-api
+  profiles:
+    default: local
+
+server:
+  error:
+    include-message: never
+
+safepay:
+  jwt:
+    # Replace through SAFEPAY_JWT_SECRET in every non-local environment (at least 32 bytes).
+    secret: ${SAFEPAY_JWT_SECRET:change-this-local-development-secret-key-1234567890}
+    expiry-minutes: 60
