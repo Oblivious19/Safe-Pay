@@ -18,6 +18,7 @@ public interface TransactionDao extends JpaRepository<TransactionDb, Long> {
     List<TransactionDb> findByFromAccountUserEmail(String email);
     List<TransactionDb> findByFromAccountUserEmailAndState(String email, TransactionState state);
     List<TransactionDb> findByStateAndProtectionExpiresAtLessThanEqual(TransactionState state, LocalDateTime time);
+    boolean existsByFromAccountAccountId(Long accountId);
 
     @Modifying
     @Query("update TransactionDb t set t.state = 'CANCELLED', t.cancelledAt = :time, t.version = t.version + 1 "

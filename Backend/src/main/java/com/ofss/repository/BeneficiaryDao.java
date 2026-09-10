@@ -10,4 +10,5 @@ import com.ofss.beans.Beneficiary;
 public interface BeneficiaryDao extends JpaRepository<Beneficiary, Long> {
     List<Beneficiary> findByAccountUserEmail(String email);
     Optional<Beneficiary> findByBeneficiaryIdAndAccountUserEmail(Long beneficiaryId, String email);
+    boolean existsByAccountAccountId(Long accountId);
 }
