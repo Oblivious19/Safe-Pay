@@ -11,8 +11,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.ofss.beans.AddBeneficiaryRequest;
 import com.ofss.beans.Beneficiary;
+import com.ofss.beans.UpdateBeneficiaryStatusRequest;
 import com.ofss.services.BeneficiaryService;
+
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/beneficiaries")
@@ -25,9 +29,12 @@ public class BeneficiaryController {
     }
 
     @PostMapping
-    public Beneficiary addBeneficiary(@RequestParam Long accountId, @RequestParam String userEmail,
-            @RequestBody Beneficiary beneficiary) {
-        return beneficiaryService.addBeneficiary(accountId, beneficiary, userEmail);
+    public Beneficiary addBeneficiary(@Valid @RequestBody AddBeneficiaryRequest request) {
+        Beneficiary beneficiary = new Beneficiary();
+        beneficiary.setBeneficiaryName(request.beneficiaryName());
+        beneficiary.setBankAccountNumber(request.bankAccountNumber());
+        beneficiary.setIfsc(request.ifsc());
+        return beneficiaryService.addBeneficiary(request.accountId(), beneficiary, request.userEmail());
     }
 
     @GetMapping
@@ -36,8 +43,8 @@ public class BeneficiaryController {
     }
 
     @PatchMapping("/{beneficiaryId}/status")
-    public Beneficiary updateStatus(@PathVariable Long beneficiaryId, @RequestParam String status,
-            @RequestParam String userEmail) {
-        return beneficiaryService.updateStatus(beneficiaryId, status, userEmail);
+    public Beneficiary updateStatus(@PathVariable Long beneficiaryId,
+            @Valid @RequestBody UpdateBeneficiaryStatusRequest request) {
+        return beneficiaryService.updateStatus(beneficiaryId, request.status(), request.userEmail());
     }
 }

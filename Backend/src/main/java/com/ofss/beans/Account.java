@@ -14,6 +14,9 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Digits;
+import jakarta.validation.constraints.NotNull;
 
 @Entity
 @Table(name = "account")
@@ -30,6 +33,10 @@ public class Account {
     @JsonIgnore
     private User user;
 
+    @NotNull
+    @DecimalMin(value = "5000.00", message = "Account balance must be at least 5000")
+    @Digits(integer = 16, fraction = 2)
+    @Column(nullable = false, precision = 18, scale = 2)
     private BigDecimal balance;
 
     @Column(name = "created_at")

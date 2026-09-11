@@ -28,11 +28,14 @@ public class TransactionDb {
     @Column(name = "transaction_id")
     private Long transactionId;
 
-    @Column(name = "transaction_ref")
+    @Column(name = "transaction_ref", nullable = false, unique = true, length = 50)
     private String transactionRef;
 
-    @Column(name = "idempotency_key")
+    @Column(name = "idempotency_key", nullable = false, unique = true, length = 100)
     private String idempotencyKey;
+
+    @Column(name = "cancel_idempotency_key", unique = true, length = 100)
+    private String cancelIdempotencyKey;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "from_account_id", nullable = false)
@@ -44,23 +47,25 @@ public class TransactionDb {
     @JsonIgnore
     private Beneficiary beneficiary;
 
+    @Column(nullable = false, precision = 18, scale = 2)
     private BigDecimal amount;
     private String purpose;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
     private TransactionState state;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "risk_tier")
+    @Column(name = "risk_tier", nullable = false, length = 15)
     private RiskTier riskTier;
 
     @Column(name = "protection_seconds")
     private int protectionSeconds;
 
-    @Column(name = "authentication_required")
+    @Column(name = "authentication_required", nullable = false, length = 1, columnDefinition = "CHAR(1)")
     private String authenticationRequired;
 
-    @Column(name = "risk_reason")
+    @Column(name = "risk_reason", nullable = false, length = 500)
     private String riskReason;
 
     @Column(name = "protection_expires_at")
@@ -71,6 +76,12 @@ public class TransactionDb {
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
+
+    @Column(name = "authorized_at")
+    private LocalDateTime authorizedAt;
+
+    @Column(name = "released_at")
+    private LocalDateTime releasedAt;
 
     @Column(name = "settled_at")
     private LocalDateTime settledAt;
@@ -84,6 +95,8 @@ public class TransactionDb {
     public void setTransactionRef(String transactionRef) { this.transactionRef = transactionRef; }
     public String getIdempotencyKey() { return idempotencyKey; }
     public void setIdempotencyKey(String idempotencyKey) { this.idempotencyKey = idempotencyKey; }
+    public String getCancelIdempotencyKey() { return cancelIdempotencyKey; }
+    public void setCancelIdempotencyKey(String cancelIdempotencyKey) { this.cancelIdempotencyKey = cancelIdempotencyKey; }
     public Account getFromAccount() { return fromAccount; }
     public void setFromAccount(Account fromAccount) { this.fromAccount = fromAccount; }
     public Beneficiary getBeneficiary() { return beneficiary; }
@@ -108,6 +121,10 @@ public class TransactionDb {
     public void setVersion(Long version) { this.version = version; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public LocalDateTime getAuthorizedAt() { return authorizedAt; }
+    public void setAuthorizedAt(LocalDateTime authorizedAt) { this.authorizedAt = authorizedAt; }
+    public LocalDateTime getReleasedAt() { return releasedAt; }
+    public void setReleasedAt(LocalDateTime releasedAt) { this.releasedAt = releasedAt; }
     public LocalDateTime getSettledAt() { return settledAt; }
     public void setSettledAt(LocalDateTime settledAt) { this.settledAt = settledAt; }
     public LocalDateTime getCancelledAt() { return cancelledAt; }

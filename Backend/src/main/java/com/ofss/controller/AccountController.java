@@ -16,7 +16,7 @@ import com.ofss.beans.Account;
 import com.ofss.services.AccountService;
 
 @RestController
-@RequestMapping("/api/accounts")
+@RequestMapping("accounts")
 public class AccountController {
 
     private final AccountService accountService;

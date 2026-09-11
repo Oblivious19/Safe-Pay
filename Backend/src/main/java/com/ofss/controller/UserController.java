@@ -3,6 +3,7 @@ package com.ofss.controller;
 import java.util.List;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -28,7 +29,7 @@ public class UserController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public User createUser(@RequestBody User user) {
+    public User createUser(@Validated(User.Create.class) @RequestBody User user) {
         return userService.register(user);
     }
 
@@ -43,7 +44,7 @@ public class UserController {
     }
 
     @PutMapping("/{userId}")
-    public User updateUser(@PathVariable Long userId, @RequestBody User user) {
+    public User updateUser(@PathVariable Long userId, @Validated(User.Update.class) @RequestBody User user) {
         return userService.updateUser(userId, user);
     }
 

@@ -3,6 +3,7 @@ package com.ofss.beans;
 import java.time.LocalDateTime;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -13,9 +14,11 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 
 @Entity
-@Table(name = "beneficiaries")
+@Table(name = "beneficiaries", uniqueConstraints = @UniqueConstraint(name = "sp_uq_benef_acct",
+        columnNames = {"account_id", "bank_account_number", "ifsc"}))
 public class Beneficiary {
 
     @Id
@@ -29,21 +32,26 @@ public class Beneficiary {
     @JsonIgnore
     private Account account;
 
-    @Column(name = "beneficiary_name")
+    @Column(name = "beneficiary_name", nullable = false, length = 100)
     private String beneficiaryName;
 
-    @Column(name = "bank_account_number")
+    @Column(name = "bank_account_number", nullable = false, length = 30)
     private String bankAccountNumber;
+    @Column(nullable = false, length = 20)
     private String ifsc;
+
+    @Column(nullable = false, length = 10)
     private String status;
 
-    @Column(name = "created_at")
+    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
     public Long getBeneficiaryId() { return beneficiaryId; }
     public void setBeneficiaryId(Long beneficiaryId) { this.beneficiaryId = beneficiaryId; }
     public Account getAccount() { return account; }
     public void setAccount(Account account) { this.account = account; }
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    public Long getAccountId() { return account == null ? null : account.getAccountId(); }
     public String getBeneficiaryName() { return beneficiaryName; }
     public void setBeneficiaryName(String beneficiaryName) { this.beneficiaryName = beneficiaryName; }
     public String getBankAccountNumber() { return bankAccountNumber; }
