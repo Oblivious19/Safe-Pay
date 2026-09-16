@@ -1,10 +1,12 @@
 package com.ofss.beans;
 
 import java.math.BigDecimal;
+import java.sql.Types;
 import java.time.LocalDateTime;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -17,6 +19,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
+import org.hibernate.annotations.JdbcTypeCode;
 
 @Entity
 @Table(name = "transaction_db")
@@ -34,8 +37,22 @@ public class TransactionDb {
     @Column(name = "idempotency_key", nullable = false, unique = true, length = 100)
     private String idempotencyKey;
 
+    @JsonIgnore
     @Column(name = "cancel_idempotency_key", unique = true, length = 100)
     private String cancelIdempotencyKey;
+
+    @JsonIgnore
+    @Column(name = "verification_idempotency_key", unique = true, length = 100)
+    private String verificationIdempotencyKey;
+
+    @Column(name = "verified_at")
+    private LocalDateTime verifiedAt;
+
+    @Column(name = "authorized_at")
+    private LocalDateTime authorizedAt;
+
+    @Column(name = "released_at")
+    private LocalDateTime releasedAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "from_account_id", nullable = false)
@@ -52,20 +69,21 @@ public class TransactionDb {
     private String purpose;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
     private TransactionState state;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "risk_tier", nullable = false, length = 15)
+    @Column(name = "risk_tier")
     private RiskTier riskTier;
 
     @Column(name = "protection_seconds")
     private int protectionSeconds;
 
-    @Column(name = "authentication_required", nullable = false, length = 1, columnDefinition = "CHAR(1)")
-    private String authenticationRequired;
+    @Convert(converter = BooleanToYNConverter.class)
+    @JdbcTypeCode(Types.CHAR)
+    @Column(name = "authentication_required", nullable = false, length = 1)
+    private boolean authenticationRequired;
 
-    @Column(name = "risk_reason", nullable = false, length = 500)
+    @Column(name = "risk_reason", length = 2000)
     private String riskReason;
 
     @Column(name = "protection_expires_at")
@@ -76,12 +94,6 @@ public class TransactionDb {
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
-
-    @Column(name = "authorized_at")
-    private LocalDateTime authorizedAt;
-
-    @Column(name = "released_at")
-    private LocalDateTime releasedAt;
 
     @Column(name = "settled_at")
     private LocalDateTime settledAt;
@@ -96,7 +108,15 @@ public class TransactionDb {
     public String getIdempotencyKey() { return idempotencyKey; }
     public void setIdempotencyKey(String idempotencyKey) { this.idempotencyKey = idempotencyKey; }
     public String getCancelIdempotencyKey() { return cancelIdempotencyKey; }
-    public void setCancelIdempotencyKey(String cancelIdempotencyKey) { this.cancelIdempotencyKey = cancelIdempotencyKey; }
+    public void setCancelIdempotencyKey(String key) { this.cancelIdempotencyKey = key; }
+    public String getVerificationIdempotencyKey() { return verificationIdempotencyKey; }
+    public void setVerificationIdempotencyKey(String key) { this.verificationIdempotencyKey = key; }
+    public LocalDateTime getVerifiedAt() { return verifiedAt; }
+    public void setVerifiedAt(LocalDateTime time) { this.verifiedAt = time; }
+    public LocalDateTime getAuthorizedAt() { return authorizedAt; }
+    public void setAuthorizedAt(LocalDateTime time) { this.authorizedAt = time; }
+    public LocalDateTime getReleasedAt() { return releasedAt; }
+    public void setReleasedAt(LocalDateTime time) { this.releasedAt = time; }
     public Account getFromAccount() { return fromAccount; }
     public void setFromAccount(Account fromAccount) { this.fromAccount = fromAccount; }
     public Beneficiary getBeneficiary() { return beneficiary; }
@@ -111,8 +131,8 @@ public class TransactionDb {
     public void setRiskTier(RiskTier riskTier) { this.riskTier = riskTier; }
     public int getProtectionSeconds() { return protectionSeconds; }
     public void setProtectionSeconds(int protectionSeconds) { this.protectionSeconds = protectionSeconds; }
-    public String getAuthenticationRequired() { return authenticationRequired; }
-    public void setAuthenticationRequired(String authenticationRequired) { this.authenticationRequired = authenticationRequired; }
+    public boolean isAuthenticationRequired() { return authenticationRequired; }
+    public void setAuthenticationRequired(boolean authenticationRequired) { this.authenticationRequired = authenticationRequired; }
     public String getRiskReason() { return riskReason; }
     public void setRiskReason(String riskReason) { this.riskReason = riskReason; }
     public LocalDateTime getProtectionExpiresAt() { return protectionExpiresAt; }
@@ -121,10 +141,6 @@ public class TransactionDb {
     public void setVersion(Long version) { this.version = version; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
-    public LocalDateTime getAuthorizedAt() { return authorizedAt; }
-    public void setAuthorizedAt(LocalDateTime authorizedAt) { this.authorizedAt = authorizedAt; }
-    public LocalDateTime getReleasedAt() { return releasedAt; }
-    public void setReleasedAt(LocalDateTime releasedAt) { this.releasedAt = releasedAt; }
     public LocalDateTime getSettledAt() { return settledAt; }
     public void setSettledAt(LocalDateTime settledAt) { this.settledAt = settledAt; }
     public LocalDateTime getCancelledAt() { return cancelledAt; }

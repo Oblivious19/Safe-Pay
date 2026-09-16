@@ -1,0 +1,69 @@
+{
+  "Date": "2026-09-16",
+  "FrontendTests": 140,
+  "TypeScript": "passed",
+  "JetBuild": "passed",
+  "BackupDirectory": "C:\\Users\\GAURAV~1\\AppData\\Local\\Temp\\safepay-account-selector-fix-20260916\\backup",
+  "Files": [
+    {
+      "Path": "Frontend\\SafePayJet\\src\\ts\\views\\dashboard.html",
+      "Source": "C:\\Users\\GAURAV~1\\AppData\\Local\\Temp\\safepay-account-selector-fix-20260916\\SafePayJet\\src\\ts\\views\\dashboard.html",
+      "PreviousSHA256": "08DF02C2CFFDD3368902C736B242C727934C2981C2F5F224A97A05AA9584CBCA",
+      "SHA256": "9D6231F06155FA56072F85E60CE34C1C1886C887DF472FBE0CBDA2A9959B38AE"
+    },
+    {
+      "Path": "Frontend\\SafePayJet\\src\\ts\\views\\beneficiaries.html",
+      "Source": "C:\\Users\\GAURAV~1\\AppData\\Local\\Temp\\safepay-account-selector-fix-20260916\\SafePayJet\\src\\ts\\views\\beneficiaries.html",
+      "PreviousSHA256": "D6E903BDECDE38D63E6CEA8FF8EFF88B11822A5F1A23C33645C096AB06725A4F",
+      "SHA256": "ACD1C8A21C26ECD06257304B9D0DB5706CA61E36BAE58BDAD104E13AAC371A23"
+    },
+    {
+      "Path": "Frontend\\SafePayJet\\src\\ts\\views\\send-money.html",
+      "Source": "C:\\Users\\GAURAV~1\\AppData\\Local\\Temp\\safepay-account-selector-fix-20260916\\SafePayJet\\src\\ts\\views\\send-money.html",
+      "PreviousSHA256": "CCC3547ABB669DABCCDDAB1C2F76D0F36C2B7AD343E40166BAAA63617092160E",
+      "SHA256": "918320FA7AB8B4C8397D302BE0AC717DFA6FBF26C303FB63EDD5C5BD7B74113E"
+    },
+    {
+      "Path": "Frontend\\SafePayJet\\src\\ts\\views\\admin.html",
+      "Source": "C:\\Users\\GAURAV~1\\AppData\\Local\\Temp\\safepay-account-selector-fix-20260916\\SafePayJet\\src\\ts\\views\\admin.html",
+      "PreviousSHA256": "9B65EF08B83370AE8C910CFAA4BB977F952C6ACEC6646B04E5AC0026325B985C",
+      "SHA256": "14FF4F33E8B905BFD9CD5DDDA6E93DE1ECCC475783868466C38918CF293AC8CD"
+    },
+    {
+      "Path": "Frontend\\SafePayJet\\tests\\csp-selectors.test.cjs",
+      "Source": "C:\\Users\\GAURAV~1\\AppData\\Local\\Temp\\safepay-account-selector-fix-20260916\\SafePayJet\\tests\\csp-selectors.test.cjs",
+      "PreviousSHA256": null,
+      "SHA256": "36046A3B441DEAC925F3D4B68CC5FC3C636CE0B3F0C61EB633BB9FBDFCB0EE23"
+    },
+    {
+      "Path": "Frontend\\SafePayJet\\web\\js\\views\\dashboard.html",
+      "Source": "C:\\Users\\GAURAV~1\\AppData\\Local\\Temp\\safepay-account-selector-fix-20260916\\SafePayJet\\web\\js\\views\\dashboard.html",
+      "PreviousSHA256": "08DF02C2CFFDD3368902C736B242C727934C2981C2F5F224A97A05AA9584CBCA",
+      "SHA256": "9D6231F06155FA56072F85E60CE34C1C1886C887DF472FBE0CBDA2A9959B38AE"
+    },
+    {
+      "Path": "Frontend\\SafePayJet\\web\\js\\views\\beneficiaries.html",
+      "Source": "C:\\Users\\GAURAV~1\\AppData\\Local\\Temp\\safepay-account-selector-fix-20260916\\SafePayJet\\web\\js\\views\\beneficiaries.html",
+      "PreviousSHA256": "D6E903BDECDE38D63E6CEA8FF8EFF88B11822A5F1A23C33645C096AB06725A4F",
+      "SHA256": "ACD1C8A21C26ECD06257304B9D0DB5706CA61E36BAE58BDAD104E13AAC371A23"
+    },
+    {
+      "Path": "Frontend\\SafePayJet\\web\\js\\views\\send-money.html",
+      "Source": "C:\\Users\\GAURAV~1\\AppData\\Local\\Temp\\safepay-account-selector-fix-20260916\\SafePayJet\\web\\js\\views\\send-money.html",
+      "PreviousSHA256": "CCC3547ABB669DABCCDDAB1C2F76D0F36C2B7AD343E40166BAAA63617092160E",
+      "SHA256": "918320FA7AB8B4C8397D302BE0AC717DFA6FBF26C303FB63EDD5C5BD7B74113E"
+    },
+    {
+      "Path": "Frontend\\SafePayJet\\web\\js\\views\\admin.html",
+      "Source": "C:\\Users\\GAURAV~1\\AppData\\Local\\Temp\\safepay-account-selector-fix-20260916\\SafePayJet\\web\\js\\views\\admin.html",
+      "PreviousSHA256": "9B65EF08B83370AE8C910CFAA4BB977F952C6ACEC6646B04E5AC0026325B985C",
+      "SHA256": "14FF4F33E8B905BFD9CD5DDDA6E93DE1ECCC475783868466C38918CF293AC8CD"
+    },
+    {
+      "Path": "docs\\ACCOUNT_SELECTOR_FIX.md",
+      "Source": "C:\\Users\\GAURAV~1\\AppData\\Local\\Temp\\safepay-account-selector-fix-20260916\\ACCOUNT_SELECTOR_FIX.md",
+      "PreviousSHA256": null,
+      "SHA256": "DDC243B1DF2995744524E9F745E0447488EC606E93E2213C4F6E4B3D20C760E4"
+    }
+  ]
+}

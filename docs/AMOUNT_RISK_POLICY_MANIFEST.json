@@ -1,0 +1,122 @@
+{
+  "policy": "Amount-only risk correction requested 15 September 2026",
+  "tests": {
+    "total": 396,
+    "passed": 395,
+    "skipped": 1,
+    "failures": 0,
+    "errors": 0
+  },
+  "files": [
+    {
+      "path": "AGENTS.md",
+      "oldSha256": "8b453880aac7327c26a3cb478c354d204d696270d0a8169a9c8894524113fbf0",
+      "sha256": "028a6c1792e6b58a0052eaf63b1f14627d4bd3982b55b4521aba31cb97c8582e"
+    },
+    {
+      "path": "Backend/enhanced-requests.http",
+      "oldSha256": "62f81aa0241be02b51b436a5ee032b6e0fb126d343c71ec53d33c6117bc5e99c",
+      "sha256": "dd79a650751d0ff340585433e227b12c81bdbe64b00e8ea0f2438128564e589c"
+    },
+    {
+      "path": "Backend/README.md",
+      "oldSha256": "3758b9ab3595f60c2e60181ae93e75265d6cd120ea5f7fdfd7ce890f00290c90",
+      "sha256": "433660cf30675d3e7fdcbca628e299f9a8750f409267ad7a9d6858fd31692f10"
+    },
+    {
+      "path": "Backend/scripts/smoke-local.cjs",
+      "oldSha256": "9d3bd8ed67e0845490431c6ec7de85391e11377c734fdd147f8ace3f22f898f2",
+      "sha256": "52189fb36eead6673c0f605590e6f08b7322f899b5ca2012b65da5334fbd9db6"
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/services/RiskAssessmentEngine.java",
+      "oldSha256": "c6137888a1899b65be9230f1883563273b215c7fb6b9650d1b42edd6d34c0d6c",
+      "sha256": "33547bbc2ebafa82b431cb5c35954434ef1f40d19b966c8a9cf0b2182a723edd"
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/services/TransactionServiceImpl.java",
+      "oldSha256": "99a534e04acf7d5f8b5151a551696ccc1716e71e836d8e3a418f58a5e98eb711",
+      "sha256": "a3790e5bde71d00cdcee2506df7184b92ce665366901711c92d8435d3de6bdcf"
+    },
+    {
+      "path": "Backend/src/test/java/com/ofss/controller/CustomerResourceTest.java",
+      "oldSha256": "349b9a38130f5391b3ee73e3df9de1699a0d88c8f5af6aea367ba2e7f0827af8",
+      "sha256": "84e909abbcea72d4b5c7bcf0a7da091cbf9da3db36006a479af4f73071102dce"
+    },
+    {
+      "path": "Backend/src/test/java/com/ofss/controller/EnhancedWorkflowIntegrationTest.java",
+      "oldSha256": "8a93392e091ddb5dee0fa85c8411518671b0b42f5f2e92a25851c492db444b48",
+      "sha256": "eb7d817abcaf2feba5511105a4437ef81a85cb7c904bc1189ab5730ac9016e2a"
+    },
+    {
+      "path": "Backend/src/test/java/com/ofss/services/RiskAssessmentEngineTest.java",
+      "oldSha256": "8bf307cb0e23555ed32004d9d569b47e53d64ea1f47602e7a1ea7de908bee694",
+      "sha256": "524662b83b90ccfe6a63ba0f35b3d82f840374eb38bc6e01a38e8beebf9d46cf"
+    },
+    {
+      "path": "Backend/src/test/java/com/ofss/services/TransactionDatabaseTest.java",
+      "oldSha256": "67cb5df7fe2acb8141437592df497f2019a1b5421c503b56af63afa178a30ea8",
+      "sha256": "50fb447a9413697d29edc31d4da68af40364f5dadbee2fb942f09a4af0e32430"
+    },
+    {
+      "path": "Backend/src/test/java/com/ofss/services/TransactionPreRiskStageTest.java",
+      "oldSha256": "7b671a8bd96f988c761f3c4dc63bed906d47969416062019a9e2d87b4c63b0a9",
+      "sha256": "ababbf1b1867c7a9bc841554cdcb47e330cefe2ce147360dc41002109d31dfc4"
+    },
+    {
+      "path": "Backend/src/test/java/com/ofss/services/TransactionRiskInputBuilderTest.java",
+      "oldSha256": "66c1e85d33e972851626d367d3adb4a0ae223c66d13a64d5b7a7ee3016dd51c2",
+      "sha256": "bf8169332c08d7d116a13ba1e00071068f4aad5bc19595f812771e7b33338e03"
+    },
+    {
+      "path": "Backend/src/test/java/com/ofss/services/TransactionSafeguardsTest.java",
+      "oldSha256": "9a17c43e001d594939b089b4d09388d9764d83ebfaff769286272f192e8077d5",
+      "sha256": "350c159ccbb4273e3a56fa9220aa4184cffbfee0745dec58b4f6c2df16cf75f3"
+    },
+    {
+      "path": "dist/SafePay.jar",
+      "oldSha256": "345e60a22b83eec7b4a9df890da44fc2b7c2ea377ca15266a54b2dccde94df3e",
+      "sha256": "e0c9da6066e998a008df91fa89ea8f8c408c0290682e9fa24756632f4d73fe23"
+    },
+    {
+      "path": "docs/BEST_MODULES_AND_CHANGES.md",
+      "oldSha256": "85f2b9ffc510b15041802361355492b09e1c98ac2b974e2f8f73cf16fcc8089d",
+      "sha256": "31915653f9341f7b6819f571b011f190d1b47a55cfa52bf9af11e3cd366d8a97"
+    },
+    {
+      "path": "docs/postman/SafePay_Enhanced_Examples.postman_collection.json",
+      "oldSha256": "838ebe90a2facda8f5f6f18fff31407c8f20bc1593c5a6906cf2e6bacfbbd22e",
+      "sha256": "0f0130cc5aacb5702850f1fe6a08eac7246c81b8bd034140b0a1a4c243571470"
+    },
+    {
+      "path": "docs/postman/SafePay_Enhanced_Local.postman_environment.json",
+      "oldSha256": "b85a12319a2e4670f8c350a2c14aebf31e04ecbf5aa147102e9a686b3ae549f6",
+      "sha256": "f0a27f1a9db5dcae2c3cba8d4c6951c01a3931c86828019bda225f1b885cb0b5"
+    },
+    {
+      "path": "docs/postman/SAFEPAY_ENHANCED_POSTMAN_GUIDE.md",
+      "oldSha256": "e8e7a6ddb749e404f175d861df509ea7e8e74e659b4e9ee98a8511948c1e5385",
+      "sha256": "45aaea82ceb14333d4ab37888f68987a306a5d3b2f1fe8a533d3b748153ea34a"
+    },
+    {
+      "path": "docs/VALIDATION.md",
+      "oldSha256": "aa8418c5eff151e1731129178685be16ac523bcf539f7d4083e6d9c3b1543d46",
+      "sha256": "d4cff364c00218dbe6e5441b8230483f6df1d3d4659ebc10c8f98f658b1bdf11"
+    },
+    {
+      "path": "PHASE1_SPEC.md",
+      "oldSha256": "6bb4e858d7acfbb60f01dfe6f18fdc92845e446d26d40ca25db54c8363eb5648",
+      "sha256": "680bcd0eb185cca74f80d42f763f78e0f90209281f663e115317023872322f40"
+    },
+    {
+      "path": "README.md",
+      "oldSha256": "a35dfb5dadc34701556cce6644072408a162993f36c68c8aab0bd2aeb10652f8",
+      "sha256": "0e1c3e963c18f3003a0ddc39250558e92d3d50facd395ebc5c3c6129b09afbd4"
+    },
+    {
+      "path": "docs/AMOUNT_RISK_POLICY_UPDATE.md",
+      "oldSha256": null,
+      "sha256": "20ba3f231fc68f804d7c5951409c975b417bc16e89966a8de5873399c69a71f3"
+    }
+  ]
+}

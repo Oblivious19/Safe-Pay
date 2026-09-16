@@ -1,0 +1,1325 @@
+{
+  "prepared": "2026-09-15",
+  "files": [
+    {
+      "path": "AGENTS.md",
+      "sha256": "8b453880aac7327c26a3cb478c354d204d696270d0a8169a9c8894524113fbf0",
+      "bytes": 4643
+    },
+    {
+      "path": "Backend/.gitattributes",
+      "sha256": "5775a77ad2f6d12dde053a3fb0cca4309189163f0888f4e7e984cd0ab327028b",
+      "bytes": 38
+    },
+    {
+      "path": "Backend/.gitignore",
+      "sha256": "089382e4d7944ab6cb6900a1269678ebff93c00d441ada788cd05a8da182b22b",
+      "bytes": 394
+    },
+    {
+      "path": "Backend/.mvn/wrapper/maven-wrapper.properties",
+      "sha256": "488e1b3f2e641779d4636abf9390845f901e64607261bc3c0b0bfe4fe96e6706",
+      "bytes": 168
+    },
+    {
+      "path": "Backend/README.md",
+      "sha256": "3758b9ab3595f60c2e60181ae93e75265d6cd120ea5f7fdfd7ce890f00290c90",
+      "bytes": 1349
+    },
+    {
+      "path": "Backend/enhanced-requests.http",
+      "sha256": "62f81aa0241be02b51b436a5ee032b6e0fb126d343c71ec53d33c6117bc5e99c",
+      "bytes": 2669
+    },
+    {
+      "path": "Backend/mvnw",
+      "sha256": "cae96cef89ebea3531221f4ae17c23cf8edf67d00eae8306d4186ae1bbed4d02",
+      "bytes": 11790
+    },
+    {
+      "path": "Backend/mvnw.cmd",
+      "sha256": "5e0614de4562d0a349b656a6e74a4e358062167cd46f80c9a41020f0f2e46063",
+      "bytes": 8496
+    },
+    {
+      "path": "Backend/pom.xml",
+      "sha256": "24cea22fa0434d351940b7b76cb2aff506e8c799a23826318aa8f6546db9adff",
+      "bytes": 2416
+    },
+    {
+      "path": "Backend/scripts/smoke-local.cjs",
+      "sha256": "9d3bd8ed67e0845490431c6ec7de85391e11377c734fdd147f8ace3f22f898f2",
+      "bytes": 6333
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/SafePayApplication.java",
+      "sha256": "fc1544451a7287b29eb0c9e4f4a20f24b8ab7bd5b8a08dbed55174d0a1a83693",
+      "bytes": 388
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/beans/Account.java",
+      "sha256": "6ffc5b1dbcd61cdfde1a98391252f1dc5914f1e56c81c83618292e2a7feb1eeb",
+      "bytes": 3188
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/beans/AccountStatus.java",
+      "sha256": "656caf144d92ad85900ce704a98962a8f6721c230b6bde29074b50ed053f20be",
+      "bytes": 83
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/beans/AccountType.java",
+      "sha256": "b3e9d283c5f25d6429ebe6b43e43d0749566db38ed9d21c96dd786dd9c39074e",
+      "bytes": 74
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/beans/AdminAccountDtos.java",
+      "sha256": "0bc71df0212ac1c47fa2b42e352cebd6101e1949dbbc6a24ead0e535d80a8ba0",
+      "bytes": 1195
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/beans/AdminDtos.java",
+      "sha256": "663c93b62784935bb34f2b2c4d653ae61d457048bbc44b9487bae05a6c4b34aa",
+      "bytes": 1367
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/beans/AdminReportDtos.java",
+      "sha256": "3f41e1ac4f1abd76a67f2a388397b3e314edca8ce3cd05cb938941f621f36a3b",
+      "bytes": 494
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/beans/AssessmentRiskTier.java",
+      "sha256": "308a87984aa26bc197250296e23c3220e6fd3c97bd0572cfe8a638f13f02f2b1",
+      "bytes": 183
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/beans/AuditLog.java",
+      "sha256": "bb5834bcc639835e2ad4fcf585ca51fe5683462c6299408d5472f5c59d620124",
+      "bytes": 1890
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/beans/Beneficiary.java",
+      "sha256": "c943a7d36308b93e0212f90b71ebdb483133e03ac3c73439f2851201308dae7b",
+      "bytes": 2439
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/beans/BeneficiaryRequest.java",
+      "sha256": "864b4b1ef0a1048d7b8ee7c345204082af6af9076ae67a80703c3a541961e19a",
+      "bytes": 980
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/beans/BeneficiaryResponse.java",
+      "sha256": "d24984ba0d3f1701ab8db87b5cf60b39ea6e986289c103c45d4a10e49af35fa9",
+      "bytes": 537
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/beans/BeneficiaryStatusRequest.java",
+      "sha256": "62eb2d713c67ef0cc8b9cefedc800dc35e7079107cf47b639b189489f9de2c64",
+      "bytes": 460
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/beans/BooleanToYNConverter.java",
+      "sha256": "7c96d3c9cde29c9108b18eeab3416ead0e81ffa0106db50870092d9387e7262a",
+      "bytes": 729
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/beans/LoginPrincipal.java",
+      "sha256": "709de89db4240896a2759cd2b48cc22864d71e6e21d04a48b53522fc582f19dc",
+      "bytes": 284
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/beans/LoginRequest.java",
+      "sha256": "fb22fedce58190fcb4a0183ae7a3e60be68896daa67f86c9f5319d982f1388b6",
+      "bytes": 537
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/beans/ProfileUpdateRequest.java",
+      "sha256": "5771762c0458aaa32d1f37dbe90d12986f58358d4d8a8ce697f6de2025fa8a74",
+      "bytes": 748
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/beans/ProtectionState.java",
+      "sha256": "7425832cd1e5cf0609d49d1ec03ce9beafe55384691d15fb097d3cf1728f65c2",
+      "bytes": 223
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/beans/RiskAssessment.java",
+      "sha256": "6bcb4491b530e2feea389654b34230bd2f265a345f5de17151578d54bbfa45b5",
+      "bytes": 155
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/beans/RiskAssessmentInput.java",
+      "sha256": "9e94fd1efff10cdfad3b4ca5c9309ced95135f7d4e9fbdf4991befb4928d21c8",
+      "bytes": 458
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/beans/RiskContextSignal.java",
+      "sha256": "3ab19da2a02e714377a2c9cb275c196b10b8c6b373ac17dfd9117354c7f2171c",
+      "bytes": 167
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/beans/RiskTier.java",
+      "sha256": "72e1cedf8a41568616a483f94b4aaa79d9e900ce91cf93279d4992bee7cc1e16",
+      "bytes": 178
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/beans/Role.java",
+      "sha256": "0c6ea30e291a54e1ce3d2186c29eef3e7363a3742e616d9f86c35413800cb944",
+      "bytes": 1166
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/beans/RuleBasedRiskResult.java",
+      "sha256": "304380823e58f32986b73031b80e4b2340f88eed1b15049cc76db32c0ddbf146",
+      "bytes": 289
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/beans/TransactionDb.java",
+      "sha256": "45322db177362e6c31a7f6de3ff1a1f330a53c54e1873bd5d9238cc2d6394018",
+      "bytes": 6522
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/beans/TransactionRequest.java",
+      "sha256": "5ce26456e0cf6654774f4575a72725733d1e67294daff5f7187b5664127e66a6",
+      "bytes": 806
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/beans/TransactionState.java",
+      "sha256": "10b28e0c209bd098926cf84697dbe1d3dbb73037acd9877fc77cb9e7926be9d0",
+      "bytes": 139
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/beans/User.java",
+      "sha256": "86fef94c0ba119442849b7562693a30bc3c6e30186437f37fabb0b135683e4ec",
+      "bytes": 3771
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/beans/UserProfileResponse.java",
+      "sha256": "5ccf944a81b70419c6a11bae11f1c95822011f53b6cee763f3aa524f73339789",
+      "bytes": 565
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/beans/UserStatus.java",
+      "sha256": "6e7e98a4987ac91f535c1179f1f2c01709017d5dd65fd20a96cf002e3f3648b6",
+      "bytes": 92
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/beans/VerificationRequest.java",
+      "sha256": "1e5deb025e4497c9b07443b860dea3482a614484d10ef63d1b3d6ca35a38368a",
+      "bytes": 418
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/beans/VerifiedTransactionResponse.java",
+      "sha256": "183338b1e3389cf7ccd47dc95caf5172d480517d658e7089ae52f4e3f9b493f5",
+      "bytes": 1507
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/beans/package-info.java",
+      "sha256": "3fa99d205598882848fc331919f84ccfecd7fdd50ccaaa4b134cf964527f953e",
+      "bytes": 56
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/config/AdminSecurityConfig.java",
+      "sha256": "4b67433d9cbe499c55c98ba036fbdc74bf1731d5816928fb720a0b6b2d98708c",
+      "bytes": 5360
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/config/CustomerResourceSecurityConfig.java",
+      "sha256": "7f1e54ecbecd523ff7033dea7e360c730e881486c6eb6ef5e25325da21cb325d",
+      "bytes": 5450
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/config/LocalDemoConfiguration.java",
+      "sha256": "caf33fd52bfa1bd4c5604b14a5b92f03eeaa67922ddb8df6072d32286599778b",
+      "bytes": 3364
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/config/LoginSecurityConfig.java",
+      "sha256": "394ddbe36a29bf5dd9d21f26f9d6894aa11ed98c5c83ed6c8d375fad94adc8d8",
+      "bytes": 2291
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/config/LogoutSecurityConfig.java",
+      "sha256": "ff71205f9b82fef1b518b9a9a373da628afc6638f687804bb792bacd83e61519",
+      "bytes": 2823
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/config/WebConfig.java",
+      "sha256": "3713dbee05c5d2fd901a330db8f9c9689e6a47d80770e85f6149983c77a43184",
+      "bytes": 877
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/config/package-info.java",
+      "sha256": "dc892d74fd80ccad53d1980880fcd767c1d2429af55d460066c3ff110a20472e",
+      "bytes": 73
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/controller/AccountController.java",
+      "sha256": "4252c41ecf4fd94e4f44fddfba3ce9da8d355009b0750ec923bc847c01a466bf",
+      "bytes": 916
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/controller/AdminAccountController.java",
+      "sha256": "7bca6c6d4736de837215cef3df559edf646ca8f51c45a68f205d164240d21659",
+      "bytes": 740
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/controller/AdminController.java",
+      "sha256": "3e4faf8b6aaa298f061110f5e8ab0ff41a70dc937b0bbf601d2db0de7cf708ac",
+      "bytes": 1859
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/controller/AdminReportController.java",
+      "sha256": "7db0321fb008d60374e71b129b2b5c3a39d2713917a6b19dceed01baa0cfbcb6",
+      "bytes": 1813
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/controller/AuthController.java",
+      "sha256": "05f974ce7fe4396450c783bac1d73d8bb671076a7d0855be7c8e8f3c4bb61f2c",
+      "bytes": 1038
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/controller/BeneficiaryController.java",
+      "sha256": "ee99a4cccdfe1103c1d8a8dfdf58d25ee0f5af51918e12f4e2ab5daa270f8694",
+      "bytes": 4704
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/controller/LoginController.java",
+      "sha256": "ec1fe407962ad4655f8875831fa55c27801344f1c8b9ea244aa9f524291debe7",
+      "bytes": 2982
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/controller/ProfileController.java",
+      "sha256": "bb43f1715108d96cfefc4061e6d9627601e3b3a73899260b000b8aa999fdf972",
+      "bytes": 1849
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/controller/TransactionController.java",
+      "sha256": "23d119868c7101111dd2e05f49862cb8f0647d44053b0eb3a073c5354b725bcc",
+      "bytes": 6752
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/controller/UserController.java",
+      "sha256": "ec58b573485afe7d46b81c3234b588123e066f8be73865675b8e15ef66b46349",
+      "bytes": 2261
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/controller/VerificationController.java",
+      "sha256": "358d7b96c6329f2f93d422e1d20e288ff97254f38a81507b2a7684a88519bc87",
+      "bytes": 2525
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/controller/package-info.java",
+      "sha256": "5524adce0d80d51a387f021da1fd225c6e5a4abf8d5d9752e96067c8904f5d9d",
+      "bytes": 54
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/excp/AccountAlreadyExistsException.java",
+      "sha256": "7b38e23cd742711a4ea82688c8bb4e3e16a38d28a4d93a25e2f3ffc44e617742",
+      "bytes": 257
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/excp/DuplicateBeneficiaryException.java",
+      "sha256": "28fbef7e7bef6554ae54f0dbccb61ad71d589e7f3db6ac622621097a88037df4",
+      "bytes": 205
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/excp/DuplicateEmailException.java",
+      "sha256": "7b3804612940bd652d66f1c96187c3ada98ec1feaeacd329806f6fe4e85ff8ca",
+      "bytes": 181
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/excp/DuplicatePhoneException.java",
+      "sha256": "f5419f1693d567c1c677112f5998e8c4e0007f89476f2af79bf02b8a898d1217",
+      "bytes": 188
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/excp/GlobalExceptionHandler.java",
+      "sha256": "7e3742d10436d5f8fe7bbe524ce83ccf163958576ca5ad711f480e8e6f4a6dd1",
+      "bytes": 4180
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/excp/InsufficientBalanceException.java",
+      "sha256": "c5e1c2c5d524b58902282cd5a7fff695e6a3e7bd881e97b1980ee4ea790f014c",
+      "bytes": 171
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/excp/InvalidAdminStatusTransitionException.java",
+      "sha256": "3d8c45c183a4d9df73bd76de86c8c2ae393a4a3cb8ae46bf82a2af1b475694ad",
+      "bytes": 189
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/excp/InvalidStateTransitionException.java",
+      "sha256": "54c41a05202a8734586e1d2cdd1ec079c595bb1b36d337ee60f101bc36b99995",
+      "bytes": 177
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/excp/ResourceNotFoundExcp.java",
+      "sha256": "deaf32c4f36fbd5b16b4f26eec6ab43676700bceb25e5027ad611afd143cb1ba",
+      "bytes": 155
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/excp/TransactionValidationException.java",
+      "sha256": "baed0dd3c469e9217fe7116d8491302ce56c43cfb03ea8ab1735901396d162eb",
+      "bytes": 307
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/excp/package-info.java",
+      "sha256": "ad01a3390616b113cf7af795fbd16977840e173b7a9d7dd694e5cd82e3b9f37e",
+      "bytes": 72
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/repository/AccountDao.java",
+      "sha256": "f85a904ad22d45fcec90ccc6d8e1ae0b471bc157dfb58cac49305a8ab18b2cb9",
+      "bytes": 1809
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/repository/AdminAccountRepository.java",
+      "sha256": "aad49a497abad8d72a6a09b9d5dc2e27be4628f3ebc6ce649378decf30ff0971",
+      "bytes": 1124
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/repository/AdminReportRepository.java",
+      "sha256": "4d824524678d874fc5caf6c09728e47c1817c816b8f7c5f0fb2ed313c8c7dc42",
+      "bytes": 1509
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/repository/AuditLogDao.java",
+      "sha256": "34b214d58a8a51e784e5a10b8540ff965a880eed7b7c4f38f948437a5829ce6a",
+      "bytes": 197
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/repository/BeneficiaryDao.java",
+      "sha256": "026e45ff19745d30bdca57c9a6595ebd4f727c192c2bf7207936f5eb974b479c",
+      "bytes": 2194
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/repository/ProfileRepository.java",
+      "sha256": "516e5dd9c3465b889ddca47a73fd93fc1cce7f153be7d8905626e70445bde870",
+      "bytes": 701
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/repository/RoleDao.java",
+      "sha256": "c60344ccceaf6b603c7bfa647e4e2d07c880f62d395a22a3024708b86c2950fc",
+      "bytes": 263
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/repository/TransactionDao.java",
+      "sha256": "cd802a71df042a27998d5ea3a73f5fcd3d97e0b273b20c4d42c6f12786a72404",
+      "bytes": 4323
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/repository/UserDao.java",
+      "sha256": "1bbf8335e93482b515905b4950907460a43da5931d5941f7944a938bb98eec8a",
+      "bytes": 1322
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/repository/VerificationRepository.java",
+      "sha256": "2f1fe4967c307bba9ff8c6d870a1255350b3fd388556240e922c6be410ee6c17",
+      "bytes": 1772
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/repository/package-info.java",
+      "sha256": "e3f2f3495a08e0a91dbe7dd0ad19cc45211bd25c6e5759a0d3d270a23ec39dae",
+      "bytes": 66
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/services/AccountService.java",
+      "sha256": "27adbaa099804a7a5b2f1dc9c6a8ee6062640721e79740e99bfcb6ddebe736ad",
+      "bytes": 402
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/services/AccountServiceImpl.java",
+      "sha256": "f850b85d937903038dd390e97d8129b6806a9590a91035b7b4ddcbd548d707d4",
+      "bytes": 3494
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/services/AdminAccountService.java",
+      "sha256": "04acff0501234ab158b8007e42e2bb91085295422c0a297bd748c30975b178ea",
+      "bytes": 2425
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/services/AdminReportService.java",
+      "sha256": "4836cfc4f71d43b885c6bc914e003e14fb201691de7c2341b94fe7da56caba3e",
+      "bytes": 927
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/services/AdminService.java",
+      "sha256": "465f736fce843689fdf790d5fd6260a8b79d9889f90433e954e76c49fc349dc1",
+      "bytes": 3286
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/services/AmountRiskEngine.java",
+      "sha256": "c9c1570435c986edee86339be46f4322ad8e4ef8955baae9805a52842428283f",
+      "bytes": 1242
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/services/BeneficiaryService.java",
+      "sha256": "baf98e8fc64415cd7455dbc96d9f277d30f51a5aab60ec4891ab4e1911aa8238",
+      "bytes": 638
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/services/BeneficiaryServiceImpl.java",
+      "sha256": "01ef541e1789b273021068aa87ed2ae43a82dc3df2432401445a5c793e196a7d",
+      "bytes": 4327
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/services/ExpiredTransactionSettlementService.java",
+      "sha256": "135aeb5819669486e74324520d28d4bffbef23ce18d8e859ae6e350f5620d636",
+      "bytes": 3318
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/services/LoginService.java",
+      "sha256": "0fea4d2ab684019d9ef44e4fcdbb3558fb535ac39060dc8a09c65890e88eb3bb",
+      "bytes": 4301
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/services/ProfileService.java",
+      "sha256": "c42a29eff3aaacd555cd15b68de778f636ee712149577228863ae4bb4b76085d",
+      "bytes": 2559
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/services/RiskAssessmentEngine.java",
+      "sha256": "c6137888a1899b65be9230f1883563273b215c7fb6b9650d1b42edd6d34c0d6c",
+      "bytes": 5320
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/services/TransactionPreRiskValidator.java",
+      "sha256": "f3a5d6fba18a7d7cecca4027696a9a8789bd7bf2567d2608cb77fb3713670dea",
+      "bytes": 4561
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/services/TransactionProtectionStateMachine.java",
+      "sha256": "48f58a94933fface57c0d59d032769502625c8bd3f7e30f173a628e731b4f5dd",
+      "bytes": 4829
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/services/TransactionRiskInputBuilder.java",
+      "sha256": "969e28815b88f42da3fc56fce769fea1cdf0d6695b53b2f04eec50b522389d71",
+      "bytes": 2725
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/services/TransactionScheduler.java",
+      "sha256": "207d8aabc079ec19f5413f99c3fa245e3cd480a8b716970b709cfc9ab20032f1",
+      "bytes": 523
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/services/TransactionService.java",
+      "sha256": "758d37f7f32ecfab403265272155e200c2b93ab5f7151e6ada72774b35f1c78a",
+      "bytes": 567
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/services/TransactionServiceImpl.java",
+      "sha256": "99a534e04acf7d5f8b5151a551696ccc1716e71e836d8e3a418f58a5e98eb711",
+      "bytes": 11035
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/services/UserService.java",
+      "sha256": "f86fbb6dea01df5829644cfcdfbd1443e880f755d8f3cd362736f9d731677c64",
+      "bytes": 281
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/services/UserServiceImpl.java",
+      "sha256": "3c4f06fdfe2b85aaf7524c81c3ea570ee5b1e88272c1f4927a76bf11d581c481",
+      "bytes": 4011
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/services/VerificationService.java",
+      "sha256": "35f839f4528d5be9e38668352ee938203e8ccde8275a582b2a3f53b9504dd8b4",
+      "bytes": 6175
+    },
+    {
+      "path": "Backend/src/main/java/com/ofss/services/package-info.java",
+      "sha256": "e06542684b73978307c2619549f9681d9da97c9962c3fc13daccee5463e5be9a",
+      "bytes": 78
+    },
+    {
+      "path": "Backend/src/main/resources/application-local.yml",
+      "sha256": "fd695835465ac9273822f59704afc848e2a2f7aeedefa2253cfeebb7c20ed80b",
+      "bytes": 218
+    },
+    {
+      "path": "Backend/src/main/resources/application-oracle.yml",
+      "sha256": "7b6b778456670971122f1221940b4248e44fb5b0976656087ccaacf4922b6cb3",
+      "bytes": 328
+    },
+    {
+      "path": "Backend/src/main/resources/application.properties",
+      "sha256": "1ff7bae1eb4afb103938a5b646095ec25454ceb30162b03d5cffa68b51956148",
+      "bytes": 145
+    },
+    {
+      "path": "Backend/src/main/resources/application.yml",
+      "sha256": "bfd3f3608347bcadb2bd994923e9461a8fad3c968a8a7306b3318adb74d75833",
+      "bytes": 123
+    },
+    {
+      "path": "Backend/src/test/java/com/ofss/SafePayApplicationTests.java",
+      "sha256": "e609e10a5547dd244f68eeae261cd59fef8e9a7c18084460d19232f98f1926e3",
+      "bytes": 211
+    },
+    {
+      "path": "Backend/src/test/java/com/ofss/beans/BooleanToYNConverterTest.java",
+      "sha256": "b42ebb9cda597595f3f1600b6e820c7c743ae0e6f9994f9f6dd575f8e988e52b",
+      "bytes": 745
+    },
+    {
+      "path": "Backend/src/test/java/com/ofss/beans/OracleDomainValidationTest.java",
+      "sha256": "217b34f3375e5aa0ee42659190d6515a79293be7d50524d282dbac31bc6bdf07",
+      "bytes": 2304
+    },
+    {
+      "path": "Backend/src/test/java/com/ofss/beans/UserAccountDomainTest.java",
+      "sha256": "82090101463a6ed48a52cbc304e145acbebb575efd9a6e1d0b88a59bcf4e13b6",
+      "bytes": 1792
+    },
+    {
+      "path": "Backend/src/test/java/com/ofss/controller/AdminAuthorizationTest.java",
+      "sha256": "d14533dd5807d96f4fbdd34848a46bbaac15ac9c0b9e00638f49471cbe3fe534",
+      "bytes": 13049
+    },
+    {
+      "path": "Backend/src/test/java/com/ofss/controller/AdminReportTest.java",
+      "sha256": "8910d95bc5a1a0675b678d4ed2f2aa358cc83722498c734c8c3cb3b2bf984c6f",
+      "bytes": 6516
+    },
+    {
+      "path": "Backend/src/test/java/com/ofss/controller/BeneficiaryBackendTest.java",
+      "sha256": "4ed4bbb594e0c16d33fd1768879c8f672c6cd8b8450c0f3a24da31610bb85c6f",
+      "bytes": 18126
+    },
+    {
+      "path": "Backend/src/test/java/com/ofss/controller/BrowserCorsTest.java",
+      "sha256": "b4524eb017064d75b88da3caa1658e6370acc340954b3da6ce8a5faa8b3598b9",
+      "bytes": 7343
+    },
+    {
+      "path": "Backend/src/test/java/com/ofss/controller/CustomerResourceTest.java",
+      "sha256": "349b9a38130f5391b3ee73e3df9de1699a0d88c8f5af6aea367ba2e7f0827af8",
+      "bytes": 23263
+    },
+    {
+      "path": "Backend/src/test/java/com/ofss/controller/EnhancedWorkflowIntegrationTest.java",
+      "sha256": "8a93392e091ddb5dee0fa85c8411518671b0b42f5f2e92a25851c492db444b48",
+      "bytes": 12254
+    },
+    {
+      "path": "Backend/src/test/java/com/ofss/controller/FeatureAuthorizationTest.java",
+      "sha256": "5dd1c596f99af9505fbf5362cbd0cf81ced600c815dde955d567ebcd3bbb9154",
+      "bytes": 8926
+    },
+    {
+      "path": "Backend/src/test/java/com/ofss/controller/LoginControllerTest.java",
+      "sha256": "79c024f4926b087f31407af5accff1c9f9611d847e79aff5d0116c4a832d1060",
+      "bytes": 11301
+    },
+    {
+      "path": "Backend/src/test/java/com/ofss/controller/LogoutTest.java",
+      "sha256": "1cd2be345c54875f36f979cf041ef8967f05529f60b799c286d0677937008204",
+      "bytes": 5726
+    },
+    {
+      "path": "Backend/src/test/java/com/ofss/controller/RegistrationValidationTest.java",
+      "sha256": "d950e8975fdd4f667c73b8f1bbedd86874aa3daa2cd3413c7045577cbf42f202",
+      "bytes": 5428
+    },
+    {
+      "path": "Backend/src/test/java/com/ofss/repository/AdminReportRepositoryTest.java",
+      "sha256": "46ca0c75a68e210e26c3516f77c1542ef0432736eb7b4bfb9b4107908d7c1950",
+      "bytes": 1651
+    },
+    {
+      "path": "Backend/src/test/java/com/ofss/services/AccountServiceImplTest.java",
+      "sha256": "39a2685236afbfe357528bb6c519c31e41068d33a02a98e8fa3a8002c8b43a2c",
+      "bytes": 1655
+    },
+    {
+      "path": "Backend/src/test/java/com/ofss/services/AdminAccountServiceTest.java",
+      "sha256": "c7cf015794658f65a68170f0de4df5b42d2d55222d9483dbbefccd3831f275bb",
+      "bytes": 3627
+    },
+    {
+      "path": "Backend/src/test/java/com/ofss/services/AmountRiskEngineTest.java",
+      "sha256": "961dfedc85dfbbea79c36219891d6a0ced686a101c97aa20c54d3feaef0953bc",
+      "bytes": 1551
+    },
+    {
+      "path": "Backend/src/test/java/com/ofss/services/LoginAttemptTransactionTest.java",
+      "sha256": "5f5d8d05bde18e53909ee2d03c7172f59c570d70b4577fefb0fd2e55a45dbf94",
+      "bytes": 2675
+    },
+    {
+      "path": "Backend/src/test/java/com/ofss/services/LoginLockoutTest.java",
+      "sha256": "ea858ef42a67fd3ccf737822837ae8496f773b19966cf4bb72a4f9974a4c1743",
+      "bytes": 5243
+    },
+    {
+      "path": "Backend/src/test/java/com/ofss/services/ProfileServiceTest.java",
+      "sha256": "aa8258f945f037e82a6cf3bfae9245c4966516dba6702c6f7b7499bf9096ecb9",
+      "bytes": 3381
+    },
+    {
+      "path": "Backend/src/test/java/com/ofss/services/RiskAssessmentEngineTest.java",
+      "sha256": "8bf307cb0e23555ed32004d9d569b47e53d64ea1f47602e7a1ea7de908bee694",
+      "bytes": 8648
+    },
+    {
+      "path": "Backend/src/test/java/com/ofss/services/TransactionDatabaseTest.java",
+      "sha256": "67cb5df7fe2acb8141437592df497f2019a1b5421c503b56af63afa178a30ea8",
+      "bytes": 5975
+    },
+    {
+      "path": "Backend/src/test/java/com/ofss/services/TransactionPreRiskStageTest.java",
+      "sha256": "7b671a8bd96f988c761f3c4dc63bed906d47969416062019a9e2d87b4c63b0a9",
+      "bytes": 9767
+    },
+    {
+      "path": "Backend/src/test/java/com/ofss/services/TransactionProtectionStateMachineTest.java",
+      "sha256": "e43e1b6751a268a6b588bd5b4c260afe4ad6a936fe082f8ffc7e5abb705da344",
+      "bytes": 7555
+    },
+    {
+      "path": "Backend/src/test/java/com/ofss/services/TransactionRiskInputBuilderTest.java",
+      "sha256": "66c1e85d33e972851626d367d3adb4a0ae223c66d13a64d5b7a7ee3016dd51c2",
+      "bytes": 3716
+    },
+    {
+      "path": "Backend/src/test/java/com/ofss/services/TransactionSafeguardsTest.java",
+      "sha256": "9a17c43e001d594939b089b4d09388d9764d83ebfaff769286272f192e8077d5",
+      "bytes": 6474
+    },
+    {
+      "path": "Backend/src/test/java/com/ofss/services/UserRegistrationTest.java",
+      "sha256": "79e4e368ccd58b5b386fb860ed3eb25dac1143fbf7e966273af971e2435d7994",
+      "bytes": 5840
+    },
+    {
+      "path": "Backend/src/test/java/com/ofss/services/VerificationServiceTest.java",
+      "sha256": "a619500ef7aaf3c9ac8b90cb184072b0e954537cf7cfb110228735dc878725fe",
+      "bytes": 9785
+    },
+    {
+      "path": "Database/00_enhanced_fresh_schema.sql",
+      "sha256": "12b00769b129f5276d79ea051206101832f9ca19b1acbd9d7cd330c5f3d2541b",
+      "bytes": 5201
+    },
+    {
+      "path": "Database/01_sequences.sql",
+      "sha256": "0987873a702d0c7ad8132cade14444e515bfdbab86882e141db5554b65907cca",
+      "bytes": 1151
+    },
+    {
+      "path": "Database/02_tables.sql",
+      "sha256": "b237e61b17d70fa8971641c8d623ace7bc22a92d2111e286be6da9d15cc62c5e",
+      "bytes": 6225
+    },
+    {
+      "path": "Database/03_constraints_indexes.sql",
+      "sha256": "e7e31c051afa0ff1351eb7c374d5e7a5963c8056f2b1318c07d29042b0ef1225",
+      "bytes": 10230
+    },
+    {
+      "path": "Database/04_seed_data.sql",
+      "sha256": "66e0939d8c0fd3c82fd74a9e9b3f85b38dd46240efcb49c071a7222fa50a1117",
+      "bytes": 16867
+    },
+    {
+      "path": "Database/05_reporting_views.sql",
+      "sha256": "f9ab7c8289e209b8ff36639d0a12f4b954217d566d8fd86524a30bcde229fc4a",
+      "bytes": 2109
+    },
+    {
+      "path": "Database/06_phase1_mvp_alignment.sql",
+      "sha256": "f5b075844b3151ef6f1998cd0e9ed962712fcb4a1b34bb36cee9ddec3b37fbd7",
+      "bytes": 1334
+    },
+    {
+      "path": "Database/07_simplified_phase1_schema.sql",
+      "sha256": "bf054cac9510392bdb85cde189d36c5e46ed3c8a5b74c3591441684b9e691f3f",
+      "bytes": 5900
+    },
+    {
+      "path": "Database/08_simplified_phase1_seed_data.sql",
+      "sha256": "9eb5c2e35fdf03789f52e23b72eaa9b92cfeccda89f43d5972dc47f3ac8d0f71",
+      "bytes": 6621
+    },
+    {
+      "path": "Database/08_user_account_foundation.sql",
+      "sha256": "d291e5b930e82dd31af72cdc90e9de59ba65ad6669712068d8fa6786b95f6be3",
+      "bytes": 6870
+    },
+    {
+      "path": "Database/09_registration_password_transition.sql",
+      "sha256": "f396cbd53d20e93a87f773e687a1e5bbf9f56cf1b8e04d497e2f959bba36ae2b",
+      "bytes": 939
+    },
+    {
+      "path": "Database/10_risk_engine_schema_compatibility.sql",
+      "sha256": "0fedf83e947bd8d43a5027f89ec71ab7e2d828d4d887fd46bdf3ffd530b43634",
+      "bytes": 6536
+    },
+    {
+      "path": "Database/11_transaction_state_machine.sql",
+      "sha256": "ddb931ec0d7c1695a7c551cce977ba658f103616eff231c0ef113fb06eed7ab0",
+      "bytes": 3801
+    },
+    {
+      "path": "Database/12_admin_reporting_views.sql",
+      "sha256": "f28f175fa8c7f63980522a84ea82850ef274cd6cb412a998ee4192e02dd0828b",
+      "bytes": 2848
+    },
+    {
+      "path": "Database/13_transaction_safeguards.sql",
+      "sha256": "e008ce03e5a9b62c9b8a99dcc66deaf8889bca0efc1d9fa9e898a52839d34c81",
+      "bytes": 2290
+    },
+    {
+      "path": "Database/README.md",
+      "sha256": "bb7fdf98773032029c4eb41f49702e548b44134f4b0e740017fe48df787de2fb",
+      "bytes": 1188
+    },
+    {
+      "path": "Frontend/SafePayJet/.gitignore",
+      "sha256": "c9d30e41ec5d900c6c3041ad059ff3f433c2f5057dc1784fcf7ca849cddccd8c",
+      "bytes": 247
+    },
+    {
+      "path": "Frontend/SafePayJet/oraclejetconfig.json",
+      "sha256": "1334dc3f817bc7a07d358796f873603c595997a386bf6ce037728ec618441f32",
+      "bytes": 1665
+    },
+    {
+      "path": "Frontend/SafePayJet/package-lock.json",
+      "sha256": "13070b5df5eede7e55a904d607276e7073d6d6f66fca1e0f0e3e14b868ba564d",
+      "bytes": 141517
+    },
+    {
+      "path": "Frontend/SafePayJet/package.json",
+      "sha256": "30e7c45007de0b9a9e91623bc52f3de22d08c0280e12cf566e9aafa61a4e1aaf",
+      "bytes": 662
+    },
+    {
+      "path": "Frontend/SafePayJet/scripts/hooks/after_app_create.js",
+      "sha256": "0e1095a459d9000db6da5c02b920a2d02561661058d10d057c287c6d2d4fa212",
+      "bytes": 343
+    },
+    {
+      "path": "Frontend/SafePayJet/scripts/hooks/after_app_restore.js",
+      "sha256": "25b40309687ec3210b83e38aa4834a49c905d65062e3cbb2eccc22360b536ff7",
+      "bytes": 344
+    },
+    {
+      "path": "Frontend/SafePayJet/scripts/hooks/after_app_typescript.js",
+      "sha256": "2452fcc06d5ead4c3b73f4bbc30e48d63fa8f4b9e9c46f811c6d1d001f6f688c",
+      "bytes": 365
+    },
+    {
+      "path": "Frontend/SafePayJet/scripts/hooks/after_build.js",
+      "sha256": "a6287a48ab688f942d25de520e1d2ab97b0f64123cb1527791b6f4fa04f7008a",
+      "bytes": 363
+    },
+    {
+      "path": "Frontend/SafePayJet/scripts/hooks/after_component_build.js",
+      "sha256": "829aa86cb42ce346f4c1b3eb1b3d12d6da6f31a48e02cb35613331ebd3225a50",
+      "bytes": 373
+    },
+    {
+      "path": "Frontend/SafePayJet/scripts/hooks/after_component_create.js",
+      "sha256": "0c175cf881dd112c9119fbfa39908c6a02289120c4c4115ea352f6aaf2b984fc",
+      "bytes": 421
+    },
+    {
+      "path": "Frontend/SafePayJet/scripts/hooks/after_component_package.js",
+      "sha256": "51c2dcf27a82ae4da015de19e35f402929ed0397b7d911364651bd54e6184c61",
+      "bytes": 414
+    },
+    {
+      "path": "Frontend/SafePayJet/scripts/hooks/after_component_typescript.js",
+      "sha256": "95e9e87c08bdd59fbb1003e6080260e307e0b738b4a81e6713c3eb950455d506",
+      "bytes": 371
+    },
+    {
+      "path": "Frontend/SafePayJet/scripts/hooks/after_serve.js",
+      "sha256": "792797675d22f66f399d80136369509752573b66af6b20b39b9ff6e879838a01",
+      "bytes": 363
+    },
+    {
+      "path": "Frontend/SafePayJet/scripts/hooks/after_watch.js",
+      "sha256": "0f96e1dc4646fc819315b9dc6fe8c2ddb46da073f1e12897e5205314d72f2193",
+      "bytes": 363
+    },
+    {
+      "path": "Frontend/SafePayJet/scripts/hooks/before_app_typescript.js",
+      "sha256": "c328f13ae38cd15d2f55af7822ba045098baf2b763ee7387ca87b8541b948e07",
+      "bytes": 419
+    },
+    {
+      "path": "Frontend/SafePayJet/scripts/hooks/before_build.js",
+      "sha256": "f534e2dd20645bb96584297242cfdd7b84ec9a03553d0c480506a6a36a8e1b85",
+      "bytes": 364
+    },
+    {
+      "path": "Frontend/SafePayJet/scripts/hooks/before_component_optimize.js",
+      "sha256": "1c4e84978324a5e4fe9009b8472352562403ac892936edf96a0038c389384aa7",
+      "bytes": 377
+    },
+    {
+      "path": "Frontend/SafePayJet/scripts/hooks/before_component_package.js",
+      "sha256": "aed5a4e0cd8a85293d12947f2a4fd171ea9ae7716077d343630754f01d349865",
+      "bytes": 415
+    },
+    {
+      "path": "Frontend/SafePayJet/scripts/hooks/before_component_typescript.js",
+      "sha256": "e51bc3d07bfb4f304919cb91ba3f69f7da8c618007312aa3b860172ed13a0696",
+      "bytes": 425
+    },
+    {
+      "path": "Frontend/SafePayJet/scripts/hooks/before_injection.js",
+      "sha256": "7184baed25a0af11d6238cb9692bb63ad263293e25543ab74092b5fc37a4df8a",
+      "bytes": 368
+    },
+    {
+      "path": "Frontend/SafePayJet/scripts/hooks/before_optimize.js",
+      "sha256": "0ce62febbb8630f9f5978fc1cfd4ca1c1ae66dfe99502e047c2f8eb711149f9d",
+      "bytes": 367
+    },
+    {
+      "path": "Frontend/SafePayJet/scripts/hooks/before_release_build.js",
+      "sha256": "84a3eebcbe94320836c01157dbcdd830d2e6bb379a6b1ba61981e3c323f9ff5b",
+      "bytes": 372
+    },
+    {
+      "path": "Frontend/SafePayJet/scripts/hooks/before_serve.js",
+      "sha256": "169a970663bc653450edac27781ebb75f57a638069c9083c15c4bee44e8e2b1c",
+      "bytes": 1923
+    },
+    {
+      "path": "Frontend/SafePayJet/scripts/hooks/before_watch.js",
+      "sha256": "82cdb20da312294846219d451da31d64096ffa6babbf3a203ed1f423edf70502",
+      "bytes": 364
+    },
+    {
+      "path": "Frontend/SafePayJet/scripts/hooks/before_webpack.js",
+      "sha256": "a55a68956ed7c448af7ef509e1b2e91cc7fbe7978b849611dd1bd087103ac5b2",
+      "bytes": 411
+    },
+    {
+      "path": "Frontend/SafePayJet/scripts/hooks/hooks.json",
+      "sha256": "c35e170132b09a58f644241818b7122c5727cc5e9b4ed862d7cd208c1e67c283",
+      "bytes": 1586
+    },
+    {
+      "path": "Frontend/SafePayJet/src/css/app-min.css",
+      "sha256": "a33d73b62e61dfbabf9a897ef9df1f8c95681047f53f5410e300b652617c5af3",
+      "bytes": 689
+    },
+    {
+      "path": "Frontend/SafePayJet/src/css/app.css",
+      "sha256": "f986dd24b35ee7dc1876d5cd87eb7d0e48aa5af7120aeef826db4e916c8583ca",
+      "bytes": 7361
+    },
+    {
+      "path": "Frontend/SafePayJet/src/css/auth-admin.css",
+      "sha256": "66d46df283d360ce7e3a04a3b309a13af9c5e46ba39e99a8f62b9bebf8762a88",
+      "bytes": 2517
+    },
+    {
+      "path": "Frontend/SafePayJet/src/css/customer-dashboard.css",
+      "sha256": "3b01fb416edbe76112490d63334de18e4ae9215e6d73277fdf8604f72ff8cd6f",
+      "bytes": 10846
+    },
+    {
+      "path": "Frontend/SafePayJet/src/css/fonts/App_iconfont.woff",
+      "sha256": "4cab74e90aaad2e7ccc3191bbf32b50c7eb31719f440d30e6d58e78a4fe59316",
+      "bytes": 5104
+    },
+    {
+      "path": "Frontend/SafePayJet/src/css/images/JET-Favicon-Red-32x32.png",
+      "sha256": "0e7a5ff8e6628f8b3eb8298a33345afa86ca9b2bfba9a723ee868ee5ff50cff9",
+      "bytes": 1890
+    },
+    {
+      "path": "Frontend/SafePayJet/src/css/images/avatar_24px.png",
+      "sha256": "2a519f0410721a7dcda01173fc44d4746c191bd712b1a7c84322a37da815ad31",
+      "bytes": 1576
+    },
+    {
+      "path": "Frontend/SafePayJet/src/css/images/avatar_24px_2x.png",
+      "sha256": "d50d3ab8f0d6c4c472bc0075c08b814951178239f5e23760edfe189b110eb155",
+      "bytes": 2170
+    },
+    {
+      "path": "Frontend/SafePayJet/src/css/images/oracle_logo.svg",
+      "sha256": "de3b2368fc712a3330f3943da5900ad1837797731e5bfeb6eb2325ad1ed0434b",
+      "bytes": 2210
+    },
+    {
+      "path": "Frontend/SafePayJet/src/css/login.css",
+      "sha256": "58d44dfccb81ccce7556d4dcb466e361a0936a155efea6f7f7856737cf9f486c",
+      "bytes": 3368
+    },
+    {
+      "path": "Frontend/SafePayJet/src/index.html",
+      "sha256": "ba21b7329a7aa5823ed79b4c8392b6ad251b76527205ee6cf9e41864b484c29d",
+      "bytes": 4178
+    },
+    {
+      "path": "Frontend/SafePayJet/src/js/main.js",
+      "sha256": "d0b73719f2bc0cc9a48d416bf24478bb3f4b8ae6b5710ed1cd2d307ebb130838",
+      "bytes": 1907
+    },
+    {
+      "path": "Frontend/SafePayJet/src/js/path_mapping.json",
+      "sha256": "6c09ac1fa078c6f914d8d68940eb4084708ba2740e67021e2636e34306d5c8c0",
+      "bytes": 10465
+    },
+    {
+      "path": "Frontend/SafePayJet/src/ts/accUtils.ts",
+      "sha256": "df8e24fa4cde02a5ab44e9848f22bbde66606fbdb9e0389834b1000654339d87",
+      "bytes": 1232
+    },
+    {
+      "path": "Frontend/SafePayJet/src/ts/appController.ts",
+      "sha256": "102e113fcfa9ed928c2f3eeb7625772dbe73f61035de468551c699c2896ba60f",
+      "bytes": 4642
+    },
+    {
+      "path": "Frontend/SafePayJet/src/ts/root.ts",
+      "sha256": "4cd855f55c7c2af2939b5451e5ddc1f3732ea48d6dce1f35e0655a3de391a133",
+      "bytes": 1240
+    },
+    {
+      "path": "Frontend/SafePayJet/src/ts/services/README.md",
+      "sha256": "1bbb10bbba58d3caddb9e8b0d4101e1adf92d25c9632c4731d6b43feccb6f4e1",
+      "bytes": 7683
+    },
+    {
+      "path": "Frontend/SafePayJet/src/ts/services/accountService.ts",
+      "sha256": "2faaac4b503c70957603103a97fef25e233bd8d7de0d94ae191738043e710fee",
+      "bytes": 199
+    },
+    {
+      "path": "Frontend/SafePayJet/src/ts/services/adminReportService.ts",
+      "sha256": "063bd998bb11311fafb094c7f5e6451f48e5f0b65183915101764f5306f28912",
+      "bytes": 872
+    },
+    {
+      "path": "Frontend/SafePayJet/src/ts/services/adminService.ts",
+      "sha256": "a69d3de56a2d4d3e5572152dd0e6749fa65b661cb163b076a30d4e65473e9b6b",
+      "bytes": 1991
+    },
+    {
+      "path": "Frontend/SafePayJet/src/ts/services/api.ts",
+      "sha256": "c7a8598687f38fbcf74c31720913288a093117f72416af96b2d383e5c51938a4",
+      "bytes": 4458
+    },
+    {
+      "path": "Frontend/SafePayJet/src/ts/services/apiClient.ts",
+      "sha256": "a010b593940926faf4ef16d0c1bc91e3e7a6ba4dff0bd4b2273dfcd3f2cbf619",
+      "bytes": 4326
+    },
+    {
+      "path": "Frontend/SafePayJet/src/ts/services/apiError.ts",
+      "sha256": "6f9ad894dc05f6483cd0dd17f8b16fdc43463573dd399ca826b4d35efa565aad",
+      "bytes": 1678
+    },
+    {
+      "path": "Frontend/SafePayJet/src/ts/services/authService.ts",
+      "sha256": "aca55ea01b5102659be378672f5ccd24a795225f5c209e8fe22ac7a28d1fbadd",
+      "bytes": 1588
+    },
+    {
+      "path": "Frontend/SafePayJet/src/ts/services/customerService.ts",
+      "sha256": "d3cb120d7d7818884cb14699f12de235de5e3846996aba27168baead50522ecc",
+      "bytes": 683
+    },
+    {
+      "path": "Frontend/SafePayJet/src/ts/services/customerSession.ts",
+      "sha256": "f1925c21978675fc9a471a1e626665f75e20edefe24ab6e327b1de59f611e7b5",
+      "bytes": 375
+    },
+    {
+      "path": "Frontend/SafePayJet/src/ts/services/profileService.ts",
+      "sha256": "bf7cc9c7a7437bb8d7c4190139559831887308c587d59ddcbd41a2dd66f1fef6",
+      "bytes": 341
+    },
+    {
+      "path": "Frontend/SafePayJet/src/ts/services/refreshLoop.ts",
+      "sha256": "bb0a0c904e175db28806d9888111d8ba6a0c13d132e065e412d3a5bf8514d0ca",
+      "bytes": 1227
+    },
+    {
+      "path": "Frontend/SafePayJet/src/ts/services/retryKeys.ts",
+      "sha256": "1516b1492c25b87ba451b28f8f86c6b2dd123a908e8506e5a60b36cd3e417cce",
+      "bytes": 1457
+    },
+    {
+      "path": "Frontend/SafePayJet/src/ts/services/sessionService.ts",
+      "sha256": "3113461a243d927982068dd913fb971541714fb6528715becc59afe718d10a86",
+      "bytes": 1210
+    },
+    {
+      "path": "Frontend/SafePayJet/src/ts/services/transactionService.ts",
+      "sha256": "fbb66dbd28238cf1c3326976265c4637b4e8da310f35454b25176d8947e7f11f",
+      "bytes": 2099
+    },
+    {
+      "path": "Frontend/SafePayJet/src/ts/services/types.ts",
+      "sha256": "a114c42a983741673a27b5ad59893726d78cea5a3c904da35d4ca7dfec8622db",
+      "bytes": 2464
+    },
+    {
+      "path": "Frontend/SafePayJet/src/ts/viewModels/about.ts",
+      "sha256": "187f1decd3bdb0aec0201b400534a5dc84f345ababcb64304c6038d1eb904733",
+      "bytes": 1217
+    },
+    {
+      "path": "Frontend/SafePayJet/src/ts/viewModels/admin.ts",
+      "sha256": "c313cfa0649fea7bf86ff2c22e2ce442088fcc74a36b5a523aa4df004abdb42e",
+      "bytes": 7098
+    },
+    {
+      "path": "Frontend/SafePayJet/src/ts/viewModels/beneficiaries.ts",
+      "sha256": "7eb677f5694299dad94f7a1966bfa86f9006c88a4a722202d1d872752aaf6d7f",
+      "bytes": 5651
+    },
+    {
+      "path": "Frontend/SafePayJet/src/ts/viewModels/customers.ts",
+      "sha256": "1182d35101fe69e134c731d8f72ee87b328c6d220b4f901d8c604f78c590930c",
+      "bytes": 1234
+    },
+    {
+      "path": "Frontend/SafePayJet/src/ts/viewModels/dashboard.ts",
+      "sha256": "65f18976766f5ce0f928ba358155ed5fce63181066bd291ca90d00031b357041",
+      "bytes": 4326
+    },
+    {
+      "path": "Frontend/SafePayJet/src/ts/viewModels/incidents.ts",
+      "sha256": "7d2ac45cf1571187e9daca74a7f3efb38ed5c53608354e1113d641d136009b83",
+      "bytes": 1234
+    },
+    {
+      "path": "Frontend/SafePayJet/src/ts/viewModels/login.ts",
+      "sha256": "7d87f19087142a76818e7f975c7298c9730f80f05053b386f1c8d4ad91f03f68",
+      "bytes": 2659
+    },
+    {
+      "path": "Frontend/SafePayJet/src/ts/viewModels/profile.ts",
+      "sha256": "ca046439c8100026173959df4fc23d0e4e9ba691a7641241c8047c9388a52a46",
+      "bytes": 2770
+    },
+    {
+      "path": "Frontend/SafePayJet/src/ts/viewModels/register.ts",
+      "sha256": "a537646bab18dd64cb81e972af735a30fdc03521b3951a86fa13fcd0f866739a",
+      "bytes": 2154
+    },
+    {
+      "path": "Frontend/SafePayJet/src/ts/viewModels/send-money.ts",
+      "sha256": "bb4462a6d8eab9ac68843bef4d502853535f7355bc5b3326a2f027b1df05f7a4",
+      "bytes": 4136
+    },
+    {
+      "path": "Frontend/SafePayJet/src/ts/viewModels/transactions.ts",
+      "sha256": "2ef3e2b95ec361e14d7a2c20b28bf9fe815d4ffc351bcc76d3c5d36099382462",
+      "bytes": 5254
+    },
+    {
+      "path": "Frontend/SafePayJet/src/ts/views/about.html",
+      "sha256": "a0f43477589e52a5b4713b0eb3ab9ddfbf9076864e571489f9d7549df631819d",
+      "bytes": 392
+    },
+    {
+      "path": "Frontend/SafePayJet/src/ts/views/admin.html",
+      "sha256": "c31d2b3b7e87585bc87c387fbce8fbc679e2850b91df69a460c6a56505c2ea37",
+      "bytes": 7396
+    },
+    {
+      "path": "Frontend/SafePayJet/src/ts/views/beneficiaries.html",
+      "sha256": "f3f0008b3c2fc31bb1c394f162749ff8cdfe28ca887ea62cf2a4cf10b3497032",
+      "bytes": 3253
+    },
+    {
+      "path": "Frontend/SafePayJet/src/ts/views/customers.html",
+      "sha256": "51954867db7f2571fa07201b09ad6f0ed4c73091515eaca9ba4094ab2d52bb97",
+      "bytes": 400
+    },
+    {
+      "path": "Frontend/SafePayJet/src/ts/views/dashboard.html",
+      "sha256": "8ae7e555f92c40a2bec688bcec18acfa02afb08a8315ab56dece9c6935a394a7",
+      "bytes": 6118
+    },
+    {
+      "path": "Frontend/SafePayJet/src/ts/views/incidents.html",
+      "sha256": "62fdea90e51fe94d103c3e7269dc0a55a4b271b790f8f218c401d99d0eec6f41",
+      "bytes": 400
+    },
+    {
+      "path": "Frontend/SafePayJet/src/ts/views/login.html",
+      "sha256": "b1b130119f0f66fdcffc0c64278a42374a5157b2fa2615dada6aed6edbb89945",
+      "bytes": 3149
+    },
+    {
+      "path": "Frontend/SafePayJet/src/ts/views/profile.html",
+      "sha256": "1b1f0058b0ef180236f770b23dec6c4249f9647c29018c6ed74c94498115f174",
+      "bytes": 1582
+    },
+    {
+      "path": "Frontend/SafePayJet/src/ts/views/register.html",
+      "sha256": "8647a6ec6b64153227ba8b4788b4ce897965718f35b36edfefe35f44148fa6af",
+      "bytes": 2175
+    },
+    {
+      "path": "Frontend/SafePayJet/src/ts/views/send-money.html",
+      "sha256": "94d314c3f7e592b9136a9c0465faf22fbce7de039c55719e1d8999951f625ed7",
+      "bytes": 2286
+    },
+    {
+      "path": "Frontend/SafePayJet/src/ts/views/transactions.html",
+      "sha256": "a0d4620cab13908ac15e6682b31c2b6e496afd88300293a6bcad9963c430c481",
+      "bytes": 4180
+    },
+    {
+      "path": "Frontend/SafePayJet/tests/admin-services.test.cjs",
+      "sha256": "93ea88680282b378f0bbe082e470146734d25b43041b3831f8456cbeb023cab9",
+      "bytes": 3366
+    },
+    {
+      "path": "Frontend/SafePayJet/tests/api-foundation.test.cjs",
+      "sha256": "de9b7f68e9a2a1cf64738d24ed8667d816309392cd4e0831dd9f6efba20d0bee",
+      "bytes": 10138
+    },
+    {
+      "path": "Frontend/SafePayJet/tests/auth-admin.test.cjs",
+      "sha256": "6c0d17a33b5f341c875231e2547f2af6994cbfd4a6803b726fe9e240fabe5b70",
+      "bytes": 7476
+    },
+    {
+      "path": "Frontend/SafePayJet/tests/customer-workflows.test.cjs",
+      "sha256": "c0bff0bd82bbd35ca82cab27a1e1f826690d47f89df9e407be6a79b8cb8d8f09",
+      "bytes": 10879
+    },
+    {
+      "path": "Frontend/SafePayJet/tests/dashboard.test.cjs",
+      "sha256": "4ff0b41d953fc1e5412b2eac05c51bd35d4c5ac41a180c4069538e43dd12e4eb",
+      "bytes": 6144
+    },
+    {
+      "path": "Frontend/SafePayJet/tests/login.test.cjs",
+      "sha256": "5ccf14241f8240317187a02a305880ca4b4a67a013c8b0dc9ddd9d692822c256",
+      "bytes": 5375
+    },
+    {
+      "path": "Frontend/SafePayJet/tests/navigation.test.cjs",
+      "sha256": "637685a02e9564c156081bc5798aa5d20d4c44a4ea6067bed8b38ad8e57b0f05",
+      "bytes": 5504
+    },
+    {
+      "path": "Frontend/SafePayJet/tests/signed-in-email.test.cjs",
+      "sha256": "e06f907c868d6d3e61edc3933f9f37c149d75408c6939abaead6c3581470d4d4",
+      "bytes": 2704
+    },
+    {
+      "path": "Frontend/SafePayJet/tsconfig.json",
+      "sha256": "a0184d7fc46d39010cdb04ab6b05b1f998b0df8b10110e6996ac2dfcae7b383d",
+      "bytes": 949
+    },
+    {
+      "path": "PHASE1_SPEC.md",
+      "sha256": "6bb4e858d7acfbb60f01dfe6f18fdc92845e446d26d40ca25db54c8363eb5648",
+      "bytes": 11222
+    },
+    {
+      "path": "README.md",
+      "sha256": "a35dfb5dadc34701556cce6644072408a162993f36c68c8aab0bd2aeb10652f8",
+      "bytes": 6422
+    },
+    {
+      "path": "dist/SafePay.jar",
+      "sha256": "345e60a22b83eec7b4a9df890da44fc2b7c2ea377ca15266a54b2dccde94df3e",
+      "bytes": 66374931
+    },
+    {
+      "path": "docs/2026-09-11_CHANGE_SUMMARY_AND_TESTING.md",
+      "sha256": "8cd92d66d677a41770f8ae8b917c8f1821ee04de6291a103e41de4ffb007c4c2",
+      "bytes": 21101
+    },
+    {
+      "path": "docs/2026-09-13_IMPLEMENTATION_PLAN.md",
+      "sha256": "8e8d37660a32aca1965dd5a1d9331f45f150f7f996bab0451a143c320b652b4e",
+      "bytes": 6707
+    },
+    {
+      "path": "docs/ADMIN_REPORTING.md",
+      "sha256": "d17d7a6ab1c7722c823bc255e63ab433959417d1d65a03c110b9051c108c5b02",
+      "bytes": 2918
+    },
+    {
+      "path": "docs/BEST_MODULES_AND_CHANGES.md",
+      "sha256": "85f2b9ffc510b15041802361355492b09e1c98ac2b974e2f8f73cf16fcc8089d",
+      "bytes": 5605
+    },
+    {
+      "path": "docs/CHANGE_MANIFEST.json",
+      "sha256": "7bf9b5870acefeb9a916d259545201fe1bb934ab9dc551ba8ba2b08250b1512a",
+      "bytes": 21158
+    },
+    {
+      "path": "docs/CHANGE_MANIFEST.md",
+      "sha256": "4a616ab907c66c3ca68305641e3b4a2a9c488ceaada9b833047ef4f3ff010930",
+      "bytes": 6330
+    },
+    {
+      "path": "docs/FRONTEND_SPEC.md",
+      "sha256": "3e0679c5695b26b9277b4e3b65cc28f460cd3a858ec4cf8c641f325c17b75c43",
+      "bytes": 863
+    },
+    {
+      "path": "docs/Flow.png",
+      "sha256": "5064460545159d80e2b4e6f4320802875e798499a0b7493ab6db4948576332cc",
+      "bytes": 442340
+    },
+    {
+      "path": "docs/PROJECT_SPEC.md",
+      "sha256": "80ce52478952318a74e0188937f126325cafad799601a09c9e46bf3300e6ebea",
+      "bytes": 16836
+    },
+    {
+      "path": "docs/SafePay_Group_Project_Brief.docx",
+      "sha256": "f5c8df18ab518b022ac30f2843c6a1691c0b3736021daa85e7939ddf3528e704",
+      "bytes": 41801
+    },
+    {
+      "path": "docs/SafePay_Project_Requirements.md",
+      "sha256": "19911cb26549aa0ff140398dae5358d5e19dede3009fe0502a7a0014193ca00e",
+      "bytes": 17376
+    },
+    {
+      "path": "docs/SafePay_Three_Version_Module_Comparison.md",
+      "sha256": "6f9d4793b68a9cfe03cfccfe7c3e1a48dce9876a12c9b552e3a397125aa1f7fc",
+      "bytes": 31730
+    },
+    {
+      "path": "docs/USER_ACCOUNT_DATABASE_SETUP.md",
+      "sha256": "de2d8893d652074dcaeaa4246170f8c2980b9d5ce694ed3dcd33a07de6e11bc5",
+      "bytes": 16557
+    },
+    {
+      "path": "docs/VALIDATION.md",
+      "sha256": "aa8418c5eff151e1731129178685be16ac523bcf539f7d4083e6d9c3b1543d46",
+      "bytes": 4640
+    },
+    {
+      "path": "docs/postman/SAFEPAY_POSTMAN_TEST_REPORT.md",
+      "sha256": "024936b01a574a1728f3f90d7cea500d6c2b55fe9618010fb1b7a88bd83e3153",
+      "bytes": 32669
+    },
+    {
+      "path": "docs/postman/SafePay_Local.postman_environment.json",
+      "sha256": "f679318f8819ee06431e0c1ac9aeabb77b2d7a0f5108a1f725763556ab28538a",
+      "bytes": 4321
+    },
+    {
+      "path": "docs/postman/SafePay_Workflow.postman_collection.json",
+      "sha256": "0694581a0a855c587d68780ee1ad012dd4f79a2167c65457176c13c3c11117da",
+      "bytes": 77378
+    }
+  ]
+}

@@ -1,0 +1,72 @@
+<section class="admin-page" aria-labelledby="admin-title">
+  <div class="admin-heading"><div><p class="login-overline">SAFE PAY ADMINISTRATION</p><h1 id="admin-title">Users, accounts &amp; reports</h1><p>Manage access and review simulated payment activity.</p></div><button class="dashboard-secondary" data-bind="click: load, disable: loading() || busy()">Refresh</button></div>
+  <p role="status" data-bind="visible: loading">Loading administration…</p>
+  <p class="login-message" role="alert" data-bind="visible: actionError, text: actionError"></p>
+  <p class="auth-success" role="status" data-bind="visible: notice, text: notice"></p>
+
+  <section class="admin-card" aria-labelledby="admin-users-title"><h2 id="admin-users-title">Users</h2>
+    <p class="login-message" role="alert" data-bind="visible: usersError, text: usersError"></p>
+    <p data-bind="visible: !loading() && !usersError() && !users().length">No users found.</p>
+    <div class="admin-table-scroll" data-bind="visible: users().length"><table><thead><tr><th scope="col">ID</th><th scope="col">Name</th><th scope="col">Email / mobile</th><th scope="col">Role</th><th scope="col">Status</th><th scope="col">Action</th></tr></thead><tbody data-bind="foreach: users"><tr><td data-bind="text: userId"></td><td data-bind="text: name"></td><td><span data-bind="text: email"></span><br><small data-bind="text: phone"></small></td><td data-bind="text: role"></td><td data-bind="text: status"></td><td><button class="dashboard-secondary" data-bind="visible: status === 'ACTIVE' || status === 'SUSPENDED', disable: $parent.disabled, click: $parent.toggleUser, text: status === 'ACTIVE' ? 'Suspend' : 'Activate', attr: {'aria-label': (status === 'ACTIVE' ? 'Suspend ' : 'Activate ') + name}"></button><button class="dashboard-secondary" data-bind="disable: $parent.disabled, click: $parent.viewUser">Details / status / credit</button></td></tr></tbody></table></div>
+  </section>
+
+  <section class="admin-card" aria-labelledby="admin-provision-title"><h2 id="admin-provision-title">Create an administrator</h2>
+    <form novalidate class="admin-form-grid" data-bind="submit: provision">
+      <label>Name<input maxlength="100" autocomplete="off" data-bind="textInput: provisionName, disable: disabled"></label>
+      <label>Email<input type="email" maxlength="150" autocomplete="off" data-bind="textInput: provisionEmail, disable: disabled"></label>
+      <label>Mobile number<input type="tel" maxlength="10" inputmode="numeric" autocomplete="off" data-bind="textInput: provisionPhone, disable: disabled"></label>
+      <label>Initial password<input type="password" autocomplete="new-password" data-bind="textInput: initialPassword, disable: disabled"></label>
+      <p>Creates an ADMIN user without a bank account. Use at least 8 characters and at most 72 UTF-8 bytes for the initial password.</p>
+      <button class="dashboard-primary" type="submit" data-bind="disable: disabled">Create administrator</button>
+    </form>
+  </section>
+  <p role="status" data-bind="visible: detailLoading">Loading user details and accounts…</p>
+  <section class="admin-card" data-bind="with: selectedUser">
+    <h2 data-bind="text: name"></h2><p><span data-bind="text: email"></span> · <span data-bind="text: phone"></span></p>
+    <p><span data-bind="text: role"></span> · Current status: <strong data-bind="text: status"></strong></p>
+    <p>Created: <span data-bind="text: createdAt"></span> · Updated: <span data-bind="text: updatedAt"></span></p>
+    <form class="admin-report-form" data-bind="submit: $parent.saveUserStatus">
+      <label>User status<select data-bind="options: $parent.statusChoices, value: $parent.desiredStatus, disable: $parent.disabled"></select></label>
+      <button class="dashboard-secondary" type="submit" data-bind="disable: $parent.disabled">Save status</button>
+    </form>
+    <h3>Bank interest credit</h3><p>Choose one of this user's accounts and enter the amount to add to the simulated balance.</p>
+    <p data-bind="visible: !$parent.userAccounts().length">This user has no bank accounts.</p>
+    <form class="admin-form-grid" novalidate data-bind="submit: $parent.submitCredit">
+      <label>Account<select data-bind="options: $parent.userAccounts, optionsText: $parent.creditAccountLabel, optionsValue: function(a) { return a.accountId.toString(); }, value: $parent.creditAccountId, disable: $parent.disabled"></select></label>
+      <label>Credit amount (INR)<input type="text" inputmode="decimal" maxlength="19" data-bind="textInput: $parent.creditAmount, disable: $parent.disabled"></label>
+      <label><input type="checkbox" data-bind="checked: $parent.creditConfirmed, disable: $parent.disabled"> I confirm this simulated bank interest credit.</label>
+      <button class="dashboard-primary" type="submit" data-bind="disable: $parent.disabled">Add credit</button>
+    </form>
+    <ul data-bind="foreach: $parent.userAccounts"><li><span data-bind="text: $parents[1].creditAccountLabel($data)"></span> · <strong data-bind="text: $parents[1].exactMoney(balance)"></strong></li></ul>
+  </section>
+  <section class="admin-card" data-bind="with: creditDraft">
+    <h2>Credit awaiting confirmation</h2><p>The outcome is not confirmed. Retry submits the same account, amount and operation key.</p>
+    <p>Account ID: <strong data-bind="text: accountId"></strong> · Amount: <strong data-bind="text: $parent.exactMoney(amount)"></strong></p>
+    <button class="dashboard-primary" data-bind="click: $parent.submitCredit, disable: $parent.busy() || $parent.loading() || !$parent.verified()">Retry same credit</button>
+  </section>
+  <section class="admin-card" data-bind="with: creditReceipt"><h2>Credit confirmed</h2>
+    <dl><dt>Amount credited</dt><dd data-bind="text: $parent.exactMoney(amount)"></dd><dt>Balance before</dt><dd data-bind="text: $parent.exactMoney(balanceBefore)"></dd><dt>Balance after</dt><dd data-bind="text: $parent.exactMoney(balanceAfter)"></dd><dt>Recorded</dt><dd data-bind="text: createdAt"></dd></dl>
+  </section>
+  <section class="admin-card" aria-labelledby="admin-accounts-title"><h2 id="admin-accounts-title">Accounts</h2>
+    <p class="login-message" role="alert" data-bind="visible: accountsError, text: accountsError"></p>
+    <p data-bind="visible: verified() && !loading() && !accountsError() && !accounts().length">No accounts found.</p>
+    <div class="admin-table-scroll" data-bind="visible: accounts().length"><table><thead><tr><th scope="col">Account ID</th><th scope="col">User ID</th><th scope="col">Account number</th><th scope="col">Type</th><th scope="col">Balance</th><th scope="col">Status</th><th scope="col">Actions</th></tr></thead><tbody data-bind="foreach: accounts"><tr><td data-bind="text: accountId"></td><td data-bind="text: userId"></td><td data-bind="text: accountNumber"></td><td data-bind="text: accountType"></td><td data-bind="text: $parent.formatMoney(balance)"></td><td data-bind="text: status"></td><td class="admin-actions"><button class="dashboard-secondary" data-bind="visible: status === 'ACTIVE' || status === 'BLOCKED', disable: $parent.disabled, click: $parent.toggleAccount, text: status === 'ACTIVE' ? 'Block' : 'Unblock', attr: {'aria-label': (status === 'ACTIVE' ? 'Block account ' : 'Unblock account ') + accountId}"></button><button class="dashboard-secondary" data-bind="disable: $parent.disabled, click: $parent.editAccount, attr: {'aria-label': 'Edit account ' + accountId}">Edit balance / type</button></td></tr></tbody></table></div>
+    <form class="admin-edit" novalidate data-bind="visible: editingId() !== null, submit: saveAccount, attr: {'aria-busy': busy}">
+      <h3>Edit account <span data-bind="text: editingId"></span></h3><p>Enter the desired total balance. It must cover pending payments and the ₹5,000 minimum.</p>
+      <div class="admin-form-grid"><div class="login-field"><label for="admin-balance">New total balance (INR)</label><input id="admin-balance" name="balance" type="text" inputmode="decimal" required placeholder="e.g. 25000.00" data-bind="textInput: balance, disable: busy"></div><div class="login-field"><label for="admin-account-type">Account type</label><select id="admin-account-type" name="accountType" data-bind="value: accountType, disable: busy"><option value="SAVINGS">Savings</option><option value="CURRENT">Current</option></select></div></div>
+      <div class="admin-actions"><button class="dashboard-primary" type="submit" data-bind="disable: disabled, text: busy() ? 'Saving…' : 'Save account'"></button><button class="dashboard-secondary" type="button" data-bind="click: cancelEdit, disable: busy">Cancel</button></div>
+    </form>
+  </section>
+
+  <section class="admin-card" aria-labelledby="admin-summary-title"><h2 id="admin-summary-title">Transaction summary</h2>
+    <p class="login-message" role="alert" data-bind="visible: summaryError, text: summaryError"></p>
+    <!-- ko with: summary --><dl class="admin-metrics"><div><dt>Total payments</dt><dd data-bind="text: totalTransactions"></dd></div><div><dt>Settled</dt><dd data-bind="text: settledTransactions"></dd></div><div><dt>Protected</dt><dd data-bind="text: protectedTransactions"></dd></div><div><dt>Cancelled</dt><dd data-bind="text: cancelledTransactions"></dd></div><div><dt>Hard holds</dt><dd data-bind="text: hardHolds"></dd></div><div><dt>High risk</dt><dd data-bind="text: highRiskTransactions"></dd></div><div><dt>Rejected</dt><dd data-bind="text: rejectedTransactions"></dd></div><div><dt>Total amount</dt><dd data-bind="text: $parent.formatMoney(totalAmount)"></dd></div><div><dt>Settled amount</dt><dd data-bind="text: $parent.formatMoney(settledAmount)"></dd></div></dl><!-- /ko -->
+  </section>
+
+  <section class="admin-card" aria-labelledby="admin-daily-title"><h2 id="admin-daily-title">Daily report</h2>
+    <form class="admin-report-form" data-bind="submit: loadDaily"><div class="login-field"><label for="report-from">From</label><input id="report-from" type="date" required data-bind="value: from, disable: reportsLoading"></div><div class="login-field"><label for="report-to">To</label><input id="report-to" type="date" required data-bind="value: to, disable: reportsLoading"></div><button class="dashboard-secondary" type="submit" data-bind="disable: reportsLoading() || !verified(), text: reportsLoading() ? 'Loading…' : 'Load daily report'"></button></form><p>Choose a date range of up to 366 days.</p>
+    <p class="login-message" role="alert" data-bind="visible: reportError, text: reportError"></p>
+    <p role="status" data-bind="visible: dailyLoaded() && !daily().length">No report rows were returned for this date range.</p>
+    <div class="admin-table-scroll" data-bind="visible: daily().length"><table><thead><tr><th scope="col">Date</th><th scope="col">Total</th><th scope="col">Settled</th><th scope="col">Protected</th><th scope="col">Cancelled</th><th scope="col">Hard holds</th><th scope="col">Total amount</th><th scope="col">Settled amount</th></tr></thead><tbody data-bind="foreach: daily"><tr><td data-bind="text: date"></td><td data-bind="text: summary.totalTransactions"></td><td data-bind="text: summary.settledTransactions"></td><td data-bind="text: summary.protectedTransactions"></td><td data-bind="text: summary.cancelledTransactions"></td><td data-bind="text: summary.hardHolds"></td><td data-bind="text: $parent.formatMoney(summary.totalAmount)"></td><td data-bind="text: $parent.formatMoney(summary.settledAmount)"></td></tr></tbody></table></div>
+  </section>
+</section>

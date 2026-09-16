@@ -1,0 +1,10 @@
+spring:
+  application:
+    name: safepay-api
+  profiles:
+    default: oracle
+
+server:
+  error:
+    include-message: never
+

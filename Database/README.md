@@ -1,3 +1,7 @@
+# Current Oracle setup (16 September 2026)
+
+Use 14_existing_oracle_ui_migration.sql only for the inspected legacy schema; it preserves multiple accounts and backs up existing rows before DDL. It stops if prerequisites differ or it has already been applied. Then use 12_admin_reporting_views.sql once. See ../docs/ORACLE_UI_SETUP.md. The numbered-script sequence below is historical and must not be applied blindly to the current application.
+
 # SafePay Oracle Database Scripts
 
 These scripts implement Phase 1 of SafePay using synthetic data only. Run them in this order against an empty Oracle schema:
@@ -18,3 +22,4 @@ The database is the source of truth. The scripts provide structural constraints,
 - Protection expiry is represented as a policy-driven transition to `SETTLED`; the backend will use server time to execute it.
 - Risk configuration (`RISK_FACTORS`) and policy configuration (`PROTECTION_RULES`) remain separate.
 - The `TRANSACTIONS` table retains historical records; no financial history is physically deleted.
+

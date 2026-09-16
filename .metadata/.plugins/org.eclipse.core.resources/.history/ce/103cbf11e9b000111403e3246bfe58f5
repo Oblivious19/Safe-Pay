@@ -1,0 +1,3 @@
+spring.application.name=SafePay
+server.port=${PORT:8080}
+# Database settings are selected by application-local.yml or application-oracle.yml.

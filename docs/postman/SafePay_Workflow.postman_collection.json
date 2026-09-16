@@ -1,0 +1,1584 @@
+{
+  "info": {
+    "_postman_id": "bba4ea0d-8e31-4a23-a2bd-a8d5799a7cc4",
+    "name": "SafePay Workflow",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Source-verified SafePay backend workflow, 13 September 2026. Session-cookie authentication, not JWT. Import SafePay Local and read the companion report first. Default: no credentials and all data-mutation opt-ins false. Never export populated credentials, CSRF values or cookie jars. Requires a modern Postman runtime with pm.execution.skipRequest(). Use ONE iteration, no parallel runs. Existing source still uses legacy transaction persistence transitions; no approval/verification HTTP endpoint exists."
+  },
+  "auth": {
+    "type": "noauth"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if(pm.environment.get(\"baseUrl\")!==\"http://localhost:8080\") { pm.collectionVariables.set(\"_lastSkip\",\"Only the approved local origin is allowed\"); pm.execution.skipRequest(); }"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const csrf=pm.response.headers.get(\"X-CSRF-TOKEN\"); if(csrf && pm.request.method===\"GET\") pm.environment.set(\"csrfToken\",csrf);",
+          "if(pm.response.headers.get(\"Content-Type\") && pm.response.headers.get(\"Content-Type\").includes(\"json\")) {",
+          " pm.test(\"No security fields or database diagnostics in JSON\", function() {",
+          "  const forbidden=new Set([\"password\",\"passwordHash\",\"password_hash\",\"rawPassword\",\"failedLoginAttempts\",\"lockedUntil\",\"sessionId\",\"JSESSIONID\"]);",
+          "  let found=false;",
+          "  function walk(v){if(v && typeof v===\"object\") Object.keys(v).forEach(k=>{if(forbidden.has(k)) found=true;walk(v[k]);});}",
+          "  const b=pm.response.json();walk(b);pm.expect(found).to.eql(false);",
+          "  pm.expect(/ORA-\\d{5}|SYS\\.C\\d+/i.test(JSON.stringify(b))).to.eql(false);",
+          " });",
+          "}"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "01 - Registration",
+      "item": [
+        {
+          "name": "Optional registration — creates user and INR 5000 account",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/auth/register",
+            "description": "OFF by default. Intended body: {\"name\":\"<demo name>\",\"email\":\"<demo email>\",\"phone\":\"<unique demo phone>\",\"password\":\"<raw demo password>\"}. Uses local inputs, never a precomputed hash. Does not fund the account beyond the existing INR 5000 registration behavior. Existing-email registration should return 409; disable this request when using an existing fixture.\nPrerequisite skips are intentional, not passes. See SAFEPAY_POSTMAN_TEST_REPORT.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{{_registrationJson}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "[\"_customerReady\",\"_adminReady\",\"_accountReady\",\"_beneficiaryReady\",\"_historyReady\",\"_created\",\"_replayed\",\"_cancelReady\",\"_loggedOut\"].forEach(k => pm.collectionVariables.set(k,\"false\"));",
+                  "[\"_payload\",\"_key\",\"_beforeCents\",\"_amountCents\",\"_initialTxId\",\"_snapshotTime\"].forEach(k => pm.collectionVariables.unset(k));",
+                  "pm.environment.set(\"csrfToken\",\"\");",
+                  "if (!(pm.environment.get(\"enableRegistration\") === \"true\" && pm.environment.get(\"approvedDemoFixture\") === \"true\" && String(pm.environment.get(\"testName\") || \"\").trim().length > 0 && String(pm.environment.get(\"testEmail\") || \"\").trim().length > 0 && String(pm.environment.get(\"testPhone\") || \"\").trim().length > 0 && String(pm.environment.get(\"testPassword\") || \"\").trim().length > 0)) { pm.collectionVariables.set(\"_lastSkip\", \"Registration disabled or local demo input missing\"); pm.execution.skipRequest(); } else {",
+                  "pm.variables.set(\"_registrationJson\",JSON.stringify({name:pm.environment.get(\"testName\"),email:pm.environment.get(\"testEmail\"),phone:pm.environment.get(\"testPhone\"),password:pm.environment.get(\"testPassword\")}));",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", function () { pm.response.to.have.status(201); });",
+                  "if(pm.response.code===201){pm.test(\"Expected response fields\", function () { pm.expect(Object.keys(pm.response.json())).to.include.members([\"userId\",\"email\",\"message\"]); }); pm.environment.set(\"userId\",String(pm.response.json().userId));}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "02 - Authentication",
+      "item": [
+        {
+          "name": "Missing login credentials — safe validation check",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/auth/login",
+            "description": "Does not look up a user or increment a failed-login counter.\nPrerequisite skips are intentional, not passes. See SAFEPAY_POSTMAN_TEST_REPORT.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 401\", function () { pm.response.to.have.status(401); });",
+                  "pm.test(\"Expected response fields\", function () { pm.expect(Object.keys(pm.response.json())).to.include.members([\"message\"]); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login existing approved CUSTOMER",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/auth/login",
+            "description": "Body resolves to {\"email\":\"<demo email>\",\"password\":\"<raw demo password>\"}. One attempt only: repeated invalid credentials can lock the account. Keep the cookie jar enabled.\nPrerequisite skips are intentional, not passes. See SAFEPAY_POSTMAN_TEST_REPORT.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{{_loginJson}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "[\"_customerReady\",\"_adminReady\",\"_accountReady\",\"_beneficiaryReady\",\"_historyReady\",\"_created\",\"_replayed\",\"_cancelReady\",\"_loggedOut\"].forEach(k => pm.collectionVariables.set(k,\"false\"));",
+                  "[\"_payload\",\"_key\",\"_beforeCents\",\"_amountCents\",\"_initialTxId\",\"_snapshotTime\"].forEach(k => pm.collectionVariables.unset(k));",
+                  "pm.environment.set(\"csrfToken\",\"\");",
+                  "if (!(pm.environment.get(\"approvedDemoFixture\") === \"true\" && String(pm.environment.get(\"testEmail\") || \"\").trim().length > 0 && String(pm.environment.get(\"testPassword\") || \"\").trim().length > 0)) { pm.collectionVariables.set(\"_lastSkip\", \"Approved existing demo customer credentials missing\"); pm.execution.skipRequest(); } else {",
+                  "pm.variables.set(\"_loginJson\",JSON.stringify({email:pm.environment.get(\"testEmail\"),password:pm.environment.get(\"testPassword\")}));",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "if (pm.response.code === 200) {",
+                  " const b=pm.response.json();",
+                  " pm.test(\"Only safe login fields\",()=>pm.expect(Object.keys(b).sort()).to.eql([\"email\",\"name\",\"role\",\"status\",\"userId\"]));",
+                  " pm.test(\"Expected role and active status\",()=>{pm.expect(b.role).to.eql(\"CUSTOMER\");pm.expect(b.status).to.eql(\"ACTIVE\");});",
+                  " pm.test(\"Session cookie established (value not logged)\",()=>pm.expect(pm.cookies.has(\"JSESSIONID\") || pm.response.headers.all().some(h=>h.key.toLowerCase()===\"set-cookie\" && /^JSESSIONID=/i.test(h.value))).to.eql(true));",
+                  " if(b.role===\"CUSTOMER\" && b.status===\"ACTIVE\") {",
+                  " pm.collectionVariables.set(\"_customerReady\",\"true\");",
+                  " pm.environment.set(\"userId\",String(b.userId));",
+                  " }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "03 - Customer Account",
+      "item": [
+        {
+          "name": "Current account — capture account and CSRF",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/accounts/current",
+            "description": "\nPrerequisite skips are intentional, not passes. See SAFEPAY_POSTMAN_TEST_REPORT.md."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!(pm.collectionVariables.get(\"_customerReady\") === \"true\")) { pm.collectionVariables.set(\"_lastSkip\", \"CUSTOMER login required\"); pm.execution.skipRequest(); } else {",
+                  "",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "if(pm.response.code===200) {",
+                  " const b=pm.response.json();",
+                  " pm.test(\"Expected response fields\", function () { pm.expect(Object.keys(pm.response.json())).to.include.members([\"accountId\",\"accountNumber\",\"accountType\",\"balance\",\"status\",\"createdAt\",\"updatedAt\",\"userId\"]); });",
+                  " pm.test(\"Account belongs to current principal\",()=>pm.expect(String(b.userId)).to.eql(String(pm.environment.get(\"userId\"))));",
+                  " if(String(b.userId)===String(pm.environment.get(\"userId\"))) {",
+                  " pm.environment.set(\"accountId\",String(b.accountId));pm.environment.set(\"accountNumber\",b.accountNumber);",
+                  " pm.collectionVariables.set(\"_accountReady\",b.status===\"ACTIVE\"?\"true\":\"false\");",
+                  " pm.collectionVariables.set(\"_accountBalance\",String(b.balance));",
+                  " }",
+                  " pm.test(\"CSRF response header available\",()=>pm.expect(pm.response.headers.has(\"X-CSRF-TOKEN\")).to.eql(true));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Current profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/users/current",
+            "description": "\nPrerequisite skips are intentional, not passes. See SAFEPAY_POSTMAN_TEST_REPORT.md."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!(pm.collectionVariables.get(\"_customerReady\") === \"true\")) { pm.collectionVariables.set(\"_lastSkip\", \"CUSTOMER login required\"); pm.execution.skipRequest(); } else {",
+                  "",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "if(pm.response.code===200){pm.test(\"Expected response fields\", function () { pm.expect(Object.keys(pm.response.json())).to.include.members([\"userId\",\"name\",\"email\",\"phone\",\"status\",\"createdAt\",\"updatedAt\"]); }); pm.test(\"Own profile\",()=>pm.expect(String(pm.response.json().userId)).to.eql(String(pm.environment.get(\"userId\"))));}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Own profile by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/users/{{userId}}",
+            "description": "\nPrerequisite skips are intentional, not passes. See SAFEPAY_POSTMAN_TEST_REPORT.md."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!(pm.collectionVariables.get(\"_customerReady\") === \"true\" && String(pm.environment.get(\"userId\") || \"\").trim().length > 0)) { pm.collectionVariables.set(\"_lastSkip\", \"Own profile ID unavailable\"); pm.execution.skipRequest(); } else {",
+                  "",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "if(pm.response.code===200)pm.test(\"Own profile\",()=>pm.expect(String(pm.response.json().userId)).to.eql(String(pm.environment.get(\"userId\"))));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "04 - Beneficiaries",
+      "item": [
+        {
+          "name": "List own active beneficiaries",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/beneficiaries",
+            "description": "Does not automatically select a payment recipient.\nPrerequisite skips are intentional, not passes. See SAFEPAY_POSTMAN_TEST_REPORT.md."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!(pm.collectionVariables.get(\"_customerReady\") === \"true\")) { pm.collectionVariables.set(\"_lastSkip\", \"CUSTOMER login required\"); pm.execution.skipRequest(); } else {",
+                  "",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "if(pm.response.code===200)pm.test(\"Array of active beneficiaries\",()=>{const b=pm.response.json();pm.expect(Array.isArray(b)).to.eql(true);pm.expect(b.every(x=>x.status===\"ACTIVE\")).to.eql(true);});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Inspect explicitly selected existing beneficiary",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/beneficiaries/{{beneficiaryId}}",
+            "description": "\nPrerequisite skips are intentional, not passes. See SAFEPAY_POSTMAN_TEST_REPORT.md."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set(\"_beneficiaryReady\",\"false\");",
+                  "if (!(pm.collectionVariables.get(\"_customerReady\") === \"true\" && String(pm.environment.get(\"beneficiaryId\") || \"\").trim().length > 0)) { pm.collectionVariables.set(\"_lastSkip\", \"Select an existing owned demo beneficiary first\"); pm.execution.skipRequest(); } else {",
+                  "",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "if(pm.response.code===200){const b=pm.response.json();pm.test(\"Expected response fields\", function () { pm.expect(Object.keys(pm.response.json())).to.include.members([\"beneficiaryId\",\"beneficiaryName\",\"bankAccountNumber\",\"ifsc\",\"status\",\"createdAt\"]); }); if(String(b.beneficiaryId)===String(pm.environment.get(\"beneficiaryId\")) && b.status===\"ACTIVE\")pm.collectionVariables.set(\"_beneficiaryReady\",\"true\");}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Optional add beneficiary — never auto-selected for payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrfToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/beneficiaries",
+            "description": "OFF by default. Body uses beneficiaryName, bankAccountNumber (1–30 digits), ifsc (11 characters; four letters, zero, six alphanumeric). Supply only approved simulated recipient details. DELETE exists but is deliberately excluded from this verification workflow.\nPrerequisite skips are intentional, not passes. See SAFEPAY_POSTMAN_TEST_REPORT.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{{_beneficiaryJson}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!(pm.collectionVariables.get(\"_customerReady\") === \"true\" && pm.environment.get(\"approvedDemoFixture\") === \"true\" && pm.environment.get(\"enableBeneficiaryCreation\") === \"true\" && String(pm.environment.get(\"csrfToken\") || \"\").trim().length > 0 && String(pm.environment.get(\"beneficiaryName\") || \"\").trim().length > 0 && String(pm.environment.get(\"beneficiaryBankAccountNumber\") || \"\").trim().length > 0 && String(pm.environment.get(\"beneficiaryIfsc\") || \"\").trim().length > 0)) { pm.collectionVariables.set(\"_lastSkip\", \"Beneficiary creation disabled or demo details missing\"); pm.execution.skipRequest(); } else {",
+                  "pm.variables.set(\"_beneficiaryJson\",JSON.stringify({beneficiaryName:pm.environment.get(\"beneficiaryName\"),bankAccountNumber:pm.environment.get(\"beneficiaryBankAccountNumber\"),ifsc:pm.environment.get(\"beneficiaryIfsc\")}));",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", function () { pm.response.to.have.status(201); });",
+                  "if(pm.response.code===201){pm.test(\"Expected response fields\", function () { pm.expect(Object.keys(pm.response.json())).to.include.members([\"beneficiaryId\",\"beneficiaryName\",\"bankAccountNumber\",\"ifsc\",\"status\",\"createdAt\"]); }); pm.environment.set(\"createdBeneficiaryId\",String(pm.response.json().beneficiaryId));}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "05 - Transactions",
+      "item": [
+        {
+          "name": "List own transactions and inspect outstanding holds",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/transactions",
+            "description": "Optional supported filter is ?state=PROTECTED. No caller identity query is used. Payment guard conservatively requires no outstanding protected/hard-held transfers.\nPrerequisite skips are intentional, not passes. See SAFEPAY_POSTMAN_TEST_REPORT.md."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set(\"_historyReady\",\"false\");",
+                  "if (!(pm.collectionVariables.get(\"_customerReady\") === \"true\")) { pm.collectionVariables.set(\"_lastSkip\", \"CUSTOMER login required\"); pm.execution.skipRequest(); } else {",
+                  "",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "if(pm.response.code===200){const b=pm.response.json();pm.test(\"Transaction array\",()=>pm.expect(Array.isArray(b)).to.eql(true)); if(Array.isArray(b)) { pm.collectionVariables.set(\"_historyReady\",\"true\");pm.collectionVariables.set(\"_pendingCount\",String(b.filter(t=>[\"PROTECTED\",\"HARD_HOLD\"].includes(t.state)).length));if(pm.environment.get(\"accountId\"))pm.test(\"All source accounts are own\",()=>pm.expect(b.every(t=>String(t.fromAccountId)===String(pm.environment.get(\"accountId\")))).to.eql(true));}}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Pre-payment account snapshot",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/accounts/current",
+            "description": "Read-only. Records starting balance locally; no funds are created. Run with no concurrent activity on this demo account.\nPrerequisite skips are intentional, not passes. See SAFEPAY_POSTMAN_TEST_REPORT.md."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!(pm.collectionVariables.get(\"_customerReady\") === \"true\" && pm.environment.get(\"approvedDemoFixture\") === \"true\" && pm.environment.get(\"enableDemoPayments\") === \"true\" && pm.environment.get(\"acceptPossibleHardHold\") === \"true\" && pm.collectionVariables.get(\"_accountReady\")===\"true\" && pm.collectionVariables.get(\"_beneficiaryReady\")===\"true\" && pm.collectionVariables.get(\"_historyReady\")===\"true\" && String(pm.environment.get(\"testAmount\") || \"\").trim().length > 0 && String(pm.environment.get(\"maximumDemoAmount\") || \"\").trim().length > 0 && String(pm.environment.get(\"csrfToken\") || \"\").trim().length > 0)) { pm.collectionVariables.set(\"_lastSkip\", \"Payment opt-ins or verified fixtures missing\"); pm.execution.skipRequest(); } else {",
+                  "",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "if(pm.response.code===200) {",
+                  " const b=pm.response.json();",
+                  " pm.test(\"Expected response fields\", function () { pm.expect(Object.keys(pm.response.json())).to.include.members([\"accountId\",\"accountNumber\",\"accountType\",\"balance\",\"status\",\"createdAt\",\"updatedAt\",\"userId\"]); });",
+                  " pm.test(\"Account belongs to current principal\",()=>pm.expect(String(b.userId)).to.eql(String(pm.environment.get(\"userId\"))));",
+                  " if(String(b.userId)===String(pm.environment.get(\"userId\"))) {",
+                  " pm.environment.set(\"accountId\",String(b.accountId));pm.environment.set(\"accountNumber\",b.accountNumber);",
+                  " pm.collectionVariables.set(\"_accountReady\",b.status===\"ACTIVE\"?\"true\":\"false\");",
+                  " pm.collectionVariables.set(\"_accountBalance\",String(b.balance));",
+                  " }",
+                  " pm.test(\"CSRF response header available\",()=>pm.expect(pm.response.headers.has(\"X-CSRF-TOKEN\")).to.eql(true));",
+                  "}",
+                  "if(pm.response.code===200){function cents(value) { const s=String(value); if(!/^\\d+(\\.\\d{1,2})?$/.test(s)) throw new Error(\"Use an unsigned decimal with at most two fraction digits\"); const p=s.split(\".\"); return BigInt(p[0])*100n+BigInt((p[1]||\"\").padEnd(2,\"0\")); } try{pm.collectionVariables.set(\"_beforeCents\",String(cents(pm.response.json().balance)));pm.collectionVariables.set(\"_snapshotTime\",String(Date.now()));}catch(e){pm.collectionVariables.unset(\"_beforeCents\");}}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Optional create demo transaction",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrfToken}}"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{_requestIdempotencyKey}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/transactions",
+            "description": "OFF by default. Requires a verified existing demo CUSTOMER, active own account and beneficiary, no pending holds, fresh balance snapshot, explicit amount and budget, and acknowledgement that VERY_HIGH can remain on HARD_HOLD indefinitely. Maximum collection-only safety cap INR 1,000,000 (not an API rule). Exact JSON has only fromAccountId, beneficiaryId, amount, purpose. Never set risk/state/identity. A retry key is retained until you deliberately clear it for a different approved payment.\nPrerequisite skips are intentional, not passes. See SAFEPAY_POSTMAN_TEST_REPORT.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{{_transactionJson}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set(\"_created\",\"false\");pm.collectionVariables.set(\"_replayed\",\"false\");",
+                  "if (!(pm.collectionVariables.get(\"_customerReady\") === \"true\" && pm.environment.get(\"approvedDemoFixture\") === \"true\" && pm.environment.get(\"enableDemoPayments\") === \"true\" && pm.environment.get(\"acceptPossibleHardHold\") === \"true\" && pm.collectionVariables.get(\"_accountReady\")===\"true\" && pm.collectionVariables.get(\"_beneficiaryReady\")===\"true\" && pm.collectionVariables.get(\"_historyReady\")===\"true\" && String(pm.environment.get(\"testAmount\") || \"\").trim().length > 0 && String(pm.environment.get(\"maximumDemoAmount\") || \"\").trim().length > 0 && String(pm.environment.get(\"csrfToken\") || \"\").trim().length > 0 && pm.collectionVariables.get(\"_beforeCents\") && pm.collectionVariables.get(\"_pendingCount\")===\"0\")) { pm.collectionVariables.set(\"_lastSkip\", \"Payments disabled, missing fixtures, or outstanding holds\"); pm.execution.skipRequest(); } else {",
+                  "function cents(value) { const s=String(value); if(!/^\\d+(\\.\\d{1,2})?$/.test(s)) throw new Error(\"Use an unsigned decimal with at most two fraction digits\"); const p=s.split(\".\"); return BigInt(p[0])*100n+BigInt((p[1]||\"\").padEnd(2,\"0\")); }",
+                  "try {",
+                  " const a=cents(pm.environment.get(\"testAmount\")), limit=cents(pm.environment.get(\"maximumDemoAmount\"));",
+                  " const before=BigInt(pm.collectionVariables.get(\"_beforeCents\"));",
+                  " const fresh=Date.now()-Number(pm.collectionVariables.get(\"_snapshotTime\"))<30000;",
+                  " if(a<=0n || a>limit || a>100000000n || before-a<500000n || !fresh) { pm.collectionVariables.set(\"_lastSkip\",\"Unsafe amount, insufficient INR 5000 reserve, or stale snapshot\");pm.execution.skipRequest(); }",
+                  " else {",
+                  "  const account=String(pm.environment.get(\"accountId\")), beneficiary=String(pm.environment.get(\"beneficiaryId\"));",
+                  "  if(!/^\\d+$/.test(account)||!/^\\d+$/.test(beneficiary)||!Number.isSafeInteger(Number(account))||!Number.isSafeInteger(Number(beneficiary)))throw new Error(\"Invalid demo fixture ID\");",
+                  "  const payload=JSON.stringify({fromAccountId:Number(account),beneficiaryId:Number(beneficiary),amount:Number(a)/100,purpose:pm.environment.get(\"testPurpose\")||\"Approved local demo\"});",
+                  "  const key=pm.environment.get(\"idempotencyKey\")||pm.variables.replaceIn(\"{{$guid}}\");",
+                  "  pm.environment.set(\"idempotencyKey\",key);",
+                  "  pm.collectionVariables.set(\"_key\",key);pm.collectionVariables.set(\"_payload\",payload);pm.collectionVariables.set(\"_amountCents\",String(a));",
+                  "  pm.variables.set(\"_requestIdempotencyKey\",key);pm.variables.set(\"_transactionJson\",payload);",
+                  " }",
+                  "} catch(e) {pm.collectionVariables.set(\"_lastSkip\",\"Invalid demo amount or fixture; request not sent\");pm.execution.skipRequest();}",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "if(pm.response.code===200){const b=pm.response.json();pm.test(\"Expected response fields\", function () { pm.expect(Object.keys(pm.response.json())).to.include.members([\"transactionId\",\"transactionRef\",\"amount\",\"purpose\",\"fromAccountId\",\"beneficiaryId\",\"beneficiaryName\",\"beneficiaryBankAccountNumber\",\"beneficiaryIfsc\",\"state\",\"riskTier\",\"riskReason\",\"protectionSeconds\",\"protectionExpiresAt\",\"createdAt\",\"settledAt\",\"cancelledAt\"]); });",
+                  "pm.environment.set(\"transactionId\",String(b.transactionId));pm.collectionVariables.set(\"_initialTxId\",String(b.transactionId));pm.collectionVariables.set(\"_created\",\"true\");",
+                  "pm.test(\"Rule-based tier and reason\",()=>{pm.expect([\"LOW\",\"MEDIUM\",\"HIGH\",\"VERY_HIGH\"]).to.include(b.riskTier);pm.expect(typeof b.riskReason===\"string\" && b.riskReason.length>0).to.eql(true);});",
+                  "pm.test(\"Initial risk/protection decision\",()=>{",
+                  " if(b.riskTier===\"LOW\"){pm.expect(b.state).to.eql(\"SETTLED\");pm.expect(b.protectionSeconds).to.eql(0);}",
+                  " if(b.riskTier===\"MEDIUM\"){pm.expect(b.state).to.eql(\"PROTECTED\");pm.expect(b.protectionSeconds).to.eql(10);}",
+                  " if(b.riskTier===\"HIGH\"){pm.expect(b.state).to.eql(\"PROTECTED\");pm.expect(b.protectionSeconds).to.eql(60);}",
+                  " if(b.riskTier===\"VERY_HIGH\"){pm.expect(b.state).to.eql(\"HARD_HOLD\");pm.expect(b.protectionExpiresAt).to.eql(\"\");}",
+                  "});}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Replay exact payment with same key",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrfToken}}"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{_requestIdempotencyKey}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/transactions",
+            "description": "\nPrerequisite skips are intentional, not passes. See SAFEPAY_POSTMAN_TEST_REPORT.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{{_transactionJson}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!(pm.collectionVariables.get(\"_customerReady\") === \"true\" && pm.environment.get(\"enableDemoPayments\") === \"true\" && pm.collectionVariables.get(\"_created\")===\"true\" && String(pm.environment.get(\"csrfToken\") || \"\").trim().length > 0)) { pm.collectionVariables.set(\"_lastSkip\", \"No successful payment in this run\"); pm.execution.skipRequest(); } else {",
+                  "pm.variables.set(\"_transactionJson\",pm.collectionVariables.get(\"_payload\"));pm.variables.set(\"_requestIdempotencyKey\",pm.collectionVariables.get(\"_key\"));",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "if(pm.response.code===200){pm.test(\"Same transaction, not a second transaction\",()=>pm.expect(String(pm.response.json().transactionId)).to.eql(pm.collectionVariables.get(\"_initialTxId\")));if(String(pm.response.json().transactionId)===pm.collectionVariables.get(\"_initialTxId\"))pm.collectionVariables.set(\"_replayed\",\"true\");}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Post-replay balance — at most one debit",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/accounts/current",
+            "description": "Assumes no other activity on this account. A scheduler may settle between requests. This is HTTP evidence only; it is not independent database verification or a concurrency proof.\nPrerequisite skips are intentional, not passes. See SAFEPAY_POSTMAN_TEST_REPORT.md."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!(pm.collectionVariables.get(\"_customerReady\") === \"true\" && pm.collectionVariables.get(\"_replayed\")===\"true\")) { pm.collectionVariables.set(\"_lastSkip\", \"Replay not verified\"); pm.execution.skipRequest(); } else {",
+                  "",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "if(pm.response.code===200){function cents(value) { const s=String(value); if(!/^\\d+(\\.\\d{1,2})?$/.test(s)) throw new Error(\"Use an unsigned decimal with at most two fraction digits\"); const p=s.split(\".\"); return BigInt(p[0])*100n+BigInt((p[1]||\"\").padEnd(2,\"0\")); }const end=cents(pm.response.json().balance),start=BigInt(pm.collectionVariables.get(\"_beforeCents\")),amount=BigInt(pm.collectionVariables.get(\"_amountCents\"));pm.collectionVariables.set(\"_endingBalance\",String(pm.response.json().balance));pm.test(\"Balance unchanged while held OR debited exactly once\",()=>pm.expect(end===start || end===start-amount).to.eql(true));}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Transaction detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/transactions/{{transactionId}}",
+            "description": "\nPrerequisite skips are intentional, not passes. See SAFEPAY_POSTMAN_TEST_REPORT.md."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!(pm.collectionVariables.get(\"_customerReady\") === \"true\" && String(pm.environment.get(\"transactionId\") || \"\").trim().length > 0)) { pm.collectionVariables.set(\"_lastSkip\", \"No selected or created transaction ID\"); pm.execution.skipRequest(); } else {",
+                  "",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "if(pm.response.code===200){pm.test(\"Expected response fields\", function () { pm.expect(Object.keys(pm.response.json())).to.include.members([\"transactionId\",\"transactionRef\",\"amount\",\"purpose\",\"fromAccountId\",\"beneficiaryId\",\"beneficiaryName\",\"beneficiaryBankAccountNumber\",\"beneficiaryIfsc\",\"state\",\"riskTier\",\"riskReason\",\"protectionSeconds\",\"protectionExpiresAt\",\"createdAt\",\"settledAt\",\"cancelledAt\"]); });pm.test(\"Requested transaction\",()=>pm.expect(String(pm.response.json().transactionId)).to.eql(String(pm.environment.get(\"transactionId\"))));}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "06 - Risk and Protection",
+      "item": [
+        {
+          "name": "Poll transaction — inspect cancellation eligibility",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/transactions/{{transactionId}}",
+            "description": "GET only; no invented release/approve/verify API. For cancellation, set the actual backend UTC offset (for example +05:30 only if verified). Offset-free Java timestamps otherwise cannot safely be interpreted across computers.\nPrerequisite skips are intentional, not passes. See SAFEPAY_POSTMAN_TEST_REPORT.md."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set(\"_cancelReady\",\"false\");",
+                  "if (!(pm.collectionVariables.get(\"_customerReady\") === \"true\" && String(pm.environment.get(\"transactionId\") || \"\").trim().length > 0)) { pm.collectionVariables.set(\"_lastSkip\", \"Select an owned transaction\"); pm.execution.skipRequest(); } else {",
+                  "",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "if(pm.response.code===200){const b=pm.response.json();pm.test(\"Expected response fields\", function () { pm.expect(Object.keys(pm.response.json())).to.include.members([\"state\",\"riskTier\",\"protectionSeconds\",\"protectionExpiresAt\",\"riskReason\"]); });",
+                  "const offset=String(pm.environment.get(\"serverUtcOffset\")||\"\");",
+                  "const serverNow=Date.parse(pm.response.headers.get(\"Date\")||\"\");",
+                  "const expires=/[Zz]$|[+-]\\d\\d:\\d\\d$/.test(b.protectionExpiresAt||\"\")?Date.parse(b.protectionExpiresAt):(/^[+-]\\d\\d:\\d\\d$/.test(offset)?Date.parse(b.protectionExpiresAt+offset):NaN);",
+                  "if(b.state===\"PROTECTED\" && Number.isFinite(serverNow) && Number.isFinite(expires) && expires-serverNow>3000) {",
+                  "pm.collectionVariables.set(\"_cancelReady\",\"true\");pm.collectionVariables.set(\"_cancelDeadline\",String(Date.now()+expires-serverNow-3000));pm.collectionVariables.set(\"_cancelTxId\",String(b.transactionId));",
+                  "}}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Optional cancel currently eligible protected transaction",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrfToken}}"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{cancelIdempotencyKey}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/transactions/{{transactionId}}/cancel",
+            "description": "OFF by default. No body. Cancellation changes transaction history and must be explicitly approved. A timer race may legitimately produce 400; do not hide or retry it blindly. Source inspection found a possible stale response after a bulk update: use the following GET to inspect persisted state.\nPrerequisite skips are intentional, not passes. See SAFEPAY_POSTMAN_TEST_REPORT.md."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!(pm.collectionVariables.get(\"_customerReady\") === \"true\" && pm.environment.get(\"enableCancellation\") === \"true\" && pm.environment.get(\"approvedDemoFixture\") === \"true\" && String(pm.environment.get(\"csrfToken\") || \"\").trim().length > 0 && pm.collectionVariables.get(\"_cancelReady\")===\"true\" && String(pm.environment.get(\"transactionId\"))===pm.collectionVariables.get(\"_cancelTxId\") && Date.now()<Number(pm.collectionVariables.get(\"_cancelDeadline\")))) { pm.collectionVariables.set(\"_lastSkip\", \"Cancellation disabled, expired, or eligibility unverified\"); pm.execution.skipRequest(); } else {",
+                  "if(!pm.environment.get(\"cancelIdempotencyKey\"))pm.environment.set(\"cancelIdempotencyKey\",pm.variables.replaceIn(\"{{$guid}}\"));",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "if(pm.response.code===200)pm.test(\"Cancellation response reflects CANCELLED\",()=>pm.expect(pm.response.json().state).to.eql(\"CANCELLED\"));pm.collectionVariables.set(\"_cancelReady\",\"false\");"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Read latest transaction state",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/transactions/{{transactionId}}",
+            "description": "\nPrerequisite skips are intentional, not passes. See SAFEPAY_POSTMAN_TEST_REPORT.md."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!(pm.collectionVariables.get(\"_customerReady\") === \"true\" && String(pm.environment.get(\"transactionId\") || \"\").trim().length > 0)) { pm.collectionVariables.set(\"_lastSkip\", \"No owned transaction selected\"); pm.execution.skipRequest(); } else {",
+                  "",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "if(pm.response.code===200){pm.test(\"Expected response fields\", function () { pm.expect(Object.keys(pm.response.json())).to.include.members([\"transactionId\",\"state\",\"riskTier\",\"settledAt\",\"cancelledAt\"]); });}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "07 - Security and Ownership",
+      "item": [
+        {
+          "name": "CUSTOMER denied admin summary",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/admin/reports/transactions/summary",
+            "description": "\nPrerequisite skips are intentional, not passes. See SAFEPAY_POSTMAN_TEST_REPORT.md."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!(pm.collectionVariables.get(\"_customerReady\") === \"true\")) { pm.collectionVariables.set(\"_lastSkip\", \"CUSTOMER login required\"); pm.execution.skipRequest(); } else {",
+                  "",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 403\", function () { pm.response.to.have.status(403); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Another approved customer's profile is hidden",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/users/{{otherUserId}}",
+            "description": "\nPrerequisite skips are intentional, not passes. See SAFEPAY_POSTMAN_TEST_REPORT.md."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!(pm.collectionVariables.get(\"_customerReady\") === \"true\" && pm.environment.get(\"approvedSecondFixture\") === \"true\" && String(pm.environment.get(\"otherUserId\") || \"\").trim().length > 0 && String(pm.environment.get(\"otherUserId\"))!==String(pm.environment.get(\"userId\")))) { pm.collectionVariables.set(\"_lastSkip\", \"Approved second fixture and distinct user ID required\"); pm.execution.skipRequest(); } else {",
+                  "",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", function () { pm.response.to.have.status(404); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Another approved customer's transaction is hidden",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/transactions/{{otherTransactionId}}",
+            "description": "\nPrerequisite skips are intentional, not passes. See SAFEPAY_POSTMAN_TEST_REPORT.md."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!(pm.collectionVariables.get(\"_customerReady\") === \"true\" && pm.environment.get(\"approvedSecondFixture\") === \"true\" && String(pm.environment.get(\"otherTransactionId\") || \"\").trim().length > 0)) { pm.collectionVariables.set(\"_lastSkip\", \"Provide a verified existing transaction belonging to the approved second fixture\"); pm.execution.skipRequest(); } else {",
+                  "",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", function () { pm.response.to.have.status(404); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Another approved customer's beneficiary is hidden",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/beneficiaries/{{otherBeneficiaryId}}",
+            "description": "\nPrerequisite skips are intentional, not passes. See SAFEPAY_POSTMAN_TEST_REPORT.md."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!(pm.collectionVariables.get(\"_customerReady\") === \"true\" && pm.environment.get(\"approvedSecondFixture\") === \"true\" && String(pm.environment.get(\"otherBeneficiaryId\") || \"\").trim().length > 0)) { pm.collectionVariables.set(\"_lastSkip\", \"Provide a verified existing beneficiary belonging to the approved second fixture\"); pm.execution.skipRequest(); } else {",
+                  "",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", function () { pm.response.to.have.status(404); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Client userEmail cannot change current account identity",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/accounts/current?userEmail={{otherEmail}}",
+            "description": "Intentional unsupported query parameter: the controller ignores it. Only the authenticated principal determines the account. This is not the normal account URL.\nPrerequisite skips are intentional, not passes. See SAFEPAY_POSTMAN_TEST_REPORT.md."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!(pm.collectionVariables.get(\"_customerReady\") === \"true\" && pm.environment.get(\"approvedSecondFixture\") === \"true\" && String(pm.environment.get(\"otherEmail\") || \"\").trim().length > 0)) { pm.collectionVariables.set(\"_lastSkip\", \"Approved second customer email required\"); pm.execution.skipRequest(); } else {",
+                  "",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "if(pm.response.code===200) {",
+                  " const b=pm.response.json();",
+                  " pm.test(\"Expected response fields\", function () { pm.expect(Object.keys(pm.response.json())).to.include.members([\"accountId\",\"accountNumber\",\"accountType\",\"balance\",\"status\",\"createdAt\",\"updatedAt\",\"userId\"]); });",
+                  " pm.test(\"Account belongs to current principal\",()=>pm.expect(String(b.userId)).to.eql(String(pm.environment.get(\"userId\"))));",
+                  " if(String(b.userId)===String(pm.environment.get(\"userId\"))) {",
+                  " pm.environment.set(\"accountId\",String(b.accountId));pm.environment.set(\"accountNumber\",b.accountNumber);",
+                  " pm.collectionVariables.set(\"_accountReady\",b.status===\"ACTIVE\"?\"true\":\"false\");",
+                  " pm.collectionVariables.set(\"_accountBalance\",String(b.balance));",
+                  " }",
+                  " pm.test(\"CSRF response header available\",()=>pm.expect(pm.response.headers.has(\"X-CSRF-TOKEN\")).to.eql(true));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Authenticated logout without CSRF is denied",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/auth/logout",
+            "description": "Intentionally no CSRF header or body. Does not use a payment to test CSRF.\nPrerequisite skips are intentional, not passes. See SAFEPAY_POSTMAN_TEST_REPORT.md."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!(pm.collectionVariables.get(\"_customerReady\") === \"true\")) { pm.collectionVariables.set(\"_lastSkip\", \"CUSTOMER session required\"); pm.execution.skipRequest(); } else {",
+                  "",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 403\", function () { pm.response.to.have.status(403); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Session still works after rejected logout",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/accounts/current",
+            "description": "\nPrerequisite skips are intentional, not passes. See SAFEPAY_POSTMAN_TEST_REPORT.md."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!(pm.collectionVariables.get(\"_customerReady\") === \"true\")) { pm.collectionVariables.set(\"_lastSkip\", \"CUSTOMER session required\"); pm.execution.skipRequest(); } else {",
+                  "",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "if(pm.response.code===200) {",
+                  " const b=pm.response.json();",
+                  " pm.test(\"Expected response fields\", function () { pm.expect(Object.keys(pm.response.json())).to.include.members([\"accountId\",\"accountNumber\",\"accountType\",\"balance\",\"status\",\"createdAt\",\"updatedAt\",\"userId\"]); });",
+                  " pm.test(\"Account belongs to current principal\",()=>pm.expect(String(b.userId)).to.eql(String(pm.environment.get(\"userId\"))));",
+                  " if(String(b.userId)===String(pm.environment.get(\"userId\"))) {",
+                  " pm.environment.set(\"accountId\",String(b.accountId));pm.environment.set(\"accountNumber\",b.accountNumber);",
+                  " pm.collectionVariables.set(\"_accountReady\",b.status===\"ACTIVE\"?\"true\":\"false\");",
+                  " pm.collectionVariables.set(\"_accountBalance\",String(b.balance));",
+                  " }",
+                  " pm.test(\"CSRF response header available\",()=>pm.expect(pm.response.headers.has(\"X-CSRF-TOKEN\")).to.eql(true));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Logout with current CSRF",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrfToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/auth/logout",
+            "description": "Invalidates only this test session; keep the same cookie jar to verify subsequent 401 responses.\nPrerequisite skips are intentional, not passes. See SAFEPAY_POSTMAN_TEST_REPORT.md."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!(pm.collectionVariables.get(\"_customerReady\") === \"true\" && String(pm.environment.get(\"csrfToken\") || \"\").trim().length > 0)) { pm.collectionVariables.set(\"_lastSkip\", \"CUSTOMER session and token required\"); pm.execution.skipRequest(); } else {",
+                  "",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "if(pm.response.code===200){pm.test(\"Logout message\",()=>pm.expect(pm.response.json().message).to.eql(\"Logged out successfully\"));pm.collectionVariables.set(\"_customerReady\",\"false\");pm.collectionVariables.set(\"_loggedOut\",\"true\");pm.environment.set(\"csrfToken\",\"\");}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Anonymous denied /api/accounts/current",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/accounts/current",
+            "description": "\nPrerequisite skips are intentional, not passes. See SAFEPAY_POSTMAN_TEST_REPORT.md."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!(pm.collectionVariables.get(\"_loggedOut\")===\"true\" || !pm.cookies.has(\"JSESSIONID\"))) { pm.collectionVariables.set(\"_lastSkip\", \"Clear a pre-existing session or complete logout first\"); pm.execution.skipRequest(); } else {",
+                  "",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 401\", function () { pm.response.to.have.status(401); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Anonymous denied /api/transactions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/transactions",
+            "description": "\nPrerequisite skips are intentional, not passes. See SAFEPAY_POSTMAN_TEST_REPORT.md."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!(pm.collectionVariables.get(\"_loggedOut\")===\"true\" || !pm.cookies.has(\"JSESSIONID\"))) { pm.collectionVariables.set(\"_lastSkip\", \"Clear a pre-existing session or complete logout first\"); pm.execution.skipRequest(); } else {",
+                  "",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 401\", function () { pm.response.to.have.status(401); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Anonymous denied /api/admin/reports/transactions/summary",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/admin/reports/transactions/summary",
+            "description": "\nPrerequisite skips are intentional, not passes. See SAFEPAY_POSTMAN_TEST_REPORT.md."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!(pm.collectionVariables.get(\"_loggedOut\")===\"true\" || !pm.cookies.has(\"JSESSIONID\"))) { pm.collectionVariables.set(\"_lastSkip\", \"Clear a pre-existing session or complete logout first\"); pm.execution.skipRequest(); } else {",
+                  "",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 401\", function () { pm.response.to.have.status(401); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Anonymous logout is safe",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/auth/logout",
+            "description": "\nPrerequisite skips are intentional, not passes. See SAFEPAY_POSTMAN_TEST_REPORT.md."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!(pm.collectionVariables.get(\"_loggedOut\")===\"true\" || !pm.cookies.has(\"JSESSIONID\"))) { pm.collectionVariables.set(\"_lastSkip\", \"Only run without an authenticated session\"); pm.execution.skipRequest(); } else {",
+                  "",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "if(pm.response.code===200)pm.test(\"Logout message\",()=>pm.expect(pm.response.json().message).to.eql(\"Logged out successfully\"));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "08 - Admin Reporting",
+      "item": [
+        {
+          "name": "Login existing approved ADMIN",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/auth/login",
+            "description": "Shares the cookie jar but logs in as ADMIN explicitly. Do not reuse customer credentials or modify a role in the database.\nPrerequisite skips are intentional, not passes. See SAFEPAY_POSTMAN_TEST_REPORT.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{{_adminLoginJson}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set(\"_adminReady\",\"false\");pm.collectionVariables.set(\"_customerReady\",\"false\");pm.environment.set(\"csrfToken\",\"\");",
+                  "if (!(pm.environment.get(\"approvedAdminFixture\") === \"true\" && String(pm.environment.get(\"adminEmail\") || \"\").trim().length > 0 && String(pm.environment.get(\"adminPassword\") || \"\").trim().length > 0)) { pm.collectionVariables.set(\"_lastSkip\", \"Approved existing ADMIN credentials missing\"); pm.execution.skipRequest(); } else {",
+                  "pm.variables.set(\"_adminLoginJson\",JSON.stringify({email:pm.environment.get(\"adminEmail\"),password:pm.environment.get(\"adminPassword\")}));",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "if (pm.response.code === 200) {",
+                  " const b=pm.response.json();",
+                  " pm.test(\"Only safe login fields\",()=>pm.expect(Object.keys(b).sort()).to.eql([\"email\",\"name\",\"role\",\"status\",\"userId\"]));",
+                  " pm.test(\"Expected role and active status\",()=>{pm.expect(b.role).to.eql(\"ADMIN\");pm.expect(b.status).to.eql(\"ACTIVE\");});",
+                  " pm.test(\"Session cookie established (value not logged)\",()=>pm.expect(pm.cookies.has(\"JSESSIONID\") || pm.response.headers.all().some(h=>h.key.toLowerCase()===\"set-cookie\" && /^JSESSIONID=/i.test(h.value))).to.eql(true));",
+                  " if(b.role===\"ADMIN\" && b.status===\"ACTIVE\") {",
+                  " pm.collectionVariables.set(\"_adminReady\",\"true\");",
+                  " ",
+                  " }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin transaction summary",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/admin/reports/transactions/summary",
+            "description": "\nPrerequisite skips are intentional, not passes. See SAFEPAY_POSTMAN_TEST_REPORT.md."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!(pm.collectionVariables.get(\"_adminReady\") === \"true\")) { pm.collectionVariables.set(\"_lastSkip\", \"ADMIN login required\"); pm.execution.skipRequest(); } else {",
+                  "",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "if(pm.response.code===200){pm.test(\"Expected response fields\", function () { pm.expect(Object.keys(pm.response.json())).to.include.members([\"totalTransactions\",\"settledTransactions\",\"protectedTransactions\",\"cancelledTransactions\",\"rejectedTransactions\",\"hardHolds\",\"highRiskTransactions\",\"totalAmount\",\"settledAmount\"]); }); pm.test(\"Nonnegative totals\",()=>pm.expect([\"totalTransactions\",\"settledTransactions\",\"protectedTransactions\",\"cancelledTransactions\",\"rejectedTransactions\",\"hardHolds\",\"highRiskTransactions\",\"totalAmount\",\"settledAmount\"].every(k=>Number(pm.response.json()[k])>=0)).to.eql(true));}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin daily transaction summary",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/admin/reports/transactions/daily?from={{reportFrom}}&to={{reportTo}}",
+            "description": "\nPrerequisite skips are intentional, not passes. See SAFEPAY_POSTMAN_TEST_REPORT.md."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!(pm.collectionVariables.get(\"_adminReady\") === \"true\" && String(pm.environment.get(\"reportFrom\") || \"\").trim().length > 0 && String(pm.environment.get(\"reportTo\") || \"\").trim().length > 0)) { pm.collectionVariables.set(\"_lastSkip\", \"ADMIN session and YYYY-MM-DD range required\"); pm.execution.skipRequest(); } else {",
+                  "",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "if(pm.response.code===200)pm.test(\"Daily DTO array\",()=>{const b=pm.response.json();pm.expect(Array.isArray(b)).to.eql(true);b.forEach(x=>{pm.expect(Object.keys(x)).to.eql([\"date\",\"summary\"]);pm.expect(Object.keys(x.summary)).to.include.members([\"totalTransactions\",\"settledTransactions\",\"protectedTransactions\",\"cancelledTransactions\",\"rejectedTransactions\",\"hardHolds\",\"highRiskTransactions\",\"totalAmount\",\"settledAmount\"]);});});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin user directory — read only",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/admin/users",
+            "description": "Does not change statuses. Status PATCH endpoints are documented in the report but deliberately omitted from this non-destructive workflow.\nPrerequisite skips are intentional, not passes. See SAFEPAY_POSTMAN_TEST_REPORT.md."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!(pm.collectionVariables.get(\"_adminReady\") === \"true\")) { pm.collectionVariables.set(\"_lastSkip\", \"ADMIN login required\"); pm.execution.skipRequest(); } else {",
+                  "",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "if(pm.response.code===200)pm.test(\"Safe user directory\",()=>{const b=pm.response.json();pm.expect(Array.isArray(b)).to.eql(true);b.forEach(x=>pm.expect(Object.keys(x)).to.include.members([\"userId\",\"name\",\"email\",\"phone\",\"role\",\"status\",\"createdAt\",\"updatedAt\"]));});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrfToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/auth/logout",
+            "description": "\nPrerequisite skips are intentional, not passes. See SAFEPAY_POSTMAN_TEST_REPORT.md."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!(pm.collectionVariables.get(\"_adminReady\") === \"true\" && String(pm.environment.get(\"csrfToken\") || \"\").trim().length > 0)) { pm.collectionVariables.set(\"_lastSkip\", \"ADMIN session and fresh token required\"); pm.execution.skipRequest(); } else {",
+                  "",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "if(pm.response.code===200){pm.test(\"Logout message\",()=>pm.expect(pm.response.json().message).to.eql(\"Logged out successfully\"));pm.collectionVariables.set(\"_adminReady\",\"false\");pm.collectionVariables.set(\"_loggedOut\",\"true\");pm.environment.set(\"csrfToken\",\"\");}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

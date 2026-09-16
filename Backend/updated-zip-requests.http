@@ -1,0 +1,60 @@
+### Updated ZIP APIs. Base URL and paths are identical in Postman.
+### Replace placeholders and use one cookie jar. No Bearer token is used.
+@base = http://localhost:8080
+@csrf = COPY_X_CSRF_TOKEN_FROM_A_PROTECTED_GET_RESPONSE
+@userId = REPLACE_WITH_USER_ID
+@accountId = REPLACE_WITH_ACCOUNT_ID_NOT_ACCOUNT_NUMBER
+
+### Email login remains available. Use your existing password.
+POST {{base}}/api/auth/login
+Content-Type: application/json
+
+{"email":"your.registered.email@example.com","password":"YOUR_EXISTING_PASSWORD"}
+
+### Alternative mobile/password login: send phone OR email, never both.
+POST {{base}}/api/auth/login
+Content-Type: application/json
+
+{"phone":"9876543210","password":"YOUR_EXISTING_PASSWORD"}
+
+### CUSTOMER session: all owned accounts; response header supplies X-CSRF-TOKEN.
+GET {{base}}/api/accounts
+
+### ADMIN session: get users and copy its X-CSRF-TOKEN response header.
+GET {{base}}/api/admin/users
+
+### ADMIN only: user details.
+GET {{base}}/api/admin/users/{{userId}}
+
+### ADMIN only: returns every account owned by this user.
+GET {{base}}/api/admin/users/{{userId}}/accounts
+
+### ADMIN only: creates another administrator, with no customer account.
+### The initial password has no automatic expiry or forced-change behavior.
+POST {{base}}/api/admin/users
+Content-Type: application/json
+X-CSRF-TOKEN: {{csrf}}
+
+{"name":"New administrator","email":"new.admin@example.com","phone":"9876543210","initialPassword":"CHOOSE_A_NEW_STRONG_PASSWORD"}
+
+### ADMIN only: status changes are audited. Inactive sessions lose access.
+### Statuses: ACTIVE, LOCKED, SUSPENDED, INACTIVE; invalid transitions return 409.
+PATCH {{base}}/api/admin/users/{{userId}}/status
+Content-Type: application/json
+X-CSRF-TOKEN: {{csrf}}
+
+{"status":"SUSPENDED"}
+
+### ADMIN only: explicit simulated credit (changes the simulated ledger).
+### Choose a fresh unique key for a NEW credit; retain the same key/body/account
+### for all retries of THIS credit. A lost response is not permission for a new key.
+POST {{base}}/api/admin/accounts/{{accountId}}/interest-credits
+Content-Type: application/json
+X-CSRF-TOKEN: {{csrf}}
+Idempotency-Key: REPLACE_WITH_A_UNIQUE_KEY_FOR_THIS_CREDIT
+
+{"amount":"1000.03"}
+
+### Existing transaction APIs now also return protectionRemainingMillis and canCancel.
+### Server state and database deadlines remain authoritative.
+GET {{base}}/api/transactions

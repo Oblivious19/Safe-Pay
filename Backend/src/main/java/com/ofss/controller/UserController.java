@@ -3,7 +3,6 @@ package com.ofss.controller;
 import java.util.List;
 
 import org.springframework.http.HttpStatus;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -15,6 +14,10 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.ofss.beans.User;
+import com.ofss.beans.LoginPrincipal;
+import com.ofss.beans.UserProfileResponse;
+import com.ofss.excp.ResourceNotFoundExcp;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import com.ofss.services.UserService;
 
 @RestController
@@ -29,7 +32,7 @@ public class UserController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public User createUser(@Validated(User.Create.class) @RequestBody User user) {
+    public User createUser(@RequestBody User user) {
         return userService.register(user);
     }
 
@@ -38,13 +41,22 @@ public class UserController {
         return userService.getUsers();
     }
 
+    @GetMapping("/current")
+    public UserProfileResponse current(@AuthenticationPrincipal LoginPrincipal caller) {
+        return UserProfileResponse.from(userService.getUser(caller.userId()));
+    }
+
     @GetMapping("/{userId}")
-    public User getUser(@PathVariable Long userId) {
-        return userService.getUser(userId);
+    public UserProfileResponse getUser(@PathVariable Long userId,
+            @AuthenticationPrincipal LoginPrincipal caller) {
+        if (!caller.userId().equals(userId)) {
+            throw new ResourceNotFoundExcp("User not found");
+        }
+        return current(caller);
     }
 
     @PutMapping("/{userId}")
-    public User updateUser(@PathVariable Long userId, @Validated(User.Update.class) @RequestBody User user) {
+    public User updateUser(@PathVariable Long userId, @RequestBody User user) {
         return userService.updateUser(userId, user);
     }
 

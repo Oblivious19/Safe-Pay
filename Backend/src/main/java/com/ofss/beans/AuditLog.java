@@ -28,6 +28,10 @@ public class AuditLog {
 
     private String action;
 
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    @Column(name = "request_key", unique = true, length = 100)
+    private String requestKey;
+
     @Column(name = "old_state")
     private String oldState;
 
@@ -43,6 +47,8 @@ public class AuditLog {
     public void setTransactionId(Long transactionId) { this.transactionId = transactionId; }
     public Long getUserId() { return userId; }
     public void setUserId(Long userId) { this.userId = userId; }
+    public String getRequestKey() { return requestKey; }
+    public void setRequestKey(String requestKey) { this.requestKey = requestKey; }
     public String getAction() { return action; }
     public void setAction(String action) { this.action = action; }
     public String getOldState() { return oldState; }

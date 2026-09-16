@@ -1,0 +1,20 @@
+<div class="safepay-page"><p class="eyebrow">YOUR ACCOUNT</p><h1>My Profile</h1>
+  <div class="payment-shell"><h2>Contact details</h2>
+    <p>Keep your name and contact details up to date. Use your updated email the next time you sign in.</p>
+    <p>Status: <span class="status-pill" data-bind="text: status"></span></p>
+    <form data-bind="submit: save">
+      <div class="form-grid">
+        <label>Name<input required maxlength="100" autocomplete="name" data-bind="textInput: name, disable: loading() || saving()" /></label>
+        <label>Email<input required type="email" autocomplete="email" data-bind="textInput: email, disable: loading() || saving()" /></label>
+        <label>Phone<input required type="tel" autocomplete="tel" data-bind="textInput: phone, disable: loading() || saving()" /></label>
+        <label>New password (optional)<input type="password" autocomplete="new-password" data-bind="textInput: password, disable: loading() || saving()" /><small>Leave blank to keep your current password.</small></label>
+      </div>
+      <div class="form-actions">
+        <button class="safe-button" type="submit" data-bind="disable: saving() || loading(), text: saving() ? 'Saving…' : 'Save profile'"></button>
+        <button class="safe-button secondary" type="button" data-bind="click: load, disable: saving() || loading()">Reload profile</button>
+      </div>
+    </form>
+    <p class="form-error" role="alert" data-bind="visible: error, text: error"></p>
+    <p class="form-success" role="status" data-bind="visible: success, text: success"></p>
+  </div>
+</div>

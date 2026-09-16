@@ -1,0 +1,46 @@
+{
+  "Date": "2026-09-16",
+  "Purpose": "Complete run guide and UI wording/filter corrections",
+  "FrontendTests": 135,
+  "TypeScript": "passed",
+  "JetBuild": "passed",
+  "BackupDirectory": "C:\\Users\\GAURAV~1\\AppData\\Local\\Temp\\safepay-run-guide-20260916\\backup",
+  "Files": [
+    {
+      "Path": "Frontend\\SafePayJet\\src\\ts\\views\\admin.html",
+      "Source": "C:\\Users\\Gaurav Sahu\\AppData\\Local\\Temp\\safepay-zip-review-20260916\\work\\Frontend\\SafePayJet\\src\\ts\\views\\admin.html",
+      "PreviousSHA256": "5779FEBC17CABDD56D788C6AC800178C9FD79EF3E6596D06C8CEE4CAA0C95255",
+      "SHA256": "9B65EF08B83370AE8C910CFAA4BB977F952C6ACEC6646B04E5AC0026325B985C"
+    },
+    {
+      "Path": "Frontend\\SafePayJet\\src\\ts\\views\\transactions.html",
+      "Source": "C:\\Users\\Gaurav Sahu\\AppData\\Local\\Temp\\safepay-zip-review-20260916\\work\\Frontend\\SafePayJet\\src\\ts\\views\\transactions.html",
+      "PreviousSHA256": "A0D4620CAB13908AC15E6682B31C2B6E496AFD88300293A6BCAD9963C430C481",
+      "SHA256": "25D3E7F9802A632D96AC3C6155CA62B51D730879D7D974F3C2B9C65A17C5F170"
+    },
+    {
+      "Path": "Frontend\\SafePayJet\\src\\ts\\viewModels\\admin.ts",
+      "Source": "C:\\Users\\Gaurav Sahu\\AppData\\Local\\Temp\\safepay-zip-review-20260916\\work\\Frontend\\SafePayJet\\src\\ts\\viewModels\\admin.ts",
+      "PreviousSHA256": "1FBF42ED9CB30F872CB7B440B86E84A23CDE0E8436CBF74CAA3668C2932BDE5B",
+      "SHA256": "A6159013DA8B01DDAD9C7A05487BB4ED9430C66BF7436CB402F596EF389C02B7"
+    },
+    {
+      "Path": "Frontend\\SafePayJet\\tests\\auth-admin.test.cjs",
+      "Source": "C:\\Users\\Gaurav Sahu\\AppData\\Local\\Temp\\safepay-zip-review-20260916\\work\\Frontend\\SafePayJet\\tests\\auth-admin.test.cjs",
+      "PreviousSHA256": "CB90C6C48E71CEF88772990A233271B562D513811AE6AA273726CABD14D13B66",
+      "SHA256": "116DC4207B0812E59C94EA50C5BD5DDA507BD132A08A4013E269A40B357D08A6"
+    },
+    {
+      "Path": "Frontend\\SafePayJet\\tests\\ui-bindings.test.cjs",
+      "Source": "C:\\Users\\Gaurav Sahu\\AppData\\Local\\Temp\\safepay-zip-review-20260916\\work\\Frontend\\SafePayJet\\tests\\ui-bindings.test.cjs",
+      "PreviousSHA256": "9870C79C5EC3BECEE592BCBAD8A369C554247010BF4BB122C14A1C92A4CD35B6",
+      "SHA256": "A0012C6AA0FA244E64E2509C3F1BBDEAEF3C428CFB40CF576B283E3065F9E7E4"
+    },
+    {
+      "Path": "docs\\RUN_GUIDE.md",
+      "Source": "C:\\Users\\GAURAV~1\\AppData\\Local\\Temp\\safepay-run-guide-20260916\\RUN_GUIDE.md",
+      "PreviousSHA256": null,
+      "SHA256": "1F84E0DE31F0432500C0B68EC89960B85467DFF488557D51AB11172C4D3A1FE7"
+    }
+  ]
+}

@@ -1,0 +1,141 @@
+### Documentation examples only. Retain JSESSIONID in a cookie-aware HTTP client.
+### Replace the zero IDs with values from server responses. Refresh csrf after each login.
+### For automatic ID/key capture, import docs/postman/SafePay_Enhanced_Examples.postman_collection.json.
+@baseUrl = http://localhost:8080
+@csrf = paste-X-CSRF-TOKEN-from-an-authenticated-GET
+@accountId = 0
+@beneficiaryId = 0
+@lowTransactionId = 0
+@hardHoldTransactionId = 0
+@protectedTransactionId = 0
+@autoTransactionId = 0
+
+### Register a customer: creates one SAVINGS account with INR 5000
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{"name":"Demo Customer","email":"customer@example.com","phone":"9876543210","password":"ChooseDemoPassword"}
+
+### Customer login; retain JSESSIONID
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{"email":"customer@example.com","password":"ChooseDemoPassword"}
+
+### Copy accountId and X-CSRF-TOKEN from the current account response
+GET {{baseUrl}}/api/accounts/current
+
+### Log out before switching to administrator
+POST {{baseUrl}}/api/auth/logout
+X-CSRF-TOKEN: {{csrf}}
+
+### ADMIN login: supply the actual password configured at local startup
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{"email":"admin@safepay.local","password":"ReplaceWithConfiguredAdminPassword"}
+
+### Capture fresh administrator CSRF
+GET {{baseUrl}}/api/admin/accounts
+
+### Set absolute simulated balance to INR 1000000, before sending payments
+PUT {{baseUrl}}/api/admin/accounts/{{accountId}}
+Content-Type: application/json
+X-CSRF-TOKEN: {{csrf}}
+
+{"balance":"1000000.00","accountType":"SAVINGS"}
+
+### Log out; repeat customer login and current-account GET above to refresh customer CSRF
+POST {{baseUrl}}/api/auth/logout
+X-CSRF-TOKEN: {{csrf}}
+
+### Add a beneficiary as CUSTOMER; save beneficiaryId
+POST {{baseUrl}}/api/beneficiaries
+Content-Type: application/json
+X-CSRF-TOKEN: {{csrf}}
+
+{"beneficiaryName":"Demo Recipient","bankAccountNumber":"123456789012","ifsc":"SBIN0001234"}
+
+### LOW: even the first INR 5000 payment settles immediately; save lowTransactionId
+### Fresh walkthrough balance becomes INR 995000. No verify or cancel applies to this payment.
+POST {{baseUrl}}/api/transactions
+Content-Type: application/json
+X-CSRF-TOKEN: {{csrf}}
+Idempotency-Key: amount-policy-low-001
+
+{"fromAccountId":{{accountId}},"beneficiaryId":{{beneficiaryId}},"amount":"5000.00","purpose":"Amount-only low example"}
+
+### VERY_HIGH: INR 150000 enters HARD_HOLD; save hardHoldTransactionId
+### Balance remains INR 995000 with INR 150000 reserved; no automatic expiry.
+POST {{baseUrl}}/api/transactions
+Content-Type: application/json
+X-CSRF-TOKEN: {{csrf}}
+Idempotency-Key: amount-policy-hard-hold-001
+
+{"fromAccountId":{{accountId}},"beneficiaryId":{{beneficiaryId}},"amount":"150000.00","purpose":"Amount-only authentication example"}
+
+### Verify the HARD_HOLD using its owner's password; successful balance INR 845000
+### Reuse this key/password on a retry: no second debit. Do not use lowTransactionId.
+POST {{baseUrl}}/api/transactions/{{hardHoldTransactionId}}/verify
+Content-Type: application/json
+X-CSRF-TOKEN: {{csrf}}
+Idempotency-Key: amount-policy-verification-001
+
+{"password":"ChooseDemoPassword"}
+
+### MEDIUM: INR 20000 is PROTECTED for 10 seconds; save protectedTransactionId
+POST {{baseUrl}}/api/transactions
+Content-Type: application/json
+X-CSRF-TOKEN: {{csrf}}
+Idempotency-Key: amount-policy-medium-001
+
+{"fromAccountId":{{accountId}},"beneficiaryId":{{beneficiaryId}},"amount":"20000.00","purpose":"Amount-only cancellation example"}
+
+### Send immediately before the 10-second deadline. Balance stays INR 845000.
+POST {{baseUrl}}/api/transactions/{{protectedTransactionId}}/cancel
+X-CSRF-TOKEN: {{csrf}}
+Idempotency-Key: amount-policy-cancellation-001
+
+### HIGH: INR 60000 is PROTECTED for 60 seconds; save autoTransactionId
+POST {{baseUrl}}/api/transactions
+Content-Type: application/json
+X-CSRF-TOKEN: {{csrf}}
+Idempotency-Key: amount-policy-high-001
+
+{"fromAccountId":{{accountId}},"beneficiaryId":{{beneficiaryId}},"amount":"60000.00","purpose":"Amount-only high timer example"}
+
+### Repeat this GET every five seconds until SETTLED after expiry/scheduler pass
+GET {{baseUrl}}/api/transactions/{{autoTransactionId}}
+
+### After HIGH settlement the fresh-walkthrough balance is INR 785000
+GET {{baseUrl}}/api/accounts/current
+
+### Customer profile edit; password may be omitted
+PUT {{baseUrl}}/api/users/current
+Content-Type: application/json
+X-CSRF-TOKEN: {{csrf}}
+
+{"name":"Demo Customer Updated","email":"customer@example.com","phone":"9876543210"}
+
+### Include inactive beneficiaries; the default list stays ACTIVE-only
+GET {{baseUrl}}/api/beneficiaries?includeInactive=true
+
+### Remove an owned beneficiary by soft deletion
+DELETE {{baseUrl}}/api/beneficiaries/{{beneficiaryId}}
+X-CSRF-TOKEN: {{csrf}}
+
+### Reactivate the owned beneficiary
+PATCH {{baseUrl}}/api/beneficiaries/{{beneficiaryId}}/status
+Content-Type: application/json
+X-CSRF-TOKEN: {{csrf}}
+
+{"status":"ACTIVE"}
+
+### Reports require ADMIN: log out, log in as ADMIN and capture fresh admin CSRF first
+GET {{baseUrl}}/api/admin/reports/transactions/summary
+
+### Inclusive daily report
+GET {{baseUrl}}/api/admin/reports/transactions/daily?from=2026-09-01&to=2026-09-30
+
+### Reuse the same key/body only for retries. Give every new payment a new key.
+### Existing transaction decisions remain saved; an old key is never rescored under the new policy.

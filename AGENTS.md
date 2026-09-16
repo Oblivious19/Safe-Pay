@@ -23,15 +23,45 @@ Specifically, do NOT build yet (these are later phases):
 - Any AI/ML component
 - Disputes, notifications beyond basic in-app rows, PWA installability
 
-Phase 1 uses fixed transaction-amount risk ranges: LOW has no hold, MEDIUM has a
-10-second cancellable hold, HIGH has a 60-second cancellable hold, and an amount
-above ₹1,00,000 enters HARD_HOLD and requires server-side authentication before
-settlement. Store the plain-language range reason on the transaction.
+Current live risk policy (explicit user change, 15 September 2026): classify each
+new payment by its validated amount only. Amounts above zero through INR 10,000
+are LOW and settle immediately; above INR 10,000 through INR 50,000 are MEDIUM
+with a 10-second cancellable hold; above INR 50,000 through INR 1,00,000 are HIGH
+with a 60-second cancellable hold; above INR 1,00,000 are VERY_HIGH and enter
+HARD_HOLD until successful server-side password verification. Persist the amount
+range and resulting protection requirement as a plain-language risk reason.
+Beneficiary age, prior payments, history, device and context must not contribute
+points to a new live decision. See PHASE1_SPEC.md section 2 for exact boundaries.
+The risk engine remains framework-free; it does not move money or authenticate.
+VERY_HIGH's zero duration means no timed release, never immediate settlement.
+
+Compatibility boundary: existing transactions retain their saved tier, reason,
+state and hold deadline. An idempotency replay returns the saved decision; do not
+rescore or rewrite existing rows. Historical contextual-engine specifications and
+original comparison reports remain historical references. Live transaction
+states remain CREATED/AUTHORIZED/RISK_ASSESSED/PROTECTED/HARD_HOLD/CANCELLED/SETTLED;
+the separate eight-state domain is not wired into this flow. The approved additions
+include server-password verification from HARD_HOLD directly to SETTLED, persistent
+retry keys, reservation-aware money updates and per-payment scheduled settlement.
+Keep session/CSRF security. On 16 September 2026 the user explicitly approved preserving all migrated accounts and adding a UI account selector. An owner may have multiple accounts; registration still creates one account. Account and beneficiary selection must be authorized server-side and a payment beneficiary must belong to the selected source account. See docs/BEST_MODULES_AND_CHANGES.md.
+No AI/ML or new device tracking is introduced.
+Approved updated-ZIP merge (16 September 2026): retain email/password and add
+phone/password with shared lockout; no PIN-only login, simulated KYC or OTP.
+Add admin details, all-account lookup, audited provisioning/status actions and
+idempotent simulated credits. Credits require Idempotency-Key and persist a unique
+AUDIT_LOG.REQUEST_KEY together with balance changes. A replay returns its original
+receipt; it must never credit again. Provisioning uses an initial password, not
+an expiring password, and never auto-promotes a live customer.
+Protected requests verify current database status/role so suspended or changed
+sessions cannot retain access. Preserve the current public registration, profile,
+multi-account, amount-risk, verification and reservation behavior. Payment review
+and cancellation timers use database-derived remaining duration; the database
+still decides whether cancellation succeeds. See docs/UPDATED_ZIP_REVIEW.md.
 
 ## Tech stack
 - Java 17, Spring Boot 3.x, Spring MVC
 - Spring Data JPA (Hibernate) + Oracle DB, `@GeneratedValue(strategy = GenerationType.SEQUENCE)`
-- Spring Security + JWT for auth not needed remove that
+- Use Spring Security session authentication, not JWT.
 - Spring `@Scheduled` for the auto-release job
 - Maven build
 - Lombok is fine to use for boilerplate reduction
@@ -70,3 +100,5 @@ settlement. Store the plain-language range reason on the transaction.
   handle table creation during early development unless asked otherwise.
 - Ask before deleting or overwriting existing files outside the current task's
   scope.
+
+

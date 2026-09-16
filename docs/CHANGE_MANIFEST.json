@@ -1,0 +1,494 @@
+{
+  "baseline": "Safe-Pay-shreya-v1.zip",
+  "unchangedFiles": 172,
+  "removedFiles": [],
+  "changes": [
+    {
+      "file": "AGENTS.md",
+      "change": "Modified",
+      "sha256": "8b453880aac7327c26a3cb478c354d204d696270d0a8169a9c8894524113fbf0",
+      "originalSha256": "476747b52484d00846cad950a96a9109d315532b2340a0f1cfa0a19b903804a4"
+    },
+    {
+      "file": "Backend/enhanced-requests.http",
+      "change": "Added",
+      "sha256": "62f81aa0241be02b51b436a5ee032b6e0fb126d343c71ec53d33c6117bc5e99c"
+    },
+    {
+      "file": "Backend/mvnw.cmd",
+      "change": "Modified",
+      "sha256": "5e0614de4562d0a349b656a6e74a4e358062167cd46f80c9a41020f0f2e46063",
+      "originalSha256": "46eedb8419bd14fe70d5bb2916d7b6f51806e51b39d5b76a42610384ca929c1c"
+    },
+    {
+      "file": "Backend/pom.xml",
+      "change": "Modified",
+      "sha256": "24cea22fa0434d351940b7b76cb2aff506e8c799a23826318aa8f6546db9adff",
+      "originalSha256": "efcb8b16236fa4084cd35567b016ea6bbd9b8bd47ebfe49d962648c796dcb05d"
+    },
+    {
+      "file": "Backend/README.md",
+      "change": "Modified",
+      "sha256": "3758b9ab3595f60c2e60181ae93e75265d6cd120ea5f7fdfd7ce890f00290c90",
+      "originalSha256": "d5e01af6170bb89b46352328e4de989549f4f466d376ea03b75045db81bc1f80"
+    },
+    {
+      "file": "Backend/scripts/smoke-local.cjs",
+      "change": "Added",
+      "sha256": "9d3bd8ed67e0845490431c6ec7de85391e11377c734fdd147f8ace3f22f898f2"
+    },
+    {
+      "file": "Backend/src/main/java/com/ofss/beans/AdminAccountDtos.java",
+      "change": "Added",
+      "sha256": "0bc71df0212ac1c47fa2b42e352cebd6101e1949dbbc6a24ead0e535d80a8ba0"
+    },
+    {
+      "file": "Backend/src/main/java/com/ofss/beans/Beneficiary.java",
+      "change": "Modified",
+      "sha256": "c943a7d36308b93e0212f90b71ebdb483133e03ac3c73439f2851201308dae7b",
+      "originalSha256": "77992a4a7b93e47e648b53d0a30d863133bcd44fbc1cd6606e086aea6ef0716e"
+    },
+    {
+      "file": "Backend/src/main/java/com/ofss/beans/BeneficiaryStatusRequest.java",
+      "change": "Added",
+      "sha256": "62eb2d713c67ef0cc8b9cefedc800dc35e7079107cf47b639b189489f9de2c64"
+    },
+    {
+      "file": "Backend/src/main/java/com/ofss/beans/ProfileUpdateRequest.java",
+      "change": "Added",
+      "sha256": "5771762c0458aaa32d1f37dbe90d12986f58358d4d8a8ce697f6de2025fa8a74"
+    },
+    {
+      "file": "Backend/src/main/java/com/ofss/beans/TransactionDb.java",
+      "change": "Modified",
+      "sha256": "45322db177362e6c31a7f6de3ff1a1f330a53c54e1873bd5d9238cc2d6394018",
+      "originalSha256": "20f08801941663cf5a6b800e2f218dbee9652e07f2fadf9db5a3887605596123"
+    },
+    {
+      "file": "Backend/src/main/java/com/ofss/beans/VerificationRequest.java",
+      "change": "Added",
+      "sha256": "1e5deb025e4497c9b07443b860dea3482a614484d10ef63d1b3d6ca35a38368a"
+    },
+    {
+      "file": "Backend/src/main/java/com/ofss/beans/VerifiedTransactionResponse.java",
+      "change": "Added",
+      "sha256": "183338b1e3389cf7ccd47dc95caf5172d480517d658e7089ae52f4e3f9b493f5"
+    },
+    {
+      "file": "Backend/src/main/java/com/ofss/config/AdminSecurityConfig.java",
+      "change": "Modified",
+      "sha256": "4b67433d9cbe499c55c98ba036fbdc74bf1731d5816928fb720a0b6b2d98708c",
+      "originalSha256": "c59b43acb8e24f8d007da9f886c4306cd6ed0ce82172d0f98d767738ca29bea5"
+    },
+    {
+      "file": "Backend/src/main/java/com/ofss/config/CustomerResourceSecurityConfig.java",
+      "change": "Modified",
+      "sha256": "7f1e54ecbecd523ff7033dea7e360c730e881486c6eb6ef5e25325da21cb325d",
+      "originalSha256": "1492b241ec159c7a6a67727e9092d7fa5728ab99df3e746f1d2d6f071d43c0a6"
+    },
+    {
+      "file": "Backend/src/main/java/com/ofss/config/LocalDemoConfiguration.java",
+      "change": "Added",
+      "sha256": "caf33fd52bfa1bd4c5604b14a5b92f03eeaa67922ddb8df6072d32286599778b"
+    },
+    {
+      "file": "Backend/src/main/java/com/ofss/controller/AdminAccountController.java",
+      "change": "Added",
+      "sha256": "7bca6c6d4736de837215cef3df559edf646ca8f51c45a68f205d164240d21659"
+    },
+    {
+      "file": "Backend/src/main/java/com/ofss/controller/BeneficiaryController.java",
+      "change": "Modified",
+      "sha256": "ee99a4cccdfe1103c1d8a8dfdf58d25ee0f5af51918e12f4e2ab5daa270f8694",
+      "originalSha256": "8bd16bee96ae398c7b6c0b72d37b0f4ee90094d76b427addf1121df7fc9e8b4a"
+    },
+    {
+      "file": "Backend/src/main/java/com/ofss/controller/ProfileController.java",
+      "change": "Added",
+      "sha256": "bb43f1715108d96cfefc4061e6d9627601e3b3a73899260b000b8aa999fdf972"
+    },
+    {
+      "file": "Backend/src/main/java/com/ofss/controller/TransactionController.java",
+      "change": "Modified",
+      "sha256": "23d119868c7101111dd2e05f49862cb8f0647d44053b0eb3a073c5354b725bcc",
+      "originalSha256": "677bb08c32f858699028256c40d31b45d3a0374fbd9b39bc12d94ed4025093e5"
+    },
+    {
+      "file": "Backend/src/main/java/com/ofss/controller/VerificationController.java",
+      "change": "Added",
+      "sha256": "358d7b96c6329f2f93d422e1d20e288ff97254f38a81507b2a7684a88519bc87"
+    },
+    {
+      "file": "Backend/src/main/java/com/ofss/excp/GlobalExceptionHandler.java",
+      "change": "Modified",
+      "sha256": "7e3742d10436d5f8fe7bbe524ce83ccf163958576ca5ad711f480e8e6f4a6dd1",
+      "originalSha256": "e7a5bce0be6f74303f3ffb499a40d34384068930c82d7dd2602d58226970c467"
+    },
+    {
+      "file": "Backend/src/main/java/com/ofss/repository/AccountDao.java",
+      "change": "Modified",
+      "sha256": "f85a904ad22d45fcec90ccc6d8e1ae0b471bc157dfb58cac49305a8ab18b2cb9",
+      "originalSha256": "e72ce650e653b912075485dd9aded091bd761b779d124ee1e98f79dbb05a89eb"
+    },
+    {
+      "file": "Backend/src/main/java/com/ofss/repository/AdminAccountRepository.java",
+      "change": "Added",
+      "sha256": "aad49a497abad8d72a6a09b9d5dc2e27be4628f3ebc6ce649378decf30ff0971"
+    },
+    {
+      "file": "Backend/src/main/java/com/ofss/repository/BeneficiaryDao.java",
+      "change": "Modified",
+      "sha256": "026e45ff19745d30bdca57c9a6595ebd4f727c192c2bf7207936f5eb974b479c",
+      "originalSha256": "7a2f37cdb4a49eb44947ceaf09dc79bae90e27cc267f2216672db19fd0f952ed"
+    },
+    {
+      "file": "Backend/src/main/java/com/ofss/repository/ProfileRepository.java",
+      "change": "Added",
+      "sha256": "516e5dd9c3465b889ddca47a73fd93fc1cce7f153be7d8905626e70445bde870"
+    },
+    {
+      "file": "Backend/src/main/java/com/ofss/repository/TransactionDao.java",
+      "change": "Modified",
+      "sha256": "cd802a71df042a27998d5ea3a73f5fcd3d97e0b273b20c4d42c6f12786a72404",
+      "originalSha256": "dc8ae06f73f27bec04a1253f57b2e50106af5dfe15c015ad61271caeb935a3b1"
+    },
+    {
+      "file": "Backend/src/main/java/com/ofss/repository/UserDao.java",
+      "change": "Modified",
+      "sha256": "1bbf8335e93482b515905b4950907460a43da5931d5941f7944a938bb98eec8a",
+      "originalSha256": "f2883aee80da7b58ed63c5f7019bb210e3f730a570df7603e0b8ed2eb64b4422"
+    },
+    {
+      "file": "Backend/src/main/java/com/ofss/repository/VerificationRepository.java",
+      "change": "Added",
+      "sha256": "2f1fe4967c307bba9ff8c6d870a1255350b3fd388556240e922c6be410ee6c17"
+    },
+    {
+      "file": "Backend/src/main/java/com/ofss/services/AdminAccountService.java",
+      "change": "Added",
+      "sha256": "04acff0501234ab158b8007e42e2bb91085295422c0a297bd748c30975b178ea"
+    },
+    {
+      "file": "Backend/src/main/java/com/ofss/services/BeneficiaryService.java",
+      "change": "Modified",
+      "sha256": "baf98e8fc64415cd7455dbc96d9f277d30f51a5aab60ec4891ab4e1911aa8238",
+      "originalSha256": "03d64b29280dbf5b3d4bd63bd7cc9da5e7304af6dd02150bdf7ace8ae0113a54"
+    },
+    {
+      "file": "Backend/src/main/java/com/ofss/services/BeneficiaryServiceImpl.java",
+      "change": "Modified",
+      "sha256": "01ef541e1789b273021068aa87ed2ae43a82dc3df2432401445a5c793e196a7d",
+      "originalSha256": "7774e26dc8b0ed96b93bdaa351e0848ae54d5a974f2e2c765330e4a8ed39cde7"
+    },
+    {
+      "file": "Backend/src/main/java/com/ofss/services/ExpiredTransactionSettlementService.java",
+      "change": "Added",
+      "sha256": "135aeb5819669486e74324520d28d4bffbef23ce18d8e859ae6e350f5620d636"
+    },
+    {
+      "file": "Backend/src/main/java/com/ofss/services/LoginService.java",
+      "change": "Modified",
+      "sha256": "0fea4d2ab684019d9ef44e4fcdbb3558fb535ac39060dc8a09c65890e88eb3bb",
+      "originalSha256": "f7b4f41ebabce1ce85540ea5df9b4c0c517012c596a9887e2e10ef098ff0107e"
+    },
+    {
+      "file": "Backend/src/main/java/com/ofss/services/ProfileService.java",
+      "change": "Added",
+      "sha256": "c42a29eff3aaacd555cd15b68de778f636ee712149577228863ae4bb4b76085d"
+    },
+    {
+      "file": "Backend/src/main/java/com/ofss/services/TransactionServiceImpl.java",
+      "change": "Modified",
+      "sha256": "99a534e04acf7d5f8b5151a551696ccc1716e71e836d8e3a418f58a5e98eb711",
+      "originalSha256": "07b09a2143371643f7cd2a5ce89513ea93541f0e75435ceac1a62015944711ec"
+    },
+    {
+      "file": "Backend/src/main/java/com/ofss/services/VerificationService.java",
+      "change": "Added",
+      "sha256": "35f839f4528d5be9e38668352ee938203e8ccde8275a582b2a3f53b9504dd8b4"
+    },
+    {
+      "file": "Backend/src/main/resources/application.properties",
+      "change": "Modified",
+      "sha256": "1ff7bae1eb4afb103938a5b646095ec25454ceb30162b03d5cffa68b51956148",
+      "originalSha256": "1689b7ca1b117f7d1052fe7f352abff953966c8c605dc2470339d76b4b1bc305"
+    },
+    {
+      "file": "Backend/src/main/resources/application.yml",
+      "change": "Modified",
+      "sha256": "bfd3f3608347bcadb2bd994923e9461a8fad3c968a8a7306b3318adb74d75833",
+      "originalSha256": "1e8caf0bdfb5baa965638e451ab314323df483f85fd4e75fe0d7b3457786c0d1"
+    },
+    {
+      "file": "Backend/src/test/java/com/ofss/controller/BeneficiaryBackendTest.java",
+      "change": "Modified",
+      "sha256": "4ed4bbb594e0c16d33fd1768879c8f672c6cd8b8450c0f3a24da31610bb85c6f",
+      "originalSha256": "92d20b9ef2974a8e893e5f92c9db219a3ec4a95389c8144e750d4a674c93ae5a"
+    },
+    {
+      "file": "Backend/src/test/java/com/ofss/controller/CustomerResourceTest.java",
+      "change": "Modified",
+      "sha256": "349b9a38130f5391b3ee73e3df9de1699a0d88c8f5af6aea367ba2e7f0827af8",
+      "originalSha256": "9efbc9758334cd4c8a7fffbf60c527ac5f6e96cd9c6eb0005f304544249e0153"
+    },
+    {
+      "file": "Backend/src/test/java/com/ofss/controller/EnhancedWorkflowIntegrationTest.java",
+      "change": "Added",
+      "sha256": "8a93392e091ddb5dee0fa85c8411518671b0b42f5f2e92a25851c492db444b48"
+    },
+    {
+      "file": "Backend/src/test/java/com/ofss/controller/FeatureAuthorizationTest.java",
+      "change": "Added",
+      "sha256": "5dd1c596f99af9505fbf5362cbd0cf81ced600c815dde955d567ebcd3bbb9154"
+    },
+    {
+      "file": "Backend/src/test/java/com/ofss/services/AdminAccountServiceTest.java",
+      "change": "Added",
+      "sha256": "c7cf015794658f65a68170f0de4df5b42d2d55222d9483dbbefccd3831f275bb"
+    },
+    {
+      "file": "Backend/src/test/java/com/ofss/services/ProfileServiceTest.java",
+      "change": "Added",
+      "sha256": "aa8258f945f037e82a6cf3bfae9245c4966516dba6702c6f7b7499bf9096ecb9"
+    },
+    {
+      "file": "Backend/src/test/java/com/ofss/services/TransactionDatabaseTest.java",
+      "change": "Added",
+      "sha256": "67cb5df7fe2acb8141437592df497f2019a1b5421c503b56af63afa178a30ea8"
+    },
+    {
+      "file": "Backend/src/test/java/com/ofss/services/TransactionPreRiskStageTest.java",
+      "change": "Modified",
+      "sha256": "7b671a8bd96f988c761f3c4dc63bed906d47969416062019a9e2d87b4c63b0a9",
+      "originalSha256": "ae2b2db77bfa23faef30044d856a8c8b9ca771b42983f1bf59d68d3417336ccb"
+    },
+    {
+      "file": "Backend/src/test/java/com/ofss/services/TransactionSafeguardsTest.java",
+      "change": "Added",
+      "sha256": "9a17c43e001d594939b089b4d09388d9764d83ebfaff769286272f192e8077d5"
+    },
+    {
+      "file": "Backend/src/test/java/com/ofss/services/VerificationServiceTest.java",
+      "change": "Added",
+      "sha256": "a619500ef7aaf3c9ac8b90cb184072b0e954537cf7cfb110228735dc878725fe"
+    },
+    {
+      "file": "Database/00_enhanced_fresh_schema.sql",
+      "change": "Added",
+      "sha256": "12b00769b129f5276d79ea051206101832f9ca19b1acbd9d7cd330c5f3d2541b"
+    },
+    {
+      "file": "Database/13_transaction_safeguards.sql",
+      "change": "Added",
+      "sha256": "e008ce03e5a9b62c9b8a99dcc66deaf8889bca0efc1d9fa9e898a52839d34c81"
+    },
+    {
+      "file": "docs/BEST_MODULES_AND_CHANGES.md",
+      "change": "Added",
+      "sha256": "85f2b9ffc510b15041802361355492b09e1c98ac2b974e2f8f73cf16fcc8089d"
+    },
+    {
+      "file": "docs/SafePay_Three_Version_Module_Comparison.md",
+      "change": "Added",
+      "sha256": "6f9d4793b68a9cfe03cfccfe7c3e1a48dce9876a12c9b552e3a397125aa1f7fc"
+    },
+    {
+      "file": "docs/VALIDATION.md",
+      "change": "Added",
+      "sha256": "aa8418c5eff151e1731129178685be16ac523bcf539f7d4083e6d9c3b1543d46"
+    },
+    {
+      "file": "Frontend/SafePayJet/scripts/hooks/before_serve.js",
+      "change": "Modified",
+      "sha256": "169a970663bc653450edac27781ebb75f57a638069c9083c15c4bee44e8e2b1c",
+      "originalSha256": "d39a34ed038844b2e0b9d3c8bfbed855578aa8293a6098512327a8ad6b27a27f"
+    },
+    {
+      "file": "Frontend/SafePayJet/src/css/auth-admin.css",
+      "change": "Added",
+      "sha256": "66d46df283d360ce7e3a04a3b309a13af9c5e46ba39e99a8f62b9bebf8762a88"
+    },
+    {
+      "file": "Frontend/SafePayJet/src/index.html",
+      "change": "Modified",
+      "sha256": "ba21b7329a7aa5823ed79b4c8392b6ad251b76527205ee6cf9e41864b484c29d",
+      "originalSha256": "64ab2aa56b9b1e4556622033dc84b63ffc29671044386184cebb1901953a6902"
+    },
+    {
+      "file": "Frontend/SafePayJet/src/ts/appController.ts",
+      "change": "Modified",
+      "sha256": "102e113fcfa9ed928c2f3eeb7625772dbe73f61035de468551c699c2896ba60f",
+      "originalSha256": "4583a26952cb173fb51e3db6e97c1dc9d5b69c4dfe75ecd8e352a1e3199dd4b9"
+    },
+    {
+      "file": "Frontend/SafePayJet/src/ts/services/adminService.ts",
+      "change": "Added",
+      "sha256": "a69d3de56a2d4d3e5572152dd0e6749fa65b661cb163b076a30d4e65473e9b6b"
+    },
+    {
+      "file": "Frontend/SafePayJet/src/ts/services/api.ts",
+      "change": "Modified",
+      "sha256": "c7a8598687f38fbcf74c31720913288a093117f72416af96b2d383e5c51938a4",
+      "originalSha256": "48f128dcf095e3131044a2d330d0e1e618e51f884a5b8722914dfd4673d9eb4d"
+    },
+    {
+      "file": "Frontend/SafePayJet/src/ts/services/apiClient.ts",
+      "change": "Modified",
+      "sha256": "a010b593940926faf4ef16d0c1bc91e3e7a6ba4dff0bd4b2273dfcd3f2cbf619",
+      "originalSha256": "809cd1719de4bd9c966a6ecdcd9c724160e99e64b3383fd2d1dc3bf951803c2d"
+    },
+    {
+      "file": "Frontend/SafePayJet/src/ts/services/customerService.ts",
+      "change": "Added",
+      "sha256": "d3cb120d7d7818884cb14699f12de235de5e3846996aba27168baead50522ecc"
+    },
+    {
+      "file": "Frontend/SafePayJet/src/ts/services/customerSession.ts",
+      "change": "Added",
+      "sha256": "f1925c21978675fc9a471a1e626665f75e20edefe24ab6e327b1de59f611e7b5"
+    },
+    {
+      "file": "Frontend/SafePayJet/src/ts/services/refreshLoop.ts",
+      "change": "Added",
+      "sha256": "bb0a0c904e175db28806d9888111d8ba6a0c13d132e065e412d3a5bf8514d0ca"
+    },
+    {
+      "file": "Frontend/SafePayJet/src/ts/services/retryKeys.ts",
+      "change": "Added",
+      "sha256": "1516b1492c25b87ba451b28f8f86c6b2dd123a908e8506e5a60b36cd3e417cce"
+    },
+    {
+      "file": "Frontend/SafePayJet/src/ts/services/sessionService.ts",
+      "change": "Added",
+      "sha256": "3113461a243d927982068dd913fb971541714fb6528715becc59afe718d10a86"
+    },
+    {
+      "file": "Frontend/SafePayJet/src/ts/services/transactionService.ts",
+      "change": "Modified",
+      "sha256": "fbb66dbd28238cf1c3326976265c4637b4e8da310f35454b25176d8947e7f11f",
+      "originalSha256": "db93cf964cfd074cc8cd4368c117bebcbaa9d1678dc7b65b259413bd957cb129"
+    },
+    {
+      "file": "Frontend/SafePayJet/src/ts/services/types.ts",
+      "change": "Modified",
+      "sha256": "a114c42a983741673a27b5ad59893726d78cea5a3c904da35d4ca7dfec8622db",
+      "originalSha256": "852f8baecb7801bf8ef444fc7923636cf1ee6276f30a65cd283185b3046c5250"
+    },
+    {
+      "file": "Frontend/SafePayJet/src/ts/viewModels/admin.ts",
+      "change": "Added",
+      "sha256": "c313cfa0649fea7bf86ff2c22e2ce442088fcc74a36b5a523aa4df004abdb42e"
+    },
+    {
+      "file": "Frontend/SafePayJet/src/ts/viewModels/beneficiaries.ts",
+      "change": "Modified",
+      "sha256": "7eb677f5694299dad94f7a1966bfa86f9006c88a4a722202d1d872752aaf6d7f",
+      "originalSha256": "2245064561a26b4708f194f5866d727b7f1c079c2e11d0464a7ae86dd6b208b1"
+    },
+    {
+      "file": "Frontend/SafePayJet/src/ts/viewModels/login.ts",
+      "change": "Modified",
+      "sha256": "7d87f19087142a76818e7f975c7298c9730f80f05053b386f1c8d4ad91f03f68",
+      "originalSha256": "4b23e2a4f0fc5b13795bd6da3d2957f4fb975f6670eb259224f67afb12fd4831"
+    },
+    {
+      "file": "Frontend/SafePayJet/src/ts/viewModels/profile.ts",
+      "change": "Added",
+      "sha256": "ca046439c8100026173959df4fc23d0e4e9ba691a7641241c8047c9388a52a46"
+    },
+    {
+      "file": "Frontend/SafePayJet/src/ts/viewModels/register.ts",
+      "change": "Added",
+      "sha256": "a537646bab18dd64cb81e972af735a30fdc03521b3951a86fa13fcd0f866739a"
+    },
+    {
+      "file": "Frontend/SafePayJet/src/ts/viewModels/send-money.ts",
+      "change": "Modified",
+      "sha256": "bb4462a6d8eab9ac68843bef4d502853535f7355bc5b3326a2f027b1df05f7a4",
+      "originalSha256": "a9f3d913a96c675c665c7101abcd0511de246027cc043cb1e61a802b64501bf9"
+    },
+    {
+      "file": "Frontend/SafePayJet/src/ts/viewModels/transactions.ts",
+      "change": "Modified",
+      "sha256": "2ef3e2b95ec361e14d7a2c20b28bf9fe815d4ffc351bcc76d3c5d36099382462",
+      "originalSha256": "976b56fe6448c6318f5a815fd06f340370e0598a7ee3df50194d0defe3338d0c"
+    },
+    {
+      "file": "Frontend/SafePayJet/src/ts/views/admin.html",
+      "change": "Added",
+      "sha256": "c31d2b3b7e87585bc87c387fbce8fbc679e2850b91df69a460c6a56505c2ea37"
+    },
+    {
+      "file": "Frontend/SafePayJet/src/ts/views/beneficiaries.html",
+      "change": "Modified",
+      "sha256": "f3f0008b3c2fc31bb1c394f162749ff8cdfe28ca887ea62cf2a4cf10b3497032",
+      "originalSha256": "a06b985e0140d68038f6dfd753b7039eebea586283d4c50b1def17217b22ce19"
+    },
+    {
+      "file": "Frontend/SafePayJet/src/ts/views/login.html",
+      "change": "Modified",
+      "sha256": "b1b130119f0f66fdcffc0c64278a42374a5157b2fa2615dada6aed6edbb89945",
+      "originalSha256": "53fb936c4a2947f649f85c17748fef2a1aee1c76f04ae6aac2034f0f3676e260"
+    },
+    {
+      "file": "Frontend/SafePayJet/src/ts/views/profile.html",
+      "change": "Added",
+      "sha256": "1b1f0058b0ef180236f770b23dec6c4249f9647c29018c6ed74c94498115f174"
+    },
+    {
+      "file": "Frontend/SafePayJet/src/ts/views/register.html",
+      "change": "Added",
+      "sha256": "8647a6ec6b64153227ba8b4788b4ce897965718f35b36edfefe35f44148fa6af"
+    },
+    {
+      "file": "Frontend/SafePayJet/src/ts/views/send-money.html",
+      "change": "Modified",
+      "sha256": "94d314c3f7e592b9136a9c0465faf22fbce7de039c55719e1d8999951f625ed7",
+      "originalSha256": "e591919b43153e75dcdf138af6fc9f8bb959121c56dcf45a1d091fb870dd5051"
+    },
+    {
+      "file": "Frontend/SafePayJet/src/ts/views/transactions.html",
+      "change": "Modified",
+      "sha256": "a0d4620cab13908ac15e6682b31c2b6e496afd88300293a6bcad9963c430c481",
+      "originalSha256": "c891f5acf7ac4c177d9f0f6e247c5c87a28728007bb6e5aa76ceef720381fb63"
+    },
+    {
+      "file": "Frontend/SafePayJet/tests/admin-services.test.cjs",
+      "change": "Added",
+      "sha256": "93ea88680282b378f0bbe082e470146734d25b43041b3831f8456cbeb023cab9"
+    },
+    {
+      "file": "Frontend/SafePayJet/tests/auth-admin.test.cjs",
+      "change": "Added",
+      "sha256": "6c0d17a33b5f341c875231e2547f2af6994cbfd4a6803b726fe9e240fabe5b70"
+    },
+    {
+      "file": "Frontend/SafePayJet/tests/customer-workflows.test.cjs",
+      "change": "Added",
+      "sha256": "c0bff0bd82bbd35ca82cab27a1e1f826690d47f89df9e407be6a79b8cb8d8f09"
+    },
+    {
+      "file": "Frontend/SafePayJet/tests/login.test.cjs",
+      "change": "Modified",
+      "sha256": "5ccf14241f8240317187a02a305880ca4b4a67a013c8b0dc9ddd9d692822c256",
+      "originalSha256": "ddbac54830b2dec9ab94b11c27e10d9648fe03e6dabcdee691ec69e12428665b"
+    },
+    {
+      "file": "Frontend/SafePayJet/tests/navigation.test.cjs",
+      "change": "Modified",
+      "sha256": "637685a02e9564c156081bc5798aa5d20d4c44a4ea6067bed8b38ad8e57b0f05",
+      "originalSha256": "f0bcd665a175d3e1f98dbf873e1c21d939f2d61f81114f5b0e3a54561bf4edb0"
+    },
+    {
+      "file": "Frontend/SafePayJet/tests/signed-in-email.test.cjs",
+      "change": "Modified",
+      "sha256": "e06f907c868d6d3e61edc3933f9f37c149d75408c6939abaead6c3581470d4d4",
+      "originalSha256": "7397d016545537e98e963153d2ed49ef9bd99c1eabfe683f0b1c61ad74e8f31f"
+    },
+    {
+      "file": "README.md",
+      "change": "Added",
+      "sha256": "a35dfb5dadc34701556cce6644072408a162993f36c68c8aab0bd2aeb10652f8"
+    }
+  ]
+}

@@ -1,129 +1,93 @@
-/**
- * @license
- * Copyright (c) 2014, 2026, Oracle and/or its affiliates.
- * Licensed under The Universal Permissive License (UPL), Version 1.0
- * as shown at https://oss.oracle.com/licenses/upl/
- * @ignore
- */
 import * as ko from "knockout";
-import * as ModuleUtils from "ojs/ojmodule-element-utils";
-import * as ResponsiveUtils from "ojs/ojresponsiveutils";
-import * as ResponsiveKnockoutUtils from "ojs/ojresponsiveknockoututils";
-import CoreRouter = require ("ojs/ojcorerouter");
+import CoreRouter = require("ojs/ojcorerouter");
 import ModuleRouterAdapter = require("ojs/ojmodulerouter-adapter");
 import KnockoutRouterAdapter = require("ojs/ojknockoutrouteradapter");
-import UrlParamAdapter = require("ojs/ojurlparamadapter");
-import ArrayDataProvider = require("ojs/ojarraydataprovider");
+import UrlPathAdapter = require("ojs/ojurlpathadapter");
+import { authService } from "./services/authService";
+import { CustomerIdentity } from "./services/profileService";
+import { sessionService } from "./services/sessionService";
+import { ApiError } from "./services/apiError";
+import { UserRole } from "./services/types";
+import Context = require("ojs/ojcontext");
 import "ojs/ojknockout";
 import "ojs/ojmodule-element";
-import { ojNavigationList } from "ojs/ojnavigationlist";
-import { ojModule } from "ojs/ojmodule-element";
-import Context = require("ojs/ojcontext");
-import "ojs/ojdrawerpopup";
 
-interface CoreRouterDetail {
-  label: string;
-  iconClass: string;
-};
-
+interface RouteDetail { label: string; }
 class RootViewModel {
-  manner: ko.Observable<string>;
-  message: ko.Observable<string|undefined>;
-  smScreen: ko.Observable<boolean>|undefined;
-  mdScreen: ko.Observable<boolean>|undefined;
-  router: CoreRouter<CoreRouterDetail>|undefined;
-  moduleAdapter: ModuleRouterAdapter<CoreRouterDetail>;
-  sideDrawerOn: ko.Observable<boolean>;
-  navDataProvider: ojNavigationList<string, CoreRouter.CoreRouterState<CoreRouterDetail>>["data"];
-  appName: ko.Observable<string>;
-  userLogin: ko.Observable<string>;
-  footerLinks: Array<object>;
-  selection: KnockoutRouterAdapter<CoreRouterDetail>;
-
-  constructor() {
-    // handle announcements sent when pages change, for Accessibility.
-    this.manner = ko.observable("polite");
-    this.message = ko.observable();
-
-    let globalBodyElement: HTMLElement = document.getElementById("globalBody") as HTMLElement;
-    globalBodyElement.addEventListener("announce", this.announcementHandler, false);
-
-    // media queries for responsive layouts
-    let smQuery: string | null = ResponsiveUtils.getFrameworkQuery("sm-only");
-    if (smQuery){
-      this.smScreen = ResponsiveKnockoutUtils.createMediaQueryObservable(smQuery);
-    }
-
-    let mdQuery: string | null = ResponsiveUtils.getFrameworkQuery("md-up");
-    if (mdQuery){
-      this.mdScreen = ResponsiveKnockoutUtils.createMediaQueryObservable(mdQuery);
-    }
-
-    const navData = [
-      { path: "", redirect: "dashboard" },
-      { path: "dashboard", detail: { label: "Dashboard", iconClass: "oj-ux-ico-bar-chart" } },
-      { path: "incidents", detail: { label: "Incidents", iconClass: "oj-ux-ico-fire" } },
-      { path: "customers", detail: { label: "Customers", iconClass: "oj-ux-ico-contact-group" } },
-      { path: "about", detail: { label: "About", iconClass: "oj-ux-ico-information-s" } }
-    ];
-    // router setup
-    const router = new CoreRouter(navData, {
-      urlAdapter: new UrlParamAdapter()
-    });
-    router.sync();
-
-    this.moduleAdapter = new ModuleRouterAdapter(router);
-
-    this.selection = new KnockoutRouterAdapter(router);
-
-    // Setup the navDataProvider with the routes, excluding the first redirected
-    // route.
-    this.navDataProvider = new ArrayDataProvider(navData.slice(1), {keyAttributes: "path"});
-
-    // drawer
-    this.sideDrawerOn = ko.observable(false);
-
-    // close drawer on medium and larger screens
-    this.mdScreen?.subscribe(() => {
-      this.sideDrawerOn(false);
-    });
-
-    // header
-
-    // application Name used in Branding Area
-    this.appName = ko.observable("App Name");
-    // user Info used in Global Navigation area
-
-    this.userLogin = ko.observable("john.hancock@oracle.com");
-    // footer
-    this.footerLinks = [
-      {name: 'About Oracle', linkId: 'aboutOracle', linkTarget:'http://www.oracle.com/us/corporate/index.html#menu-about'},
-      { name: "Contact Us", id: "contactUs", linkTarget: "http://www.oracle.com/us/corporate/contact/index.html" },
-      { name: "Legal Notices", id: "legalNotices", linkTarget: "http://www.oracle.com/us/legal/index.html" },
-      { name: "Terms Of Use", id: "termsOfUse", linkTarget: "http://www.oracle.com/us/legal/terms/index.html" },
-      { name: "Your Privacy Rights", id: "yourPrivacyRights", linkTarget: "http://www.oracle.com/us/legal/privacy/index.html" },
-    ];
-    // release the application bootstrap busy state
-    Context.getPageContext().getBusyContext().applicationBootstrapComplete();        
-  }
-
-  announcementHandler = (event: any): void => {
-      this.message(event.detail.message);
-      this.manner(event.detail.manner);
-  }
-
-  // called by navigation drawer toggle button and after selection of nav drawer item
-  toggleDrawer = (): void => {
-    this.sideDrawerOn(!this.sideDrawerOn());
-  }
-
-    // a close listener so we can move focus back to the toggle button when the drawer closes
-    openedChangedHandler = (event: CustomEvent): void => {
-    if (event.detail.value === false) {
-      const drawerToggleButtonElement = document.querySelector("#drawerToggleButton") as HTMLElement;
-      drawerToggleButtonElement.focus();
+  manner = ko.observable("polite");
+  message = ko.observable<string>();
+  loggingOut = ko.observable(false);
+  logoutError = ko.observable("");
+  profile = ko.observable<CustomerIdentity | null>(null);
+  profileLoading = ko.observable(false);
+  sessionRole = ko.observable<UserRole | null>(null);
+  sessionError = ko.observable("");
+  private profileGeneration = 0;
+  loadProfile = async (): Promise<void> => {
+    const generation = ++this.profileGeneration;
+    this.profile(null); this.sessionRole(null); this.sessionError(""); this.profileLoading(true);
+    try {
+      const session = await sessionService.restore(this.selection.path() === "admin");
+      if (generation !== this.profileGeneration) return;
+      this.profile(session.profile); this.sessionRole(session.role);
+      const path = this.selection.path();
+      if (session.role === "ADMIN" && path !== "admin" && !["login", "register"].includes(path)) window.location.replace("/admin");
+      else if (session.role === "CUSTOMER" && path === "admin") window.location.replace("/dashboard");
+    } catch (error) {
+      // Never show a cached identity when the current session cannot be verified.
+      if (generation === this.profileGeneration) {
+        this.profile(null); this.sessionRole(null);
+        if (error instanceof ApiError && error.status === 401) window.location.replace("/login?reason=session-expired");
+        else this.sessionError("We couldn’t verify your session. Refresh the page to try again.");
+      }
+    } finally {
+      if (generation === this.profileGeneration) this.profileLoading(false);
     }
   };
+  logout = async (): Promise<void> => {
+    if (this.loggingOut()) return;
+    this.loggingOut(true); this.logoutError("");
+    try {
+      await authService.logout();
+      this.profileGeneration++; this.profile(null); this.sessionRole(null);
+      window.location.replace("/login");
+    } catch {
+      this.logoutError("We couldn’t sign you out. Please try again.");
+      this.loggingOut(false);
+    }
+  };
+  customerNavItems = [
+    { path: "dashboard", label: "Dashboard", icon: "⌂" },
+    { path: "send-money", label: "Send Money", icon: "↗" },
+    { path: "beneficiaries", label: "Beneficiaries", icon: "♧" },
+    { path: "transactions", label: "Transactions", icon: "≡" },
+    { path: "profile", label: "Profile", icon: "○" }
+  ];
+  navItems = ko.pureComputed(() => this.sessionRole() === "ADMIN"
+    ? [{ path: "admin", label: "Administration", icon: "▦" }] : this.customerNavItems);
+  moduleAdapter: ModuleRouterAdapter<RouteDetail>;
+  selection: KnockoutRouterAdapter<RouteDetail>;
+  constructor() {
+    // Keep existing saved JET links working during the clean-route transition.
+    const legacy = new URLSearchParams(window.location.search).get("ojr");
+    if (legacy && ["/login", "/register", "/admin", ...this.customerNavItems.map(item => "/" + item.path)].includes(legacy)) {
+      window.history.replaceState(null, "", legacy);
+    }
+    document.getElementById("globalBody")!.addEventListener("announce", ((event: CustomEvent) => {
+      this.message(event.detail.message); this.manner(event.detail.manner);
+    }) as EventListener);
+    const router = new CoreRouter([{ path: "", redirect: "login" },
+      { path: "login", detail: { label: "Login" } },
+      { path: "register", detail: { label: "Create account" } },
+      { path: "admin", detail: { label: "Administration" } },
+      ...this.customerNavItems.map(item => ({ path: item.path, detail: { label: item.label } }))],
+      { urlAdapter: new UrlPathAdapter("/") });
+    this.moduleAdapter = new ModuleRouterAdapter(router);
+    this.selection = new KnockoutRouterAdapter(router);
+    void router.sync().then(() => {
+      if (!["login", "register"].includes(this.selection.path())) void this.loadProfile();
+    });
+    Context.getPageContext().getBusyContext().applicationBootstrapComplete();
+  }
 }
-
 export default new RootViewModel();

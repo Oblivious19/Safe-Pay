@@ -10,6 +10,15 @@
 module.exports = function (configObj) {
   return new Promise((resolve, reject) => {
     console.log('Running before_serve hook.');
+    // Serve the app shell for known browser routes, never for API or asset URLs.
+    const routes = new Set(['/login', '/register', '/admin', '/profile', '/dashboard', '/send-money', '/beneficiaries', '/transactions']);
+    configObj.preMiddleware = [...(configObj.preMiddleware || []), (req, res, next) => {
+      const pathname = req.url.split('?')[0].replace(/\/$/, '');
+      if ((req.method === 'GET' || req.method === 'HEAD') && routes.has(pathname)) {
+        req.url = '/index.html';
+      }
+      next();
+    }];
     // ojet custom connect and serve options
     // { connectOpts, serveOpts } = configObj;
     // const express = require('express');
