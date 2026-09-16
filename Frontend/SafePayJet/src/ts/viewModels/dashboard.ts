@@ -39,7 +39,7 @@ class DashboardViewModel {
   };
   statusLabel = (value: string): string => ({
     CREATED: "Payment started", AUTHORIZED: "Payment authorised", RISK_ASSESSED: "Payment checked",
-    PROTECTED: "In protection", HARD_HOLD: "Verification required", SETTLED: "Completed",
+    PROTECTED: "In protection", HARD_HOLD: "Awaiting admin approval", SETTLED: "Completed",
     CANCELLED: "Cancelled", REJECTED: "Not approved", RELEASED: "Processing"
   } as Record<string, string>)[value] || "Processing";
   riskClass = (t: PaymentTransaction): string => t.state === "HARD_HOLD" || ["VERY_HIGH", "HARD_HOLD"].includes(t.riskTier)

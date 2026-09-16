@@ -30,7 +30,7 @@ public final class RiskAssessmentEngine {
                     explanation + " is above INR 50,000 and at most INR 100,000: HIGH, 60-second protection window.", false);
         }
         return new RuleBasedRiskResult(AssessmentRiskTier.VERY_HIGH, true, 0,
-                explanation + " is above INR 100,000: VERY_HIGH, authentication required before settlement.", true);
+                explanation + " is above INR 100,000: VERY_HIGH, administrator approval required before settlement.", true);
     }
 
     /** Compatibility adapter: beneficiary, history, device and context no longer affect this policy. */

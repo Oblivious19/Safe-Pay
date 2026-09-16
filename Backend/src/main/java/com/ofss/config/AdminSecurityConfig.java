@@ -34,6 +34,8 @@ public class AdminSecurityConfig {
         return http.securityMatcher("/api/admin", "/api/admin/**")
                 .securityContext(context -> context.securityContextRepository(repository).requireExplicitSave(true))
                 .authorizeHttpRequests(requests -> requests
+                        .requestMatchers(HttpMethod.GET, "/api/admin/transactions/hard-holds").access(admin)
+                        .requestMatchers(HttpMethod.POST, "/api/admin/transactions/*/approve").access(admin)
                         .requestMatchers(HttpMethod.GET, "/api/admin/users", "/api/admin/users/*", "/api/admin/users/*/accounts", "/api/admin/accounts").access(admin)
                         .requestMatchers(HttpMethod.POST, "/api/admin/users", "/api/admin/accounts/*/interest-credits").access(admin)
                         .requestMatchers(HttpMethod.PUT, "/api/admin/accounts/*").access(admin)

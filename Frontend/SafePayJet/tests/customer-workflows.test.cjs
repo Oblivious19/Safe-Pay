@@ -256,3 +256,19 @@ test('explicit reviewed-payment retry key remains usable after an already succes
   store.clearPendingPayment('another-key', session); assert.ok(store.readPendingPayment(session));
   assert.equal(f.storage.size, 0); client.clearSession(); assert.equal(store.readPendingPayment(session), null);
 });
+
+test('admin approval uses session CSRF and retains its key across uncertain response and reload',async()=>{
+  const storage=new Map();const first=fixture([json([],200,'admin-csrf'),new Error('connection lost')],storage);
+  first.load('apiClient').apiClient.useAdminCsrf(true);
+  const api=first.load('api'),admin=first.load('adminService').adminService;
+  await assert.rejects(api.withRetryKey('approve:3',key=>admin.approve(3,key)));
+  const key=first.calls[1].headers.get('Idempotency-Key');
+  assert.equal(first.calls[1].url,'http://localhost:8080/api/admin/transactions/3/approve');
+  assert.equal(first.calls[1].headers.get('X-CSRF-TOKEN'),'admin-csrf');
+  assert.equal(first.calls[1].body,undefined);
+  const second=fixture([json([],200,'fresh-token'),json({state:'SETTLED'})],storage);
+  second.load('apiClient').apiClient.useAdminCsrf(true);
+  await second.load('api').withRetryKey('approve:3',k=>second.load('adminService').adminService.approve(3,k));
+  assert.equal(second.calls[1].headers.get('Idempotency-Key'),key);
+  assert.equal(JSON.stringify([...storage.values()]).includes('approve:3'),false);
+});

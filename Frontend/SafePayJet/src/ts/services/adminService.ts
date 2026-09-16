@@ -3,6 +3,11 @@ import { validCredit } from "./adminCreditDraft";
 import { ApiError, resourceId } from "./apiError";
 import { AccountStatus, AccountType, UserRole, UserStatus } from "./types";
 
+export interface ApprovalRequest {
+  transactionId: number; transactionRef: string; amount: string; userId: number; customerName: string;
+  fromAccountId: number; sourceAccountNumber: string; beneficiaryName: string;
+  beneficiaryBankAccountNumber: string; beneficiaryIfsc: string; purpose: string; riskReason: string; createdAt: string;
+}
 export interface AdminUser {
   userId: number; name: string; email: string; phone: string; role: UserRole;
   status: UserStatus; createdAt: string; updatedAt: string;
@@ -15,6 +20,10 @@ export interface UserAccounts { accountId: number; accountNumber: string; accoun
 export interface CreditReceipt { accountId: number; amount: string; balanceBefore: string; balanceAfter: string; createdAt: string; description: string; }
 export interface ProvisionUser { name: string; email: string; phone: string; initialPassword: string; }
 export const adminService = {
+  pendingApprovals(): Promise<ApprovalRequest[]> { return apiClient.request("/api/admin/transactions/hard-holds"); },
+  approve(id: number, key: string): Promise<import("./types").PaymentTransaction> {
+    return apiClient.request("/api/admin/transactions/" + resourceId(id) + "/approve", { method: "POST", csrf: true, idempotencyKey: key });
+  },
   user(id: number): Promise<AdminUser> { return apiClient.request("/api/admin/users/" + resourceId(id)); },
   userAccounts(id: number): Promise<UserAccounts[]> { return apiClient.request("/api/admin/users/" + resourceId(id) + "/accounts"); },
   createUser(input: ProvisionUser): Promise<AdminUser> {

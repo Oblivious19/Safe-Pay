@@ -34,6 +34,7 @@ public class CustomerResourceSecurityConfig {
                         "/api/users", "/api/users/**", "/api/beneficiaries", "/api/beneficiaries/**")
                 .securityContext(context -> context.securityContextRepository(repository).requireExplicitSave(true))
                 .authorizeHttpRequests(requests -> requests
+                        .requestMatchers(HttpMethod.POST, "/api/transactions/*/verify").denyAll()
                         .requestMatchers("/api/users").denyAll()
                         .requestMatchers(HttpMethod.GET, "/api/users/current", "/api/users/*").access(customer)
                         .requestMatchers(HttpMethod.PUT, "/api/users/current").access(customer)

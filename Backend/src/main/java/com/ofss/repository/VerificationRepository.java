@@ -9,6 +9,15 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface VerificationRepository extends JpaRepository<TransactionDb, Long> {
+    @Query("select t.fromAccount.accountId from TransactionDb t where t.transactionId = :id")
+    Optional<Long> accountId(@Param("id") Long id);
+
+    @EntityGraph(attributePaths = {"fromAccount", "fromAccount.user", "beneficiary"})
+    Optional<TransactionDb> findByTransactionId(Long id);
+
+    @EntityGraph(attributePaths = {"fromAccount", "fromAccount.user", "beneficiary"})
+    java.util.List<TransactionDb> findByStateOrderByCreatedAtAscTransactionIdAsc(com.ofss.beans.TransactionState state);
+
     @Query("select t.fromAccount.accountId from TransactionDb t where t.transactionId = :id "
             + "and t.fromAccount.user.userId = :owner")
     Optional<Long> ownedAccountId(@Param("id") Long id, @Param("owner") Long owner);

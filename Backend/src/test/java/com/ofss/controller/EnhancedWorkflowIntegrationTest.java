@@ -129,16 +129,19 @@ class EnhancedWorkflowIntegrationTest {
         String verifyKey = UUID.randomUUID().toString();
         String heldPath = "/api/transactions/" + heldId;
         customer.call("POST", heldPath + "/verify", Map.of("password", "incorrect"), 403, verifyKey, true);
-        assertEquals(1, jdbc.queryForObject("select failed_login_attempts from users where user_id=?", Integer.class, userId));
+        assertEquals(0, jdbc.queryForObject("select failed_login_attempts from users where user_id=?", Integer.class, userId));
         assertEquals("HARD_HOLD", customer.call("GET", heldPath, null, 200).path("state").asText());
-        JsonNode verified = customer.call("POST", heldPath + "/verify", Map.of("password", password), 200, verifyKey, true);
+        customer.call("POST", heldPath + "/verify", Map.of("password", password), 403, verifyKey, true);
+        customer.call("POST", "/api/admin/transactions/" + heldId + "/approve", null, 403, verifyKey, true);
+        assertEquals(1, admin.call("GET", "/api/admin/transactions/hard-holds", null, 200).size());
+        JsonNode verified = admin.call("POST", "/api/admin/transactions/" + heldId + "/approve", null, 200, verifyKey, true);
         assertEquals("SETTLED", verified.path("state").asText());
         assertFalse(verified.path("verifiedAt").asText().isBlank());
         assertFalse(verified.has("password"));
         assertFalse(verified.has("verificationIdempotencyKey"));
-        customer.call("POST", heldPath + "/verify", Map.of("password", password), 200, verifyKey, true);
+        admin.call("POST", "/api/admin/transactions/" + heldId + "/approve", null, 200, verifyKey, true);
         assertMoney("385000.00", customer.call("GET", "/api/accounts/current", null, 200).path("balance"));
-        assertEquals(1, auditCount(heldId, "TRANSACTION_VERIFIED_SETTLED"));
+        assertEquals(1, auditCount(heldId, "ADMIN_APPROVED_SETTLED"));
         assertEquals(0, jdbc.queryForObject("select failed_login_attempts from users where user_id=?", Integer.class, userId));
 
         Map<String, Object> mediumPayment = Map.of("fromAccountId", accountId, "beneficiaryId", beneficiaryId,

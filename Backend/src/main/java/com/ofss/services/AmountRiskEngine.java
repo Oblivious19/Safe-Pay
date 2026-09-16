@@ -25,6 +25,6 @@ public class AmountRiskEngine {
             return new RiskAssessment(RiskTier.HIGH, 60, false, "Amount is within the High-risk range.");
         }
         return new RiskAssessment(RiskTier.HARD_HOLD, 0, true,
-                "Amount is above the High-risk limit and requires authentication.");
+                "Amount is above the High-risk limit and requires administrator approval.");
     }
 }

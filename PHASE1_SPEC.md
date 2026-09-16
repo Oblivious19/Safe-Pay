@@ -208,3 +208,8 @@ combinations, exact expiry boundaries, ownership and invalid protection decision
 - `GET /transactions?status=PROTECTED` (etc.) returns the right filtered list.
 - Unit tests exist for the amount-range engine covering every boundary case.
 
+
+
+## HARD_HOLD administrator approval — explicit user change, 16 September 2026
+
+This narrowly supersedes earlier customer password verification instructions and the approval-queue exclusion for retail HARD_HOLD payments only. An active ADMIN session approves through POST /api/admin/transactions/{id}/approve with CSRF and Idempotency-Key. Customers cannot release HARD_HOLD through the former /verify route. GET /api/admin/transactions/hard-holds supplies persistent in-app notifications, polled every five seconds while Administration is open. Approval changes HARD_HOLD directly to SETTLED, debits once under the source-account lock, preserves all other reservations/minimum balance, and atomically audits the administrator ID and timestamp. No automatic release, rejection flow, new roles or schema change. Existing risk reasons and settled transactions remain unchanged. All amount thresholds and timed holds remain unchanged.

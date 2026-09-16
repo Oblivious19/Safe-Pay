@@ -59,7 +59,7 @@ export function addBeneficiary(accountId: number, _legacyEmail: string, input: B
 // Only cancel/verify keys also survive a tab reload; passwords are never stored.
 const pendingOperations = new Map<string, string>();
 let operationSession = -1;
-async function withRetryKey<T>(signature: string, operation: (key: string) => Promise<T>): Promise<T> {
+export async function withRetryKey<T>(signature: string, operation: (key: string) => Promise<T>): Promise<T> {
   const session = apiClient.sessionRevision();
   if (operationSession !== session) { pendingOperations.clear(); operationSession = session; }
   const key = pendingOperations.get(signature) || readRetryKey(signature) || newIdempotencyKey();

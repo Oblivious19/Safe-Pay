@@ -45,17 +45,19 @@ test('registration displays server duplicate conflict without navigating', async
   await f.model.register(); assert.match(f.model.error(), /Phone/); assert.equal(f.redirects.length, 0);
 });
 function administration(overrides = {}) {
-  const redirects = [], calls = [];
+  const redirects = [], calls = [], timers = new Map(); let timerId = 0;
   const user = { userId: 1, name: 'Customer', email: 'user@example.test', phone: '9876543210', role: 'CUSTOMER', status: 'ACTIVE' };
   const account = { accountId: 2, userId: 1, accountNumber: '1000000001', balance: 25000, accountType: 'SAVINGS', status: 'ACTIVE' };
-  const admin = { users: async () => [user], accounts: async () => [account], user: async () => user, userAccounts: async () => [{ ...account, balance: '25000.00' }, { ...account, accountId: 3, balance: '90000.25' }], createUser: async () => ({ ...user, userId: 5, role: 'ADMIN' }), setUserStatus: async (id, status) => ({ ...user, status }), setAccountStatus: async (id, status) => ({ ...account, status }), updateAccount: async (id, balance, accountType) => ({ ...account, balance, accountType }), ...overrides };
+  const admin = { pendingApprovals: async () => [], users: async () => [user], accounts: async () => [account], user: async () => user, userAccounts: async () => [{ ...account, balance: '25000.00' }, { ...account, accountId: 3, balance: '90000.25' }], createUser: async () => ({ ...user, userId: 5, role: 'ADMIN' }), setUserStatus: async (id, status) => ({ ...user, status }), setAccountStatus: async (id, status) => ({ ...account, status }), updateAccount: async (id, balance, accountType) => ({ ...account, balance, accountType }), ...overrides };
   const Model = load('viewModels/admin.ts', {
     '../services/adminService': { adminService: admin },
+    '../services/refreshLoop': load('services/refreshLoop.ts', {}, { setTimeout: fn => { timers.set(++timerId, fn); return timerId; }, clearTimeout: id => timers.delete(id) }),
+    '../services/api': { withRetryKey: (signature, operation) => operation('approval-retry-key') },
     '../services/adminCreditDraft': load('services/adminCreditDraft.ts'),
     '../services/apiClient': { apiClient: { useAdminCsrf() {} } },
     '../services/adminReportService': { adminReportService: { summary: async () => ({}), daily: async (from, to) => { calls.push([from, to]); return []; } } }
   }, { window: { location: { replace: url => redirects.push(url) } }, crypto: { randomUUID: () => 'credit-retry-key' } });
-  return { model: new Model(), redirects, calls, user, account };
+  return { model: new Model(), redirects, calls, user, account, timers };
 }
 test('admin page verifies role before loading account data', async () => {
   let accounts = 0;
@@ -152,4 +154,33 @@ test('late successful credit across reconnect reuses the retained original opera
   finishFirst({ accountId: 2, amount: '100', balanceBefore: '25000', balanceAfter: '25100', createdAt: 'original-time' }); await pending;
   assert.ok(f.model.creditDraft()); await f.model.submitCredit();
   assert.deepEqual(calls[0], calls[1]); assert.equal(f.model.creditReceipt().createdAt, 'original-time');
+});
+test('admin approval notifications poll an empty inbox and stop on disconnect', async () => {
+  let reads=0;
+  const f=administration({ pendingApprovals: async () => (++reads === 1 ? [] : [{ transactionId: 7, amount: '120000.00' }]) });
+  await f.model.load(); assert.equal(f.model.approvals().length,0); assert.equal(f.timers.size,1);
+  const [id, next]=[...f.timers.entries()][0]; f.timers.delete(id); next();
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(f.model.approvals().length,1);
+  f.model.disconnected(); assert.equal(f.timers.size,0); assert.equal(f.model.approvals().length,0);
+});
+test('approval requires review, suppresses duplicate clicks and refreshes the inbox', async () => {
+  let finish,calls=0,approved=false; const request={transactionId:7,amount:'120000.00'};
+  const f=administration({pendingApprovals:async()=>approved?[]:[request],approve:(id,key)=>{
+    calls++;assert.equal(id,7);assert.equal(key,'approval-retry-key');return new Promise(resolve=>{finish=()=>{approved=true;resolve({state:'SETTLED'});};});
+  }});
+  await f.model.load(); await f.model.approvePayment(); assert.equal(calls,0);
+  f.model.reviewApproval(request);const operation=f.model.approvePayment();await f.model.approvePayment();assert.equal(calls,1);
+  finish();await operation;assert.equal(f.model.approvals().length,0);assert.equal(f.model.approvalTarget(),null);assert.match(f.model.notice(),/approved and settled/);
+  f.model.disconnected();
+});
+test('a late approval response cannot repopulate a disconnected admin page', async () => {
+  let finish;const request={transactionId:7,amount:'120000.00'};
+  const f=administration({pendingApprovals:async()=>[request],approve:()=>new Promise(resolve=>{finish=resolve;})});
+  await f.model.load();f.model.reviewApproval(request);const operation=f.model.approvePayment();f.model.disconnected();
+  finish({state:'SETTLED'});await operation;assert.equal(f.model.approvals().length,0);assert.equal(f.model.notice(),'');assert.equal(f.timers.size,0);
+});
+test('customers have no password verification controls in their transaction view',()=>{
+  const html=fs.readFileSync(path.join(__dirname,'../src/ts/views/transactions.html'),'utf8');
+  assert.match(html,/Awaiting admin approval/);assert.doesNotMatch(html,/verificationTarget|openVerification|type="password"/);
 });

@@ -1,12 +1,43 @@
 import * as ko from "knockout";
-import { adminService, AdminUser, AdminAccount, UserAccounts, CreditReceipt } from "../services/adminService";
+import { adminService, AdminUser, AdminAccount, UserAccounts, CreditReceipt, ApprovalRequest } from "../services/adminService";
 import { adminReportService } from "../services/adminReportService";
 import { apiClient } from "../services/apiClient";
 import { ApiError } from "../services/apiError";
 import { AccountType, UserStatus, TransactionSummary, DailyTransactionSummary } from "../services/types";
 
 import { CreditDraft, readCreditDraft, saveCreditDraft, clearCreditDraft, validCredit } from "../services/adminCreditDraft";
+import { RefreshLoop } from "../services/refreshLoop";
+import { withRetryKey } from "../services/api";
 class AdminViewModel {
+  approvals = ko.observableArray<ApprovalRequest>([]);
+  approvalsError = ko.observable("");
+  approvalTarget = ko.observable<ApprovalRequest | null>(null);
+  private approvalPoll = new RefreshLoop(
+    () => adminService.pendingApprovals(),
+    rows => { if (this.verified()) { this.approvals(rows); this.approvalsError(""); } },
+    error => { this.approvalsError(this.message(error)); },
+    () => this.verified()
+  );
+  refreshApprovals = (): Promise<void> => this.approvalPoll.refresh();
+  reviewApproval = (request: ApprovalRequest): void => {
+    if (!this.disabled()) { this.approvalTarget(request); this.actionError(""); }
+  };
+  closeApproval = (): void => { if (!this.busy()) this.approvalTarget(null); };
+  approvePayment = async (): Promise<void> => {
+    const target = this.approvalTarget();
+    if (!target || this.disabled()) return;
+    const generation = this.generation;
+    this.approvalPoll.invalidate();
+    await this.mutate(async () => {
+      await withRetryKey("approve:" + target.transactionId, key => adminService.approve(target.transactionId, key));
+      if (generation !== this.generation || !this.verified()) return;
+      this.approvals.remove(item => item.transactionId === target.transactionId);
+      this.approvalTarget(null);
+    }, "Payment approved and settled. The administrator and approval time were recorded in the audit log.");
+    if (generation === this.generation && this.verified()) await this.approvalPoll.refresh();
+  };
+  private clearApprovals(): void { this.approvalPoll.stop(); this.approvals([]); this.approvalTarget(null); }
+
   selectedUser = ko.observable<AdminUser | null>(null);
   userAccounts = ko.observableArray<UserAccounts>([]);
   detailLoading = ko.observable(false);
@@ -128,7 +159,7 @@ class AdminViewModel {
 
   private message(error: unknown): string {
     if (error instanceof ApiError && error.status === 401) {
-      this.clearDetails(); this.creditDraft(null); clearCreditDraft();
+      this.clearApprovals(); this.clearDetails(); this.creditDraft(null); clearCreditDraft();
       this.reportGeneration++;
       this.reportsLoading(false);
       this.verified(false); this.users([]); this.accounts([]); this.summary(null); this.daily([]);
@@ -136,7 +167,7 @@ class AdminViewModel {
       return "Please sign in to continue.";
     }
     if (error instanceof ApiError && error.status === 403) {
-      this.clearDetails(); this.verified(false); this.users([]); this.accounts([]); this.summary(null); this.daily([]);
+      this.clearApprovals(); this.clearDetails(); this.verified(false); this.users([]); this.accounts([]); this.summary(null); this.daily([]);
       return "Administrator access or a refreshed security token is required. Reload and try again.";
     }
     return error instanceof ApiError ? error.message : "We couldn’t complete this request. Please try again.";
@@ -145,14 +176,14 @@ class AdminViewModel {
   load = async (): Promise<void> => {
     if (this.busy()) return;
     const generation = ++this.generation;
-    this.loading(true); this.verified(false); this.clearDetails(); this.creditDraft(readCreditDraft());
+    this.clearApprovals(); this.loading(true); this.verified(false); this.clearDetails(); this.creditDraft(readCreditDraft());
     this.users([]); this.accounts([]); this.summary(null);
     this.usersError(""); this.accountsError(""); this.summaryError("");
     try {
       // This protected request establishes that the current server session is an administrator.
       const users = await adminService.users();
       if (generation !== this.generation) return;
-      this.users(users); this.verified(true); apiClient.useAdminCsrf(true);
+      this.users(users); this.verified(true); apiClient.useAdminCsrf(true); this.approvalPoll.start();
     } catch (error) {
       if (generation === this.generation) { this.usersError(this.message(error)); this.loading(false); }
       return;
@@ -232,7 +263,7 @@ class AdminViewModel {
   };
   connected(): void { document.title = "Administration | SafePay"; void this.load(); }
   disconnected(): void {
-    this.generation++; this.reportGeneration++; this.verified(false); this.clearDetails();
+    this.clearApprovals(); this.generation++; this.reportGeneration++; this.verified(false); this.clearDetails();
     this.busy(false); this.loading(false); this.reportsLoading(false); this.dailyLoaded(false);
     this.editingId(null); this.balance(""); this.users([]); this.accounts([]); this.summary(null); this.daily([]);
   }

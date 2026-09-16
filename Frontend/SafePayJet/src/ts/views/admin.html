@@ -4,6 +4,34 @@
   <p class="login-message" role="alert" data-bind="visible: actionError, text: actionError"></p>
   <p class="auth-success" role="status" data-bind="visible: notice, text: notice"></p>
 
+  <section class="admin-card" aria-labelledby="admin-approvals-title" data-bind="visible: verified">
+    <h2 id="admin-approvals-title">Payment approval notifications</h2>
+    <p role="status" aria-live="polite" data-bind="text: approvals().length + ' payments awaiting admin approval'"></p>
+    <p>HARD_HOLD requests refresh every five seconds while this page is open. Review the payment before approving settlement.</p>
+    <p class="login-message" role="alert" data-bind="visible: approvalsError, text: approvalsError"></p>
+    <button class="dashboard-secondary" data-bind="click: refreshApprovals, disable: busy">Refresh requests</button>
+    <div data-bind="foreach: approvals"><article class="result-card">
+      <strong data-bind="text: transactionRef"></strong> — <strong data-bind="text: $parent.exactMoney(amount)"></strong>
+      <p><span data-bind="text: customerName"></span> → <span data-bind="text: beneficiaryName"></span></p>
+      <button class="dashboard-primary" data-bind="click: $parent.reviewApproval, disable: $parent.disabled">Review request</button>
+    </article></div>
+    <section class="result-card" data-bind="with: approvalTarget" aria-label="Review payment approval">
+      <h3>Confirm payment approval</h3>
+      <p><strong data-bind="text: transactionRef"></strong> · <strong data-bind="text: $parent.exactMoney(amount)"></strong></p>
+      <dl>
+        <dt>Customer</dt><dd data-bind="text: customerName + ' (ID ' + userId + ')'"></dd>
+        <dt>Source account</dt><dd data-bind="text: sourceAccountNumber"></dd>
+        <dt>Beneficiary</dt><dd data-bind="text: beneficiaryName"></dd>
+        <dt>Beneficiary account / IFSC</dt><dd data-bind="text: beneficiaryBankAccountNumber + ' / ' + beneficiaryIfsc"></dd>
+        <dt>Purpose</dt><dd data-bind="text: purpose || 'Not provided'"></dd>
+        <dt>Created</dt><dd data-bind="text: createdAt"></dd>
+      </dl>
+      <p>Approving settles this simulated payment and debits the source account once.</p>
+      <button class="dashboard-primary" data-bind="click: $parent.approvePayment, disable: $parent.disabled">Approve and settle</button>
+      <button class="dashboard-secondary" data-bind="click: $parent.closeApproval, disable: $parent.busy">Close</button>
+    </section>
+  </section>
+
   <section class="admin-card" aria-labelledby="admin-users-title"><h2 id="admin-users-title">Users</h2>
     <p class="login-message" role="alert" data-bind="visible: usersError, text: usersError"></p>
     <p data-bind="visible: !loading() && !usersError() && !users().length">No users found.</p>

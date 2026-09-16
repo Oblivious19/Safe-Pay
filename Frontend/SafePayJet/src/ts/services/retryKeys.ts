@@ -1,7 +1,7 @@
 // Payment operation keys survive a reload in the same browser tab. No password,
 // payment payload, identity, cookie or authentication token is stored here.
 const storageKey = "safepay.paymentOperationKeys.v1";
-const operationPattern = /^(cancel|verify):[1-9]\d*$/;
+const operationPattern = /^(cancel|verify|approve):[1-9]\d*$/;
 function read(): Record<string, string> {
   try {
     if (typeof sessionStorage === "undefined") return {};

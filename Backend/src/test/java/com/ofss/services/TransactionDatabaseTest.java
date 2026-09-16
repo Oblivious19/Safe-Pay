@@ -29,6 +29,20 @@ class TransactionDatabaseTest {
     @Autowired TransactionDao transactions;
     @Autowired TransactionService service;
     @Autowired VerificationService verification;
+    @Autowired AdminApprovalService approvals;
+    @Autowired RoleDao roles;
+    @Autowired UserDao userDao;
+    LoginPrincipal admin;
+    @BeforeEach void administrator() {
+        Role role = roles.findByRoleName("ADMIN").orElseGet(() -> {
+            Role created = new Role(); created.setRoleName("ADMIN"); return roles.save(created);
+        });
+        User actor = new User(); actor.setName("Admin"); actor.setEmail(UUID.randomUUID()+"@admin.test");
+        actor.setPhone(UUID.randomUUID().toString().substring(0,10)); actor.setPasswordHash("unused-test-hash");
+        actor.setRole(role); actor.setStatus(UserStatus.ACTIVE);
+        actor.setCreatedAt(LocalDateTime.now()); actor.setUpdatedAt(LocalDateTime.now()); actor = userDao.save(actor);
+        admin = new LoginPrincipal(actor.getUserId(),actor.getName(),actor.getEmail(),"ADMIN",UserStatus.ACTIVE);
+    }
     @Autowired JdbcTemplate jdbc;
     @Autowired PlatformTransactionManager manager;
     Account account;
@@ -81,7 +95,7 @@ class TransactionDatabaseTest {
         assertEquals(0, changed);
     }
 
-    @Test void realRiskEngineHardHoldRequiresPasswordAndReplayDoesNotDebitAgain() {
+    @Test void realRiskEngineHardHoldRequiresAdminAndReplayDoesNotDebitAgain() {
         TransactionDb t = service.initiate(account.getAccountId(), beneficiary.getBeneficiaryId(),
                 new BigDecimal("110000.00"), "Verification test", UUID.randomUUID().toString(), account.getUserId());
         assertEquals(TransactionState.HARD_HOLD, t.getState());
@@ -89,21 +103,76 @@ class TransactionDatabaseTest {
         assertTrue(t.isAuthenticationRequired());
         assertNull(t.getProtectionExpiresAt());
         String key = UUID.randomUUID().toString();
-        assertThrows(com.ofss.excp.ResourceNotFoundExcp.class,
+        assertThrows(com.ofss.excp.TransactionValidationException.class,
                 () -> verification.verify(t.getTransactionId(), account.getUserId() + 1000000L, "Payment#2026", key));
-        assertThrows(org.springframework.security.authentication.BadCredentialsException.class,
+        assertThrows(com.ofss.excp.TransactionValidationException.class,
                 () -> verification.verify(t.getTransactionId(), account.getUserId(), "wrong", key));
-        assertEquals(1, jdbc.queryForObject("select failed_login_attempts from users where user_id=?", Integer.class, account.getUserId()));
+        assertEquals(0, jdbc.queryForObject("select failed_login_attempts from users where user_id=?", Integer.class, account.getUserId()));
         assertEquals(TransactionState.HARD_HOLD, transactions.findById(t.getTransactionId()).orElseThrow().getState());
         assertEquals(0, accounts.findById(account.getAccountId()).orElseThrow().getBalance().compareTo(new BigDecimal("500000.00")));
-        verification.verify(t.getTransactionId(), account.getUserId(), "Payment#2026", key);
-        verification.verify(t.getTransactionId(), account.getUserId(), "Payment#2026", key);
+        approvals.approve(t.getTransactionId(), admin, key);
+        approvals.approve(t.getTransactionId(), admin, key);
         TransactionDb settled = transactions.findById(t.getTransactionId()).orElseThrow();
         assertEquals(TransactionState.SETTLED, settled.getState()); assertNotNull(settled.getVerifiedAt());
         assertEquals(0, accounts.findById(account.getAccountId()).orElseThrow().getBalance().compareTo(new BigDecimal("390000.00")));
         assertEquals(0, jdbc.queryForObject("select failed_login_attempts from users where user_id=?", Integer.class, account.getUserId()));
-        assertEquals(1, jdbc.queryForObject("select count(*) from audit_log where transaction_id=? and action='TRANSACTION_VERIFIED_SETTLED'",
+        assertEquals(1, jdbc.queryForObject("select count(*) from audit_log where transaction_id=? and action='ADMIN_APPROVED_SETTLED'",
                 Integer.class, t.getTransactionId()));
+    }
+
+    @Test void concurrentAdminApprovalsDebitOnceAndNotifyFromDatabase() throws Exception {
+        TransactionDb t = service.initiate(account.getAccountId(), beneficiary.getBeneficiaryId(),
+                new BigDecimal("120000.00"), "Concurrent approval", UUID.randomUUID().toString(), account.getUserId());
+        assertTrue(approvals.pending(admin).stream().anyMatch(row -> row.transactionId().equals(t.getTransactionId())));
+        String key = UUID.randomUUID().toString();
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        try {
+            Future<VerifiedTransactionResponse> one = pool.submit(() -> approvals.approve(t.getTransactionId(), admin, key));
+            Future<VerifiedTransactionResponse> two = pool.submit(() -> approvals.approve(t.getTransactionId(), admin, key));
+            assertEquals("SETTLED", one.get(20, TimeUnit.SECONDS).state());
+            assertEquals("SETTLED", two.get(20, TimeUnit.SECONDS).state());
+        } finally { pool.shutdownNow(); }
+        assertEquals(new BigDecimal("380000.00"), accounts.findById(account.getAccountId()).orElseThrow().getBalance());
+        assertEquals(1, jdbc.queryForObject("select count(*) from audit_log where transaction_id=? and action='ADMIN_APPROVED_SETTLED' and user_id=?",
+                Integer.class, t.getTransactionId(), admin.userId()));
+        assertFalse(approvals.pending(admin).stream().anyMatch(row -> row.transactionId().equals(t.getTransactionId())));
+        assertThrows(com.ofss.excp.TransactionValidationException.class,
+                () -> approvals.approve(t.getTransactionId(), admin, UUID.randomUUID().toString()));
+    }
+
+    @Test void competingAdminsWithDifferentKeysCannotDebitTwice() throws Exception {
+        TransactionDb t = service.initiate(account.getAccountId(), beneficiary.getBeneficiaryId(),
+                new BigDecimal("120000.00"), "Competing admins", UUID.randomUUID().toString(), account.getUserId());
+        LoginPrincipal firstAdmin = admin; administrator(); LoginPrincipal secondAdmin = admin;
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        java.util.concurrent.Callable<Boolean> first = () -> {
+            try { approvals.approve(t.getTransactionId(), firstAdmin, UUID.randomUUID().toString()); return true; }
+            catch (com.ofss.excp.TransactionValidationException e) { assertEquals(409,e.getStatus()); return false; }
+        };
+        java.util.concurrent.Callable<Boolean> second = () -> {
+            try { approvals.approve(t.getTransactionId(), secondAdmin, UUID.randomUUID().toString()); return true; }
+            catch (com.ofss.excp.TransactionValidationException e) { assertEquals(409,e.getStatus()); return false; }
+        };
+        try {
+            var one = pool.submit(first); var two = pool.submit(second);
+            assertNotEquals(one.get(20,TimeUnit.SECONDS), two.get(20,TimeUnit.SECONDS));
+        } finally { pool.shutdownNow(); }
+        assertEquals(new BigDecimal("380000.00"),accounts.findById(account.getAccountId()).orElseThrow().getBalance());
+        assertEquals(1,jdbc.queryForObject("select count(*) from audit_log where transaction_id=? and action='ADMIN_APPROVED_SETTLED'",Integer.class,t.getTransactionId()));
+    }
+
+    @Test void failedAuditRollsBackApprovalAndDebit() {
+        TransactionDb t = service.initiate(account.getAccountId(), beneficiary.getBeneficiaryId(),
+                new BigDecimal("120000.00"), "Rollback approval", UUID.randomUUID().toString(), account.getUserId());
+        jdbc.execute("alter table audit_log add constraint approval_audit_failure check (transaction_id <> "
+                + t.getTransactionId() + " or action <> 'ADMIN_APPROVED_SETTLED')");
+        try {
+            assertThrows(org.springframework.dao.DataIntegrityViolationException.class,
+                    () -> approvals.approve(t.getTransactionId(), admin, UUID.randomUUID().toString()));
+        } finally { jdbc.execute("alter table audit_log drop constraint approval_audit_failure"); }
+        assertEquals(TransactionState.HARD_HOLD, transactions.findById(t.getTransactionId()).orElseThrow().getState());
+        assertEquals(new BigDecimal("500000.00"), accounts.findById(account.getAccountId()).orElseThrow().getBalance());
+        assertEquals(0, jdbc.queryForObject("select count(*) from audit_log where transaction_id=? and action='ADMIN_APPROVED_SETTLED'", Integer.class,t.getTransactionId()));
     }
 
     @Test void newBeneficiaryLowPaymentSettlesImmediatelyAndInitiationReplayDebitsOnce() {

@@ -40,6 +40,8 @@ class MultiAccountWorkflowIntegrationTest {
     @Autowired ObjectMapper mapper;
     @Autowired AccountDao accounts;
     @Autowired UserDao users;
+    @Autowired com.ofss.repository.RoleDao roles;
+    @Autowired com.ofss.services.AdminApprovalService approvals;
 
     @Test
     void allMigratedAccountsRemainUsableWithScopedBeneficiariesPaymentsAndReservations() throws Exception {
@@ -108,8 +110,12 @@ class MultiAccountWorkflowIntegrationTest {
         assertEquals("HIGH", protectedOnSecond.path("riskTier").asText());
         assertEquals("CANCELLED", owner.call("POST", "/api/transactions/" + protectedOnSecond.path("transactionId").asLong()
                 + "/cancel", null, 200).path("state").asText());
-        assertEquals("SETTLED", owner.call("POST", "/api/transactions/" + held.path("transactionId").asLong()
-                + "/verify", Map.of("password", "MultiAccount#2026"), 200).path("state").asText());
+        owner.call("POST", "/api/transactions/" + held.path("transactionId").asLong()
+                + "/verify", Map.of("password", "MultiAccount#2026"), 403);
+        User actor = users.findById(other.userId).orElseThrow();
+        actor.setRole(roles.findByRoleName("ADMIN").orElseThrow()); users.saveAndFlush(actor);
+        var admin = new com.ofss.beans.LoginPrincipal(actor.getUserId(), actor.getName(), actor.getEmail(), "ADMIN", actor.getStatus());
+        assertEquals("SETTLED", approvals.approve(held.path("transactionId").asLong(), admin, UUID.randomUUID().toString()).state());
         assertBalance(owner, firstId, "45000.00");
         for (int i = 1; i < 4; i++) assertBalance(owner, owned.get(i).getAccountId(), "195000.00");
 

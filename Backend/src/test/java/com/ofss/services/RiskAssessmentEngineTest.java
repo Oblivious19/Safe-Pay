@@ -87,7 +87,7 @@ class RiskAssessmentEngineTest {
         assertTrue(result.authenticationRequired());
         assertTrue(result.protectionRequired());
         assertEquals(0, result.protectionDurationSeconds());
-        assertTrue(result.reason().contains("authentication required before settlement"));
+        assertTrue(result.reason().contains("administrator approval required before settlement"));
     }
 
     @Test

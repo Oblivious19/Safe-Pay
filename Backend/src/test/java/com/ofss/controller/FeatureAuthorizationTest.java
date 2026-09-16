@@ -47,7 +47,7 @@ class FeatureAuthorizationTest extends WebSecuritySliceSupport {
     }
 
     @Test
-    void verificationRequiresCustomerSessionCsrfAndKey() throws Exception {
+    void obsoleteVerificationIsBlockedForEveryRole() throws Exception {
         String path = "/api/transactions/21/verify";
         mvc.perform(post(path).contentType("application/json").content("{\"password\":\"correct\"}"))
                 .andExpect(status().isUnauthorized());
@@ -58,7 +58,7 @@ class FeatureAuthorizationTest extends WebSecuritySliceSupport {
         String token = csrf(customer, false);
         mvc.perform(post(path).session(customer).header("X-CSRF-TOKEN", token)
                 .contentType("application/json").content("{\"password\":\"correct\"}"))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isForbidden());
         var admin = session("ADMIN");
         mvc.perform(post(path).session(admin).header("Idempotency-Key", "k").header("X-CSRF-TOKEN", csrf(admin, false))
                 .contentType("application/json").content("{\"password\":\"correct\"}"))
@@ -67,14 +67,15 @@ class FeatureAuthorizationTest extends WebSecuritySliceSupport {
     }
 
     @Test
-    void incorrectStepUpPasswordKeepsSessionAndReturnsSafe403() throws Exception {
+    void customerCannotVerifyEvenWithCorrectPasswordAndCsrf() throws Exception {
         var customer = session("CUSTOMER");
-        when(verifications.verify(21L, 7L, "wrong", "k")).thenThrow(new BadCredentialsException("private details"));
+        
         mvc.perform(post("/api/transactions/21/verify").session(customer).header("Idempotency-Key", "k")
                 .header("X-CSRF-TOKEN", csrf(customer, false)).contentType("application/json")
                 .content("{\"password\":\"wrong\"}"))
                 .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.message").value("Incorrect password; payment remains on hold"));
+                .andExpect(jsonPath("$.message").value("Access denied or invalid CSRF token"));
+        verifyNoInteractions(verifications);
         assertNotNull(customer.getAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY));
     }
 
@@ -84,7 +85,7 @@ class FeatureAuthorizationTest extends WebSecuritySliceSupport {
         mvc.perform(post("/api/transactions/21/verify").session(customer).header("Idempotency-Key", "k")
                 .header("X-CSRF-TOKEN", csrf(customer, false)).contentType("application/json")
                 .content("{\"password\":\"correct\",\"approved\":true,\"userId\":8}"))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isForbidden());
         verifyNoInteractions(verifications);
     }
 

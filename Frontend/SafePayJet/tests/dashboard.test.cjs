@@ -58,7 +58,7 @@ test('recent payments are newest first and limited to five without changing sour
 test('pending area reflects server states, not invented timers or risk decisions', async () => {
   const { model } = fixture(undefined,()=>Promise.resolve([payment(1),payment(2,'PROTECTED','HIGH'),payment(3,'HARD_HOLD','VERY_HIGH')]));
   await model.load(); assert.equal(model.pending().length,2);
-  assert.equal(model.statusLabel('HARD_HOLD'),'Verification required');
+  assert.equal(model.statusLabel('HARD_HOLD'),'Awaiting admin approval');
   assert.equal(model.riskClass(payment(1,'PROTECTED','LOW')),'risk-neutral');
   assert.equal(model.riskClass(payment(1,'PROTECTED','MEDIUM')),'risk-amber');
   assert.equal(model.riskClass(payment(1,'PROTECTED','HIGH')),'risk-orange');
