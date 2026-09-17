@@ -1,15 +1,13 @@
 import { ApiError, httpError } from "./apiError";
-import { clearRetryKeys } from "./retryKeys";
-import { clearPendingPayment } from "./pendingPayment";
-import { clearCreditDraft } from "./adminCreditDraft";
 
 export const DEFAULT_API_BASE_URL = "http://localhost:8080";
 type CsrfPath = "/api/accounts/current" | "/api/admin/reports/transactions/summary";
 interface RequestOptions {
-  method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+  method?: "GET" | "POST" | "DELETE" | "PUT" | "PATCH";
   body?: unknown;
   csrf?: boolean;
   idempotencyKey?: string;
+  signal?: AbortSignal;
 }
 
 /** One browser transport. No cookie access, token storage, automatic payment retries or risk logic. */
@@ -30,9 +28,6 @@ export class ApiClient {
   }
 
   clearSession(): void {
-    clearRetryKeys();
-    clearCreditDraft();
-    clearPendingPayment();
     this.csrfToken = undefined; this.pendingCsrf = undefined; this.generation++;
     this.csrfPath = "/api/accounts/current";
   }
@@ -40,9 +35,6 @@ export class ApiClient {
   useAdminCsrf(admin: boolean): void {
     this.csrfPath = admin ? "/api/admin/reports/transactions/summary" : "/api/accounts/current";
   }
-
-  /** Operation retry keys must never carry over to a different signed-in session. */
-  sessionRevision(): number { return this.generation; }
 
   async ensureCsrfToken(): Promise<void> {
     if (!this.csrfToken) await this.refreshCsrfToken();
@@ -76,6 +68,7 @@ export class ApiClient {
     try {
       response = await fetch(this.baseUrl + path, {
         method: options.method || "GET", headers, credentials: "include", cache: "no-store", redirect: "error",
+        ...(options.signal ? { signal: options.signal } : {}),
         ...(options.body !== undefined ? { body: JSON.stringify(options.body) } : {})
       });
       text = await response.text();

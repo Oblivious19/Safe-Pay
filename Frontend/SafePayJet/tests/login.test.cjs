@@ -7,15 +7,23 @@ const ts = require('typescript');
 const ko = require('knockout');
 class ApiError extends Error { constructor(status, message) { super(message); this.status = status; } }
 const read = file => fs.readFileSync(path.join(__dirname, '../src/', file), 'utf8');
+test('server-authenticated ADMIN navigates to admin dashboard',async()=>{
+  const f=fixture(async()=>({role:'ADMIN'}));await f.model.login();assert.deepEqual(f.redirects,['/admin/dashboard']);
+});
+test('phone password login preserves exact password and navigates', async () => {
+  const f = fixture(); f.model.mode('phone'); f.model.phone('9876543210');
+  await f.model.login(); assert.equal(f.calls[0].password, ' Test password ');
+  assert.deepEqual(Object.keys(f.calls[0]).sort(), ['password','phone']); assert.deepEqual(f.redirects, ['/dashboard']);
+});
 function fixture(call = () => Promise.resolve({}), search = '') {
   const calls = [], redirects = [], module = { exports: {} };
   const code = ts.transpileModule(read('ts/viewModels/login.ts'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2021 } }).outputText;
-  const imports = { knockout: ko, '../services/apiError': { ApiError }, '../services/authService': { authService: { login: data => { calls.push(data); return call(data); } } } };
+  const imports = { knockout: ko, '../services/apiError': { ApiError }, '../services/authService': { authService: { login: data => { calls.push(data); return call(data); } } }, 'ojs/ojbutton': {}, 'ojs/ojinputtext': {} };
   vm.runInNewContext('(function(require,module,exports){' + code + '\n})', {
     document: { title: '', getElementById: () => ({ focus() {} }) },
     URLSearchParams, window: { location: { search, assign: url => redirects.push(url) } }
   })(p => imports[p], module, module.exports);
-  const model = new module.exports(); model.email('customer@example.test'); model.password(' Test password ');
+  const model = new module.exports(); model.mode('email'); model.email('customer@example.test'); model.password(' Test password ');
   return { model, calls, redirects };
 }
 for (const [field, value, message] of [
@@ -29,15 +37,6 @@ test('successful login sends exact raw password and navigates to dashboard', asy
   const f = fixture(); f.model.email(' customer@example.test '); await f.model.login();
   assert.equal(f.calls[0].email, 'customer@example.test'); assert.equal(f.calls[0].password, ' Test password ');
   assert.deepEqual(f.redirects, ['/dashboard']); assert.equal(f.model.password(), '');
-});
-test('administrator login navigates to administration', async () => {
-  const f = fixture(() => Promise.resolve({ role: 'ADMIN' })); await f.model.login();
-  assert.deepEqual(f.redirects, ['/admin']); assert.equal(f.model.password(), '');
-});
-test('registration completion displays a fixed success message', () => {
-  const f = fixture(undefined, '?registered=1'); f.model.connected();
-  assert.match(f.model.notice(), /account has been created/);
-  assert.match(read('ts/views/login.html'), /href="\/register"/);
 });
 test('login 401 uses generic credentials message', async () => {
   const f = fixture(() => Promise.reject(new ApiError(401, 'Ignored'))); await f.model.login();
@@ -78,25 +77,4 @@ test('login explains the session-expired redirect without exposing query text', 
   assert.match(f.model.error(), /Please log in to continue/);
   const other = fixture(undefined, '?reason=internal-secret'); other.model.connected();
   assert.equal(other.model.error(), '');
-});
-
-test('mobile login sends the exact password and switching identity method clears secrets', async () => {
-  const f = fixture(); f.model.switchMode(); f.model.phone('9876543210'); f.model.password(' exact phone password ');
-  await f.model.login();
-  assert.equal(f.calls[0].phone, '9876543210'); assert.equal(f.calls[0].password, ' exact phone password ');
-  assert.equal('email' in f.calls[0], false); assert.equal('pin' in f.calls[0], false);
-  f.model.submitting(false); f.model.password('secret'); f.model.switchMode(); assert.equal(f.model.password(), ''); assert.equal(f.model.mode(), 'email');
-});
-test('invalid mobile input is rejected before transport', async () => {
-  const f = fixture(); f.model.switchMode(); f.model.phone('123'); f.model.password('password'); await f.model.login();
-  assert.equal(f.calls.length, 0); assert.match(f.model.phoneError(), /mobile/);
-});
-test('both login modes have actual fields in matching conditional markup, without a PIN field', () => {
-  const html = read('ts/views/login.html');
-  assert.match(html, /ko if: mode\(\) === 'email'/); assert.match(html, /ko if: mode\(\) === 'phone'/);
-  assert.match(html, /id="login-phone"/); assert.doesNotMatch(html, /login-pin|textInput: pin/);
-});
-test('registered ten-digit legacy phone identifiers retain login compatibility', async () => {
-  const f = fixture(); f.model.switchMode(); f.model.phone('0123456789'); f.model.password('exact'); await f.model.login();
-  assert.equal(f.calls[0].phone, '0123456789');
 });

@@ -172,4 +172,29 @@ class AdminApprovalServiceTest {
                 () -> service.approve(21L, admin, "verify-1")).getStatus());
         verify(accounts, never()).save(any());
     }
+
+    @Test void declineCannotBePerformedByCustomerOrRevokedAdmin() {
+        var customer = new LoginPrincipal(7L,"Owner","owner@test","CUSTOMER",UserStatus.ACTIVE);
+        assertThrows(TransactionValidationException.class, () -> service.decline(21L, customer,"decline-1"));
+        when(sessions.isCurrent(admin)).thenReturn(false);
+        assertThrows(TransactionValidationException.class, () -> service.decline(21L, admin,"decline-1"));
+        verifyNoInteractions(accounts,audits);
+    }
+    @ParameterizedTest
+    @EnumSource(value=TransactionState.class,names={"CREATED","AUTHORIZED","RISK_ASSESSED","PROTECTED","CANCELLED","SETTLED"})
+    void declineOnlyAcceptsHardHold(TransactionState state) {
+        payment.setState(state);
+        assertThrows(TransactionValidationException.class, () -> service.decline(21L,admin,"decline-1"));
+        verify(verifications,never()).declineHeld(anyLong(),anyLong(),anyString());
+        verify(accounts,never()).save(any());
+    }
+    @Test void declineRejectsAnotherActionOrActorsKey() {
+        var receipt=new AuditLog();receipt.setAction("ADMIN_APPROVED_SETTLED");receipt.setTransactionId(21L);receipt.setUserId(70L);
+        when(audits.findByRequestKey("used")).thenReturn(Optional.of(receipt));
+        assertThrows(TransactionValidationException.class, () -> service.decline(21L,admin,"used"));
+        receipt.setAction("ADMIN_DECLINED_CANCELLED");receipt.setUserId(99L);
+        assertThrows(TransactionValidationException.class, () -> service.decline(21L,admin,"used"));
+        verify(verifications,never()).declineHeld(anyLong(),anyLong(),anyString());
+    }
+
 }

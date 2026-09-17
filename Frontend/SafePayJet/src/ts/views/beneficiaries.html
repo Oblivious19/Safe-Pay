@@ -1,37 +1,80 @@
-<div class="safepay-page"><p class="eyebrow">PAYMENT CONTACTS</p><h1>Beneficiaries</h1>
-  <div class="payment-shell">
-    <h2>Add a beneficiary</h2><p>Save a person or business you want to pay in this simulated SafePay environment.</p>
-    <div class="form-grid">
-      <label>Signed in as<input type="email" readonly data-bind="value: signedInEmail, attr: {placeholder: 'Profile unavailable'}" /></label>
-      <label>Account<select data-bind="options: accounts, optionsText: accountLabel, optionsValue: function(a) { return a.accountId.toString(); }, value: accountId, optionsCaption: 'Select account', disable: saving() || busyId() !== null"></select></label>
-      <label>Beneficiary name<input id="beneficiary-beneficiaryName" maxlength="100" aria-describedby="beneficiary-name-error" data-bind="textInput: beneficiaryName, attr: {'aria-invalid': !!fieldErrors().beneficiaryName}" /><span id="beneficiary-name-error" class="form-error" data-bind="text: fieldErrors().beneficiaryName"></span></label>
-      <label>Bank account number<input id="beneficiary-bankAccountNumber" maxlength="30" aria-describedby="beneficiary-number-error" data-bind="textInput: bankAccountNumber, attr: {'aria-invalid': !!fieldErrors().bankAccountNumber}" inputmode="numeric" /><span id="beneficiary-number-error" class="form-error" data-bind="text: fieldErrors().bankAccountNumber"></span></label>
-      <label>IFSC<input id="beneficiary-ifsc" maxlength="11" aria-describedby="beneficiary-ifsc-error" data-bind="textInput: ifsc, attr: {'aria-invalid': !!fieldErrors().ifsc}" placeholder="HDFC0001234" /><span id="beneficiary-ifsc-error" class="form-error" data-bind="text: fieldErrors().ifsc"></span></label>
+<section class="recipients-page" aria-labelledby="recipients-title" data-bind="attr: {'aria-busy': loading() || saving()}">
+  <header class="recipients-hero">
+    <span class="dash-orb" aria-hidden="true"></span>
+    <span class="dash-orb dash-orb-slow" aria-hidden="true"></span>
+    <div class="recipients-hero-copy">
+      <p class="dash-overline">YOUR PAYMENT CONTACTS</p>
+      <h1 id="recipients-title">Beneficiaries</h1>
+<label class="integration-account"><input type="checkbox" data-bind="checked: includeInactive, event:{change: changeAccount}, disable: loading() || saving()"> Show inactive beneficiaries</label>
+<div class="integration-account"><label for="beneficiary-account">Account</label><select id="beneficiary-account" data-bind="options: accounts, optionsText: accountOption, optionsValue: 'accountId', value: selectedAccountId, optionsCaption: 'Select account', valueAllowUnset: true, event: {change: changeAccount}, disable: loading() || saving()"></select></div>
+
+      <p>The people and businesses you save, all in one place.</p>
+      <p class="recipients-count" data-bind="visible: !loading()"><span data-bind="text: beneficiaries().length"></span> saved <span data-bind="text: beneficiaries().length === 1 ? 'recipient' : 'recipients'"></span></p>
     </div>
-    <div class="form-actions">
-      <button class="safe-button secondary" data-bind="click: load, disable: loading() || saving() || busyId() !== null">Refresh</button>
-      <button class="safe-button" data-bind="click: save, disable: saving() || loading() || busyId() !== null"><span data-bind="text: saving() ? 'Saving…' : 'Add beneficiary'"></span></button>
-    </div>
-    <p class="form-error" role="alert" data-bind="visible: error, text: error"></p>
-    <p class="form-success" role="status" data-bind="visible: success, text: success"></p>
-  </div>
-  <div class="payment-shell"><h2>Saved beneficiaries for this account</h2><p>Choose an account above to view its beneficiaries. Removed beneficiaries remain here as inactive. Reactivate one to use it for another payment.</p>
-    <div class="data-list" data-bind="foreach: beneficiaries"><article>
-      <div><strong data-bind="text: beneficiaryName"></strong><span data-bind="text: ifsc + ' · ••••' + bankAccountNumber.slice(-4)"></span></div>
-      <div class="form-actions"><span class="status-pill" data-bind="text: status"></span>
-        <button class="text-button" data-bind="click: function() { return $parent.details($data); }, disable: $parent.loading() || $parent.saving() || $parent.busyId() !== null">Details</button>
-        <button class="text-button" data-bind="visible: status === 'ACTIVE', click: function() { return $parent.remove($data); }, disable: $parent.loading() || $parent.saving() || $parent.busyId() !== null">Remove</button>
-        <button class="text-button" data-bind="visible: status === 'INACTIVE', click: function() { return $parent.reactivate($data); }, disable: $parent.loading() || $parent.saving() || $parent.busyId() !== null">Reactivate</button>
+    <button class="recipient-primary recipient-hero-cta" data-bind="visible: mode() === 'list', click: openAdd, disable: loading"><span aria-hidden="true">＋</span> Add Beneficiary</button>
+  </header>
+  <p class="recipient-success" role="status" data-bind="visible: success, text: success"></p>
+  <p class="recipient-error" role="alert" data-bind="visible: error, text: error"></p>
+  <div class="recipient-loading load-row" role="status" data-bind="visible: loading"><span class="spin" aria-hidden="true"></span><span>Loading your beneficiaries…</span></div>
+  <div class="sk-cards" aria-hidden="true" data-bind="visible: loading"><span class="sk-card"></span><span class="sk-card"></span><span class="sk-card"></span></div>
+  <!-- ko if: mode() === 'list' -->
+  <div class="recipient-list-tools"><span>Saved recipients</span><button class="recipient-link" data-bind="click: load, disable: loading() || saving()"><span class="spin" aria-hidden="true" data-bind="visible: loading"></span><span data-bind="text: loading() ? 'Refreshing…' : 'Refresh list'"></span></button></div>
+  <!-- ko if: !loading() && !error() && !beneficiaries().length -->
+  <div class="recipient-empty"><span class="recipient-empty-badge" aria-hidden="true">♧</span><h2>Your people, a little closer.</h2><p>No beneficiaries yet. Add someone using their bank account details.</p><button class="recipient-primary" data-bind="click: openAdd, disable: loading">Add your first beneficiary</button></div>
+  <!-- /ko -->
+  <div class="recipient-grid" data-bind="foreach: beneficiaries">
+    <article class="recipient-card" data-bind="css: {'is-new': $parent.isNew(createdAt), 'is-off': status !== 'ACTIVE'}">
+      <span class="recipient-card-edge" aria-hidden="true"></span>
+      <header class="recipient-card-head">
+        <div class="recipient-avatar" aria-hidden="true" data-bind="text: beneficiaryName.slice(0,1).toUpperCase()"></div>
+        <div class="recipient-card-id">
+          <h2 data-bind="text: beneficiaryName"></h2>
+          <p class="recipient-number" data-bind="text: $parent.mask(bankAccountNumber)"></p>
+        </div>
+      </header>
+      <div class="recipient-badges"><span class="recipient-bank" data-bind="text: ifsc"></span><span data-bind="text: status === 'ACTIVE' ? 'Active' : 'Inactive'"></span><span class="recipient-new" data-bind="visible: $parent.isNew(createdAt)">New</span></div>
+      <p class="recipient-meta" data-bind="text: $parent.added(createdAt)"></p>
+      <p class="recipient-meta recipient-pause-hint" data-bind="visible: $parent.isNew(createdAt)">First payments to a new recipient may pause before they settle.</p>
+      <div class="recipient-card-actions">
+        <a class="recipient-pay" data-bind="attr: {href: '/send-money', 'aria-label': 'Pay ' + beneficiaryName}">Pay</a>
+        <button class="recipient-secondary" data-bind="click: $parent.select, disable: $parent.loading() || $parent.saving(), attr: {'aria-label': 'View details for ' + beneficiaryName}">Details <span aria-hidden="true">↗</span></button>
       </div>
-    </article></div>
-    <div class="empty-state" data-bind="visible: !loading() && !beneficiaries().length"><span>+</span><h3>No beneficiaries found</h3><p>Add your first beneficiary to get started.</p></div>
+    </article>
   </div>
-  <div class="payment-shell" data-bind="with: selected">
-    <h2 data-bind="text: beneficiaryName"></h2><dl>
-      <dt>Account number</dt><dd data-bind="text: bankAccountNumber"></dd>
-      <dt>IFSC</dt><dd data-bind="text: ifsc"></dd>
-      <dt>Status</dt><dd data-bind="text: status"></dd>
-      <dt>Added</dt><dd data-bind="text: createdAt"></dd>
-    </dl><button class="safe-button secondary" data-bind="click: $parent.closeDetails">Close details</button>
+  <!-- /ko -->
+  <!-- ko if: mode() === 'add' -->
+  <div class="recipient-form-card"><button class="recipient-link" data-bind="click: back, disable: saving">← Back to beneficiaries</button><h2>Add a beneficiary</h2><p>Use the recipient’s bank details. Check them carefully before saving.</p>
+    <form novalidate data-bind="submit: save">
+      <label for="recipient-beneficiaryName">Beneficiary name</label>
+      <input id="recipient-beneficiaryName" autocomplete="off" maxlength="100" required data-bind="textInput: beneficiaryName, disable: saving, attr: {'aria-invalid': !!fieldErrors().beneficiaryName}" aria-describedby="name-error">
+      <p class="recipient-field-error" id="name-error" data-bind="text: fieldErrors().beneficiaryName"></p>
+      <label for="recipient-bankAccountNumber">Bank account number</label>
+      <input id="recipient-bankAccountNumber" inputmode="numeric" autocomplete="off" maxlength="30" required data-bind="textInput: bankAccountNumber, disable: saving, attr: {'aria-invalid': !!fieldErrors().bankAccountNumber}" aria-describedby="account-error account-hint">
+      <small id="account-hint">Enter the bank account number, not a SafePay internal account ID.</small>
+      <p class="recipient-field-error" id="account-error" data-bind="text: fieldErrors().bankAccountNumber"></p>
+      <label for="recipient-ifsc">IFSC</label>
+      <input id="recipient-ifsc" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="11" required placeholder="e.g. HDFC0001234" data-bind="textInput: ifsc, disable: saving, attr: {'aria-invalid': !!fieldErrors().ifsc}" aria-describedby="ifsc-error">
+      <p class="recipient-field-error" id="ifsc-error" data-bind="text: fieldErrors().ifsc"></p>
+      <button class="recipient-primary" type="submit" data-bind="disable: saving"><span class="spin" aria-hidden="true" data-bind="visible: saving"></span><span data-bind="text: saving() ? 'Saving…' : 'Add Beneficiary'"></span></button>
+    </form>
   </div>
-</div>
+  <!-- /ko -->
+  <!-- ko if: mode() === 'details' -->
+  <div class="recipient-form-card"><button class="recipient-link" data-bind="click: back, disable: loading() || saving()">← Back to beneficiaries</button>
+    <!-- ko with: selected -->
+    <h2 data-bind="text: beneficiaryName"></h2>
+    <dl class="recipient-details"><dt>Bank account</dt><dd data-bind="text: $parent.mask(bankAccountNumber)"></dd><dt>IFSC</dt><dd data-bind="text: ifsc"></dd><dt>Status</dt><dd data-bind="text: status === 'ACTIVE' ? 'Active' : 'Inactive'"></dd><dt>Saved</dt><dd data-bind="text: $parent.added(createdAt)"></dd></dl>
+    <p class="recipient-meta">First payments to a new recipient may pause before they settle.</p>
+    <!-- /ko -->
+    <!-- ko if: selected -->
+<button type="button" class="recipient-primary" data-bind="visible: selected().status !== 'ACTIVE', click: reactivate, disable: saving">Reactivate beneficiary</button>
+    <button class="recipient-secondary" data-bind="visible: selected().status === 'ACTIVE' && !confirmDeactivate(), click: function() { confirmDeactivate(true); }, disable: saving">Deactivate beneficiary</button>
+    <div class="recipient-confirm" data-bind="visible: confirmDeactivate"><h3>Deactivate this beneficiary?</h3><p>They will be removed from your active list. Existing transaction history is preserved.</p>
+      <button class="recipient-secondary" data-bind="click: deactivate, disable: saving"><span class="spin" aria-hidden="true" data-bind="visible: saving"></span><span data-bind="text: saving() ? 'Deactivating…' : 'Confirm deactivation'"></span></button>
+      <button class="recipient-link" data-bind="click: function() { confirmDeactivate(false); }, disable: saving">Keep beneficiary</button>
+    </div>
+    <!-- /ko -->
+  </div>
+  <!-- /ko -->
+  <p class="recipient-footnote">◇ Simulated Environment</p>
+</section>

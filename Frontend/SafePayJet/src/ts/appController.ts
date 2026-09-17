@@ -2,13 +2,12 @@ import * as ko from "knockout";
 import CoreRouter = require("ojs/ojcorerouter");
 import ModuleRouterAdapter = require("ojs/ojmodulerouter-adapter");
 import KnockoutRouterAdapter = require("ojs/ojknockoutrouteradapter");
-import UrlPathAdapter = require("ojs/ojurlpathadapter");
+import UrlPathAdapter = require("ojs/ojurlpathparamadapter");
 import { authService } from "./services/authService";
-import { CustomerIdentity } from "./services/profileService";
-import { sessionService } from "./services/sessionService";
-import { ApiError } from "./services/apiError";
-import { UserRole } from "./services/types";
+import { profileService, CustomerIdentity } from "./services/profileService";
+import { checkSessionRoute } from "./services/sessionRouteService";
 import Context = require("ojs/ojcontext");
+import { armAudio } from "./utils/chime";
 import "ojs/ojknockout";
 import "ojs/ojmodule-element";
 
@@ -20,26 +19,18 @@ class RootViewModel {
   logoutError = ko.observable("");
   profile = ko.observable<CustomerIdentity | null>(null);
   profileLoading = ko.observable(false);
-  sessionRole = ko.observable<UserRole | null>(null);
-  sessionError = ko.observable("");
+  // Session verification and route transitions both leave the page blank, so show a bar meanwhile.
+  routeBusy = ko.observable(true);
   private profileGeneration = 0;
   loadProfile = async (): Promise<void> => {
     const generation = ++this.profileGeneration;
-    this.profile(null); this.sessionRole(null); this.sessionError(""); this.profileLoading(true);
+    this.profile(null); this.profileLoading(true);
     try {
-      const session = await sessionService.restore(this.selection.path() === "admin");
-      if (generation !== this.profileGeneration) return;
-      this.profile(session.profile); this.sessionRole(session.role);
-      const path = this.selection.path();
-      if (session.role === "ADMIN" && path !== "admin" && !["login", "register"].includes(path)) window.location.replace("/admin");
-      else if (session.role === "CUSTOMER" && path === "admin") window.location.replace("/dashboard");
-    } catch (error) {
+      const profile = await profileService.getCurrent();
+      if (generation === this.profileGeneration) this.profile(profile);
+    } catch {
       // Never show a cached identity when the current session cannot be verified.
-      if (generation === this.profileGeneration) {
-        this.profile(null); this.sessionRole(null);
-        if (error instanceof ApiError && error.status === 401) window.location.replace("/login?reason=session-expired");
-        else this.sessionError("We couldn’t verify your session. Refresh the page to try again.");
-      }
+      if (generation === this.profileGeneration) this.profile(null);
     } finally {
       if (generation === this.profileGeneration) this.profileLoading(false);
     }
@@ -49,45 +40,64 @@ class RootViewModel {
     this.loggingOut(true); this.logoutError("");
     try {
       await authService.logout();
-      this.profileGeneration++; this.profile(null); this.sessionRole(null);
+      this.profileGeneration++; this.profile(null);
       window.location.replace("/login");
     } catch {
       this.logoutError("We couldn’t sign you out. Please try again.");
       this.loggingOut(false);
     }
   };
-  customerNavItems = [
-    { path: "dashboard", label: "Dashboard", icon: "⌂" },
-    { path: "send-money", label: "Send Money", icon: "↗" },
-    { path: "beneficiaries", label: "Beneficiaries", icon: "♧" },
-    { path: "transactions", label: "Transactions", icon: "≡" },
-    { path: "profile", label: "Profile", icon: "○" }
+  navItems = [
+    { path: "dashboard", label: "Dashboard", iconClass: "oj-ux-ico-home customer-nav-icon" },
+    { path: "send-money", label: "Send Money", iconClass: "oj-ux-ico-send customer-nav-icon" },
+    { path: "beneficiaries", label: "Beneficiaries", iconClass: "oj-ux-ico-contact-group customer-nav-icon" },
+    { path: "transactions", label: "Transactions", iconClass: "oj-ux-ico-list customer-nav-icon" },
+    { path: "profile", label: "Profile", iconClass: "oj-ux-ico-contact customer-nav-icon" }
   ];
-  navItems = ko.pureComputed(() => this.sessionRole() === "ADMIN"
-    ? [{ path: "admin", label: "Administration", icon: "▦" }] : this.customerNavItems);
   moduleAdapter: ModuleRouterAdapter<RouteDetail>;
   selection: KnockoutRouterAdapter<RouteDetail>;
   constructor() {
     // Keep existing saved JET links working during the clean-route transition.
+    if(window.location.pathname === "/admin" || window.location.pathname === "/admin/") window.history.replaceState(null,"","/admin/dashboard");
     const legacy = new URLSearchParams(window.location.search).get("ojr");
-    if (legacy && ["/login", "/register", "/admin", ...this.customerNavItems.map(item => "/" + item.path)].includes(legacy)) {
+    if (legacy && ["/login", "/dashboard", ...this.navItems.map(item => "/" + item.path)].includes(legacy)) {
       window.history.replaceState(null, "", legacy);
     }
     document.getElementById("globalBody")!.addEventListener("announce", ((event: CustomEvent) => {
       this.message(event.detail.message); this.manner(event.detail.manner);
     }) as EventListener);
-    const router = new CoreRouter([{ path: "", redirect: "login" },
+    const router = new CoreRouter([{ path: "", redirect: "home" },
+      { path: "home", detail: { label: "Welcome to SafePay" } },
       { path: "login", detail: { label: "Login" } },
-      { path: "register", detail: { label: "Create account" } },
-      { path: "admin", detail: { label: "Administration" } },
-      ...this.customerNavItems.map(item => ({ path: item.path, detail: { label: item.label } }))],
+      { path: "admin/{page}", detail: { label: "Administration" } },
+      { path: "register/{step}", detail: { label: "Create account" } },
+      ...this.navItems.map(item => ({ path: item.path === "send-money" ? "send-money/{step}" : item.path, detail: { label: item.label } }))],
       { urlAdapter: new UrlPathAdapter("/") });
     this.moduleAdapter = new ModuleRouterAdapter(router);
     this.selection = new KnockoutRouterAdapter(router);
-    void router.sync().then(() => {
-      if (!["login", "register"].includes(this.selection.path())) void this.loadProfile();
-    });
+    router.beforeStateChange.subscribe(() => this.routeBusy(true));
+    router.currentState.subscribe(() => this.routeBusy(false));
+    // Do not instantiate private customer modules before session verification finishes.
+    const path = window.location.pathname || "/login";
+    const customerPage = this.navItems.some(item => path === "/" + item.path || path.startsWith("/" + item.path + "/"));
+    const publicPage = path === "/" || path === "/home";
+    if (customerPage || publicPage) {
+      void checkSessionRoute().then(session => {
+        if (session.kind === "admin") { window.location.replace("/admin/dashboard"); return; }
+        if (session.kind === "customer") {
+          this.profile(session.profile);
+          if (publicPage) { window.location.replace("/dashboard"); return; }
+        } else if (customerPage) {
+          window.location.replace(session.kind === "guest" ? "/home" : "/home?reason=unavailable"); return;
+        }
+        void router.sync();
+      });
+    } else void router.sync();
     Context.getPageContext().getBusyContext().applicationBootstrapComplete();
+    // First tap anywhere unlocks Web Audio so later receipt/call tones are allowed.
+    const unlock = (): void => { armAudio(); };
+    window.addEventListener("pointerdown", unlock, true);
+    window.addEventListener("keydown", unlock, true);
   }
 }
 export default new RootViewModel();

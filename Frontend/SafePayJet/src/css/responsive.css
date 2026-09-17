@@ -13,9 +13,9 @@
 .header-disclosure svg { flex-shrink: 0; }
 .header-popover { top: 100%; left: 16px; right: 16px; width: auto; max-width: none; overflow-wrap: anywhere; }
 .profile-label { display: inline; overflow-wrap: anywhere; min-width: 0; max-width: 150px; }
-.customer-nav > div { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 12px; margin: 0 16px; }
+.customer-nav > div { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 12px; margin: 0 16px; }
 .customer-nav a { flex-direction: row; min-width: 0; min-height: 48px; padding: 12px 4px; gap: 8px; font-size: 14px; overflow-wrap: anywhere; }
-.customer-dashboard, .recipients-page, .safepay-page { width: 100%; min-width: 0; padding: 24px 16px; }
+.customer-dashboard, .recipients-page, .safepay-page, .tx-page, .profile-page { width: 100%; min-width: 0; padding: 24px 16px; }
 .dashboard-intro, .recent-heading { flex-wrap: wrap; }
 .dashboard-top-grid, .recipient-grid, .form-grid, .transaction-details dl { grid-template-columns: minmax(0, 1fr); }
 .balance-panel, .dashboard-actions, .dashboard-recent, .recipient-card, .payment-shell { min-width: 0; padding: 22px; }
@@ -54,6 +54,7 @@
 .send-account p { font-size: 16px; }
 .send-account small, .send-recipient-copy small, .send-status, .send-subtitle { font-size: 13px; }
 .send-continue { position: sticky; bottom: max(12px, env(safe-area-inset-bottom)); z-index: 5; box-shadow: 0 0 0 8px white, 0 5px 18px #12343d22; }
+.pay-sheet .send-continue { position: static; box-shadow: none; }
 .send-flow { padding-bottom: max(24px, env(safe-area-inset-bottom)); }
 .account-loader, .inline-form { flex-direction: column; align-items: stretch; }
 .inline-form label, .form-grid label { min-width: 0; font-size: 14px; }
@@ -76,7 +77,7 @@
   .payment-value { grid-column: 3; text-align: right; }
   .recipient-details { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
   .recipient-details dd { margin-bottom: 0; }
-  .customer-dashboard, .recipients-page, .safepay-page { padding: 32px 24px; }
+  .customer-dashboard, .recipients-page, .safepay-page, .tx-page, .profile-page { padding: 32px 24px; }
 }
 @media (min-width: 900px) {
   .customer-header-inner { padding: 22px 28px; flex-wrap: nowrap; }
@@ -90,27 +91,13 @@
   .recipient-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .send-flow { padding: 30px; }
   .send-recipient-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .send-flow:has(form) { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: 0 28px; }
-  .send-flow:has(form) > * { grid-column: 1 / -1; }
-  .send-flow:has(form) .send-summary { grid-column: 1; align-self: start; }
-  .send-flow:has(form) form { grid-column: 2; }
+  .send-flow:has(form):not(:has(.pay-overlay)) { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: 0 28px; }
+  .send-flow:has(form):not(:has(.pay-overlay)) > * { grid-column: 1 / -1; }
+  .send-flow:has(form):not(:has(.pay-overlay)) .send-summary { grid-column: 1; align-self: start; }
+  .send-flow:has(form):not(:has(.pay-overlay)) form { grid-column: 2; }
   .send-continue { position: static; box-shadow: none; }
   .form-grid, .transaction-details dl { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .inline-form { flex-direction: row; align-items: end; flex-wrap: wrap; }
   .transaction-list article { flex-direction: row; }
   .login-card { padding: 36px; }
 }
-
-/* Keep the existing account selectors, profile editor and administration controls usable. */
-.payment-review { margin-block: 24px; padding: 24px; border: 1px solid #9dc9ce; border-radius: 14px; background: #f3faf9; }
-.payment-review dl { display: grid; gap: 8px 24px; grid-template-columns: minmax(0, 1fr); }
-.payment-review dt { font-weight: 700; }
-.payment-review dd { margin: 0 0 12px; overflow-wrap: anywhere; }
-.admin-card, .admin-form-grid, .admin-report-form { min-width: 0; }
-.admin-form-grid label { display: flex; flex-direction: column; gap: 8px; }
-.admin-form-grid input, .admin-form-grid select { padding: 12px; border: 1px solid #9db5bf; border-radius: 8px; }
-.admin-card table { width: 100%; }
-.admin-card dd { overflow-wrap: anywhere; }
-.form-error:empty { display: none; }
-@media (max-width: 599px) { .admin-form-grid, .admin-report-form { display: grid; grid-template-columns: minmax(0, 1fr); } }
-@media (min-width: 900px) { .payment-review dl { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); } }

@@ -1,0 +1,12 @@
+.onboarding-page { max-width: 600px; }
+.onboarding-page p { line-height: 1.6; overflow-wrap: anywhere; }
+.onboarding-page h2 { font-size: 24px; color: #15373e; }
+.onboarding-progress { display: flex; flex-wrap: wrap; gap: 8px; list-style: none; padding: 0; margin: 24px 0; }
+.onboarding-progress li { padding: 6px 10px; background: #f0f5f4; border-radius: 8px; font-size: 14px; }
+.onboarding-progress [aria-current=step] { background: #12675f; color: white; font-weight: 600; }
+.onboarding-secondary { display: block; width: 100%; min-height: 48px; background: transparent; color: #12675f; border: 1px solid #bdd2cc; border-radius: 10px; padding: 10px; margin: 14px 0; cursor: pointer; font: inherit; }
+.onboarding-secondary:focus-visible, .onboarding-page a:focus-visible { outline: 3px solid #12675f; outline-offset: 3px; }
+.onboarding-kyc { background: #edf6f2; border: 1px solid #bdd2cc; border-radius: 12px; padding: 14px; margin-bottom: 20px; }
+.onboarding-page input { min-width: 0; box-sizing: border-box; }
+.onboarding-page input[type=checkbox] { width: 20px; height: 20px; vertical-align: middle; margin: 12px 8px 12px 0; }
+.onboarding-page .login-submit { box-sizing: border-box; text-decoration: none; }

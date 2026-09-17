@@ -22,6 +22,14 @@
 .login-submit:disabled { opacity:.65; cursor:wait; }
 .login-submit>span:last-child { font-size:22px; }
 .login-progress { color:#5b7478; font-size:12px; text-align:center; margin:12px 0 0; }
+.login-demo { border-top:1px solid #e6eeeb; margin-top:22px; padding-top:18px; display:grid; gap:8px; }
+.login-demo-note { margin:0 0 10px; font-size:12px; line-height:1.5; color:#5a7478; }
+.login-demo-card { width:100%; text-align:left; border:1px solid #cfe8e1; background:#f4fbf8; border-radius:12px; padding:12px 14px; cursor:pointer; color:#15373e; }
+.login-demo-card strong { display:block; font-size:14px; }
+.login-demo-card span { display:block; font-size:12px; color:#5a7478; margin-top:3px; }
+.login-demo-card:hover:not(:disabled) { border-color:#19a38a; background:#ecf7f3; }
+.login-demo-card:focus-visible { outline:3px solid #1b8071; outline-offset:2px; }
+.login-demo-card:disabled { opacity:.65; cursor:wait; }
 .login-registration { border-top:1px solid #e6eeeb; margin-top:27px; padding-top:22px; text-align:center; font-size:12px; color:#5b7478; }
 .login-registration button { display:block; width:100%; border:0; background:transparent; font:600 14px "Segoe UI",sans-serif; color:#5c7874; padding:12px; min-height:44px; cursor:not-allowed; }
 .login-registration small { font-size:11px; }

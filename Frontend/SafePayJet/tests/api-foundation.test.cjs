@@ -9,7 +9,7 @@ const ts = require('typescript');
 function fixture(replies = []) {
   const calls = [], modules = new Map();
   const context = vm.createContext({
-    Headers, Response, URL, TextEncoder, crypto: { randomUUID: () => 'test-idempotency-key' },
+    Headers, Response, URL, URLSearchParams, TextEncoder, crypto: { randomUUID: () => 'test-idempotency-key' },
     fetch: async (url, options) => {
       calls.push({ url, ...options });
       if (!replies.length) throw new Error('Unexpected network request');
@@ -35,12 +35,47 @@ const json = (body, status = 200, token) => new Response(JSON.stringify(body), {
   status, headers: { 'Content-Type': 'application/json', ...(token ? { 'X-CSRF-TOKEN': token } : {}) }
 });
 const payment = { fromAccountId: 1, beneficiaryId: 2, amount: '10.25', purpose: 'Demo' };
+for (const status of [200,201]) test('payment response '+status+' uses one credentialed protected POST',async()=>{
+ const row={transactionId:123,state:'SETTLED',amount:10.25};
+ const f=fixture([json({},200,'token'),json(row,status)]);
+ const response=await f.load('transactionService').transactionService.create({...payment,userEmail:'ignored',userId:9,riskTier:'LOW',state:'SETTLED',balance:999},'stable-key');
+ assert.equal(response.state,'SETTLED');const posts=f.calls.filter(c=>c.method==='POST');assert.equal(posts.length,1);
+ assert.equal(posts[0].url,'http://localhost:8080/api/transactions');assert.equal(posts[0].credentials,'include');
+ assert.equal(posts[0].headers.get('X-CSRF-TOKEN'),'token');assert.equal(posts[0].headers.get('Idempotency-Key'),'stable-key');
+ assert.deepEqual(JSON.parse(posts[0].body),payment);
+});
+test('phone password login sends password without PIN and preserves cookies', async () => {
+  const f = fixture([json({role:'CUSTOMER'})]);
+  await f.load('authService').authService.login({phone:'9876543210',password:' raw password '});
+  assert.deepEqual(JSON.parse(f.calls[0].body),{phone:'9876543210',password:' raw password '});
+  assert.equal(f.calls[0].credentials,'include');
+});
+test('beneficiary service uses real session endpoints and CSRF for writes', async () => {
+  const row = { beneficiaryId: 3 };
+  const f = fixture([json([], 200, 'csrf-test'), json(row, 201), json(row), new Response(null, { status: 204 })]);
+  const service = f.load('beneficiaryService').beneficiaryService;
+  await service.list();
+  await service.create({ beneficiaryName: ' Recipient ', bankAccountNumber: '00123', ifsc: 'hdfc0001234', userId: 99 });
+  await service.get(3); await service.deactivate(3);
+  assert.deepEqual(f.calls.map(c => [c.method, c.url]), [
+    ['GET', 'http://localhost:8080/api/beneficiaries'], ['POST', 'http://localhost:8080/api/beneficiaries'],
+    ['GET', 'http://localhost:8080/api/beneficiaries/3'], ['DELETE', 'http://localhost:8080/api/beneficiaries/3']]);
+  assert.deepEqual(JSON.parse(f.calls[1].body), { beneficiaryName: 'Recipient', bankAccountNumber: '00123', ifsc: 'HDFC0001234' });
+  for (const call of f.calls) assert.equal(call.credentials, 'include');
+  assert.equal(f.calls[1].headers.get('X-CSRF-TOKEN'), 'csrf-test');
+  assert.equal(f.calls[3].headers.get('X-CSRF-TOKEN'), 'csrf-test'); assert.equal(f.calls[3].body, undefined);
+});
+test('beneficiary service rejects invalid input before transport', () => {
+  const f = fixture(); const service = f.load('beneficiaryService').beneficiaryService;
+  assert.throws(() => service.create({ beneficiaryName: '', bankAccountNumber: 'x', ifsc: '' }));
+  assert.throws(() => service.get(-1)); assert.equal(f.calls.length, 0);
+});
 test('profile uses session identity and retains only display fields', async () => {
   const f = fixture([json({ name: 'Customer', email: 'customer@example.test', userId: 1, phone: 'unused' })]);
   const profile = await f.load('profileService').profileService.getCurrent();
   assert.equal(f.calls[0].url, 'http://localhost:8080/api/users/current');
   assert.equal(f.calls[0].credentials, 'include'); assert.equal(f.calls[0].body, undefined);
-  assert.deepEqual(Object.keys(profile).sort(), ['email', 'name']);
+  assert.deepEqual(Object.keys(profile).sort(), ['email', 'name', 'phone', 'status', 'userId']);
 });
 
 test('default account GET has cookies, no body, no cache and no client identity', async () => {
@@ -145,7 +180,7 @@ test('invalid report dates fail locally', async () => {
   assert.equal(f.calls.length, 0);
 });
 test('old view-model facade ignores identity and retains a failed-payment retry key', async () => {
-  const f = fixture([json([{ accountId: 1 }],200,'mock-csrf'), new Error('timeout'), json({ transactionId: 4 })]);
+  const f = fixture([json({ accountId: 1 },200,'mock-csrf'), new Error('timeout'), json({ transactionId: 4 })]);
   const api = f.load('api'); await api.getAccounts('must-not-be-sent');
   await assert.rejects(api.initiateTransaction({ ...payment, userEmail: 'must-not-be-sent' }));
   await api.initiateTransaction({ ...payment, userEmail: 'must-not-be-sent' });
@@ -159,4 +194,8 @@ test('old in-flight GET cannot restore CSRF after session clear', async () => {
   resolve(json({},200,'old-csrf')); await pending;
   await assert.rejects(f.load('transactionService').transactionService.create(payment,'key'), e => e.kind === 'csrf');
   assert.equal(f.calls.length, 2);
+});
+test('unknown credentials still fail when the API is unreachable', async () => {
+  const f = fixture([new Error('connect')]);
+  await assert.rejects(f.load('authService').authService.login({ phone: '9876543210', password: 'DemoPay@123' }), e => e.status === 0);
 });

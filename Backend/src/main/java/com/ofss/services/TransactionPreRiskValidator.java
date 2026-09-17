@@ -79,7 +79,7 @@ public class TransactionPreRiskValidator {
             throw new TransactionValidationException(409, "Available balance could not be established");
         }
         BigDecimal available = account.getBalance().subtract(pending);
-        if (available.compareTo(amount) < 0) throw new InsufficientBalanceException("Insufficient available balance");
+        if (available.compareTo(amount) < 0) throw new InsufficientBalanceException("Insufficient available balance. Account balance: INR " + account.getBalance().toPlainString() + "; reserved by pending payments: INR " + pending.toPlainString() + "; available to transfer after the INR 5000 minimum: INR " + available.subtract(MINIMUM_BALANCE).max(BigDecimal.ZERO).toPlainString());
         if (available.subtract(amount).compareTo(MINIMUM_BALANCE) < 0) {
             throw new InsufficientBalanceException("Minimum available balance of INR 5000 must remain after transfer");
         }

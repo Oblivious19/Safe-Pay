@@ -1,0 +1,31 @@
+import * as ko from "knockout";
+import { AdminUser, CreditAccount, CreditReceipt } from "../services/adminUserService";
+export declare class AdminUsersModel {
+    users: ko.ObservableArray<AdminUser>;
+    selected: ko.Observable<AdminUser | null>;
+    accounts: ko.ObservableArray<CreditAccount>;
+    selectedAccountId: ko.Observable<number | null>;
+    accountLabel: (a: CreditAccount) => string;
+    private operation?;
+    account: ko.Observable<CreditAccount | null>;
+    receipt: ko.Observable<CreditReceipt | null>;
+    amount: ko.Observable<string>;
+    confirmed: ko.Observable<boolean>;
+    pending: ko.Observable<boolean>;
+    loading: ko.Observable<boolean>;
+    busy: ko.Observable<boolean>;
+    forbidden: ko.Observable<boolean>;
+    error: ko.Observable<string>;
+    noAccount: ko.Observable<boolean>;
+    private generation;
+    money: (value: string) => string;
+    masked: (number: string) => string;
+    private fail;
+    load: () => Promise<void>;
+    select: (user: AdminUser) => Promise<void>;
+    selectAccount: () => void;
+    retry: () => Promise<void>;
+    submit: () => Promise<void>;
+    private sendCredit;
+    disconnected(): void;
+}

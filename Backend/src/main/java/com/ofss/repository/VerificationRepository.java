@@ -35,4 +35,11 @@ public interface VerificationRepository extends JpaRepository<TransactionDb, Lon
             + "and t.state = com.ofss.beans.TransactionState.HARD_HOLD and t.authenticationRequired = true "
             + "and t.riskTier in (com.ofss.beans.RiskTier.VERY_HIGH, com.ofss.beans.RiskTier.HARD_HOLD)")
     int settleVerified(@Param("id") Long id, @Param("version") Long version, @Param("key") String key);
+
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("update TransactionDb t set t.state = com.ofss.beans.TransactionState.CANCELLED, "
+            + "t.cancelledAt = local datetime, t.cancelIdempotencyKey = :key, t.version = t.version + 1 "
+            + "where t.transactionId = :id and t.version = :version "
+            + "and t.state = com.ofss.beans.TransactionState.HARD_HOLD")
+    int declineHeld(@Param("id") Long id, @Param("version") Long version, @Param("key") String key);
 }

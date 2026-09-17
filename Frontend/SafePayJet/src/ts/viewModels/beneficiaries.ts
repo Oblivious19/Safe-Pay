@@ -1,136 +1,127 @@
 import * as ko from "knockout";
-import app from "../appController";
-import * as AccUtils from "../accUtils";
-import { Account, addBeneficiary, Beneficiary, deleteBeneficiary, getAccounts, getBeneficiaries,
-  getBeneficiary, updateBeneficiaryStatus, validateBeneficiary } from "../services/api";
-import { endExpiredSession } from "../services/customerSession";
+import { beneficiaryService, Beneficiary, BeneficiaryInput, validateBeneficiary } from "../services/beneficiaryService";
+import { accountService } from "../services/accountService";
+import { Account } from "../services/types";
+import { ApiError } from "../services/apiError";
 
 class BeneficiariesViewModel {
-  signedInEmail = ko.pureComputed(() => app.profile()?.email || "");
   accounts = ko.observableArray<Account>([]);
-  accountId = ko.observable("");
+  selectedAccountId = ko.observable<number | null>(null);
+  accountOption = (a: Account): string => a.accountType + " •••• " + a.accountNumber.slice(-4) + " · " + a.status;
+  includeInactive = ko.observable(false);
+  mode = ko.observable<"list" | "add" | "details">("list");
+  beneficiaries = ko.observableArray<Beneficiary>([]);
+  selected = ko.observable<Beneficiary | null>(null);
   beneficiaryName = ko.observable("");
   bankAccountNumber = ko.observable("");
   ifsc = ko.observable("");
-  beneficiaries = ko.observableArray<Beneficiary>([]);
+  fieldErrors = ko.observable<Partial<Record<keyof BeneficiaryInput, string>>>({});
   loading = ko.observable(false);
   saving = ko.observable(false);
   error = ko.observable("");
   success = ko.observable("");
-  fieldErrors = ko.observable<{ beneficiaryName?: string; bankAccountNumber?: string; ifsc?: string }>({});
-  selected = ko.observable<Beneficiary | null>(null);
-  busyId = ko.observable<number | null>(null);
-  accountLabel = (account: Account): string => `${account.accountType} •••• ${account.accountNumber.slice(-4)} — ${account.status}`;
-  private revision = 0;
-  private connectedPage = false;
-  private lifecycle = 0;
-  private updatingSelection = false;
-  constructor() {
-    this.accountId.subscribe(() => {
-      if (!this.updatingSelection && this.connectedPage) void this.loadBeneficiaries();
-    });
+  confirmDeactivate = ko.observable(false);
+  private generation = 0;
+  private alive = true;
+  mask = (value: string): string => value.length > 4 ? "•••• " + value.slice(-4) : "••••";
+  added = (value: string): string => {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? "Added date unavailable" : "Added " + new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", year: "numeric" }).format(date);
+  };
+  isNew = (value: string): boolean => {
+    const age = Date.now() - new Date(value).getTime();
+    return age >= 0 && age < 86400000;
+  };
+  private handle(error: unknown): void {
+    if (error instanceof ApiError && error.status === 401) {
+      this.beneficiaries([]); this.selected(null);
+      window.location.replace("/login?reason=session-expired");
+      this.error("Your session has expired. Please log in again.");
+    } else if (error instanceof ApiError && [400, 403, 404, 409].includes(error.status)) {
+      this.error(error.status === 409 ? "This beneficiary is already registered." : error.message);
+    } else this.error("We couldn’t complete this request. Please try again.");
   }
-  private expired(error: unknown): boolean {
-    return endExpiredSession(error, () => {
-      this.connectedPage = false; this.lifecycle++; this.revision++;
-      this.accounts([]); this.beneficiaries([]); this.selected(null);
-      this.beneficiaryName(""); this.bankAccountNumber(""); this.ifsc("");
-      this.error("Your session has expired. Please sign in again.");
-    });
-  }
-
   load = async (): Promise<void> => {
-    if (this.saving() || this.busyId() !== null) return;
-    await this.refreshAccounts();
-  };
-  private refreshAccounts = async (): Promise<void> => {
-    const revision = ++this.revision;
-    this.loading(true); this.error(""); this.beneficiaries([]); this.selected(null);
+    if (this.loading()) return;
+    const generation = ++this.generation;
+    this.loading(true); this.error(""); this.beneficiaries([]);
     try {
-      const accounts = await getAccounts();
-      if (!this.connectedPage || revision !== this.revision) return;
-      this.updatingSelection = true;
+      const accounts=await accountService.list();
+      if(!this.alive || generation!==this.generation)return;
       this.accounts(accounts);
-      if (!accounts.some(account => account.accountId === Number(this.accountId()))) this.accountId(accounts.length ? String(accounts[0].accountId) : "");
-      this.updatingSelection = false;
-      await this.loadBeneficiaries();
-    } catch (error) {
-      if (this.connectedPage && revision === this.revision && !this.expired(error)) this.error(error instanceof Error ? error.message : "Could not load beneficiaries.");
-    } finally { if (this.connectedPage && revision === this.revision) this.loading(false); }
+      const chosen=accounts.find(a=>a.accountId===this.selectedAccountId()) || accounts.find(a=>a.status==="ACTIVE") || accounts[0];
+      this.selectedAccountId(chosen?.accountId || null);
+      if(!chosen){this.error("No account is linked to this profile yet.");return;}
+      const list = await beneficiaryService.list(chosen.accountId,this.includeInactive());
+      if (this.alive && generation === this.generation) this.beneficiaries(list);
+    } catch (error) { if (this.alive && generation === this.generation) this.handle(error); }
+    finally { if (this.alive && generation === this.generation) this.loading(false); }
   };
-  private loadBeneficiaries = async (): Promise<void> => {
-    const revision = ++this.revision;
-    const account = this.accounts().find(item => item.accountId === Number(this.accountId()));
-    this.beneficiaries([]); this.selected(null); this.error("");
-    this.loading(!!account);
-    if (!account) return;
-    try {
-      const beneficiaries = await getBeneficiaries(undefined, true, account.accountId);
-      if (!this.connectedPage || revision !== this.revision) return;
-      this.beneficiaries(beneficiaries.filter(beneficiary => beneficiary.accountId === account.accountId));
-    } catch (error) {
-      if (this.connectedPage && revision === this.revision && !this.expired(error)) this.error(error instanceof Error ? error.message : "Could not load beneficiaries for this account.");
-    } finally { if (this.connectedPage && revision === this.revision) this.loading(false); }
+  openAdd = (): void => {
+    if (this.loading() || this.saving()) return;
+    this.error(""); this.success(""); this.fieldErrors({});
+    this.beneficiaryName(""); this.bankAccountNumber(""); this.ifsc("");
+    this.mode("add");
   };
-
+  back = (): void => {
+    if (this.saving() || this.loading()) return;
+    this.mode("list"); this.selected(null); this.error(""); this.confirmDeactivate(false);
+    this.beneficiaryName(""); this.bankAccountNumber(""); this.ifsc("");
+  };
   save = async (): Promise<void> => {
-    if (this.saving() || this.loading() || this.busyId() !== null) return;
-    if (!this.accounts().some(account => account.accountId === Number(this.accountId()))) {
-      this.error("Choose an account for this beneficiary."); return;
+    if (this.saving()) return;
+    if(!this.selectedAccountId()){this.error("Select an account first.");return;}
+    const input = { accountId: this.selectedAccountId()!, beneficiaryName: this.beneficiaryName(), bankAccountNumber: this.bankAccountNumber(), ifsc: this.ifsc() };
+    const errors = validateBeneficiary(input);
+    this.fieldErrors(errors); this.error(""); this.success("");
+    if (Object.keys(errors).length) {
+      document.getElementById("recipient-" + Object.keys(errors)[0])?.focus();
+      return;
     }
-    const fieldErrors = validateBeneficiary({ beneficiaryName: this.beneficiaryName(), bankAccountNumber: this.bankAccountNumber(), ifsc: this.ifsc() });
-    this.fieldErrors(fieldErrors); this.error("");
-    if (Object.keys(fieldErrors).length) { document.getElementById("beneficiary-" + Object.keys(fieldErrors)[0])?.focus(); return; }
-    const lifecycle = this.lifecycle;
-    const accountId = this.accountId();
-    this.revision++; this.saving(true); this.error(""); this.success("");
+    this.saving(true);
     try {
-      await addBeneficiary(Number(accountId), "", {
-        beneficiaryName: this.beneficiaryName().trim(),
-        bankAccountNumber: this.bankAccountNumber().trim(),
-        ifsc: this.ifsc().trim().toUpperCase()
-      });
-      if (!this.connectedPage || lifecycle !== this.lifecycle || accountId !== this.accountId()) return;
+      await beneficiaryService.create(input);
+      if (!this.alive) return;
       this.beneficiaryName(""); this.bankAccountNumber(""); this.ifsc("");
-      this.success("Beneficiary added successfully.");
-      await this.loadBeneficiaries();
-    } catch (error) {
-      if (this.connectedPage && lifecycle === this.lifecycle && !this.expired(error) && accountId === this.accountId()) this.error(error instanceof Error ? error.message : "Could not add beneficiary.");
-    } finally { if (this.connectedPage && lifecycle === this.lifecycle) this.saving(false); }
+      this.mode("list"); this.success("Beneficiary added successfully.");
+      await this.load();
+    } catch (error) { if (this.alive) this.handle(error); }
+    finally { if (this.alive) this.saving(false); }
   };
-
-  details = async (beneficiary: Beneficiary): Promise<void> => {
-    if (this.busyId() !== null || this.saving() || this.loading() || beneficiary.accountId !== Number(this.accountId())) return;
-    const lifecycle = this.lifecycle;
-    const revision = this.revision;
-    this.busyId(beneficiary.beneficiaryId); this.error(""); this.selected(null);
+  select = async (beneficiary: Beneficiary): Promise<void> => {
+    if (this.loading() || this.saving()) return;
+    const generation = ++this.generation;
+    this.mode("details"); this.selected(null); this.error(""); this.success(""); this.loading(true);
+    this.confirmDeactivate(false);
     try {
-      const result = await getBeneficiary(beneficiary.beneficiaryId);
-      if (this.connectedPage && lifecycle === this.lifecycle && revision === this.revision && result.accountId === Number(this.accountId())) this.selected(result);
-    } catch (error) {
-      if (this.connectedPage && lifecycle === this.lifecycle && !this.expired(error) && revision === this.revision) this.error(error instanceof Error ? error.message : "Could not load beneficiary details.");
-    } finally { if (this.connectedPage && lifecycle === this.lifecycle) this.busyId(null); }
+      const detail = await beneficiaryService.get(beneficiary.beneficiaryId);
+      if (this.alive && generation === this.generation) this.selected(detail);
+    } catch (error) { if (this.alive && generation === this.generation) this.handle(error); }
+    finally { if (this.alive && generation === this.generation) this.loading(false); }
   };
-  closeDetails = (): void => { this.selected(null); };
-  remove = (beneficiary: Beneficiary): Promise<void> => this.change(beneficiary, false);
-  reactivate = (beneficiary: Beneficiary): Promise<void> => this.change(beneficiary, true);
-  private async change(beneficiary: Beneficiary, reactivate: boolean): Promise<void> {
-    if (this.busyId() !== null || this.saving() || this.loading() || beneficiary.accountId !== Number(this.accountId())) return;
-    const lifecycle = this.lifecycle;
-    const accountId = this.accountId();
-    this.revision++; this.busyId(beneficiary.beneficiaryId); this.error(""); this.success("");
+  deactivate = async (): Promise<void> => {
+    if (!this.selected() || !this.confirmDeactivate() || this.saving()) return;
+    this.saving(true); this.error("");
     try {
-      if (reactivate) await updateBeneficiaryStatus(beneficiary.beneficiaryId, "ACTIVE");
-      else await deleteBeneficiary(beneficiary.beneficiaryId);
-      if (!this.connectedPage || lifecycle !== this.lifecycle || accountId !== this.accountId()) return;
-      this.selected(null);
-      this.success(reactivate ? "Beneficiary reactivated." : "Beneficiary removed from the active list. You can reactivate it below.");
-      await this.loadBeneficiaries();
-    } catch (error) {
-      if (this.connectedPage && lifecycle === this.lifecycle && !this.expired(error) && accountId === this.accountId()) this.error(error instanceof Error ? error.message : "Could not update beneficiary.");
-    } finally { if (this.connectedPage && lifecycle === this.lifecycle) this.busyId(null); }
+      await beneficiaryService.deactivate(this.selected()!.beneficiaryId);
+      if (!this.alive) return;
+      this.selected(null); this.confirmDeactivate(false); this.mode("list");
+      this.success("Beneficiary deactivated. They no longer appear in your saved list.");
+      await this.load();
+    } catch (error) { if (this.alive) this.handle(error); }
+    finally { if (this.alive) this.saving(false); }
+  };
+  changeAccount = (): void => {this.selected(null);this.mode("list");void this.load();};
+  reactivate = async (): Promise<void> => {
+    if(!this.selected() || this.saving())return;this.saving(true);this.error("");
+    try{await beneficiaryService.reactivate(this.selected()!.beneficiaryId);if(this.alive){this.selected(null);this.mode("list");this.success("Beneficiary reactivated.");await this.load();}}
+    catch(e){if(this.alive)this.handle(e);}finally{if(this.alive)this.saving(false);}
+  };
+  connected(): void {
+    this.alive = true; document.title = "Beneficiaries | SafePay";
+    if (new URLSearchParams(window.location.search).get("action") === "add") this.openAdd();
+    void this.load();
   }
-  connected(): void { this.connectedPage = true; this.lifecycle++; this.saving(false); this.busyId(null); AccUtils.announce("Beneficiaries page loaded."); document.title = "Beneficiaries | SafePay"; void this.load(); }
-  disconnected(): void { this.connectedPage = false; this.lifecycle++; this.revision++; this.selected(null); }
+  disconnected(): void { this.alive = false; this.generation++; this.selected(null); this.beneficiaries([]); }
 }
 export = BeneficiariesViewModel;

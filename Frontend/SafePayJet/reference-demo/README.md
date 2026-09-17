@@ -1,0 +1,1 @@
+These are the original ZIP demo modules and tests, retained as reference. They rely on browser-only PIN/OTP/ledger behaviours that the working backend does not implement. They are not part of the live app. Current tests are in ../tests and run with npm test.

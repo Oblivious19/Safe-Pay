@@ -65,4 +65,33 @@ class AdminApprovalAuthorizationTest extends WebSecuritySliceSupport {
                 .header("Idempotency-Key","k")).andExpect(status().isUnauthorized());
         verifyNoInteractions(service);
     }
+    @Test void customerAndAnonymousCannotReadOrDecline() throws Exception {
+        mvc.perform(get("/api/admin/transactions/hard-holds")).andExpect(status().isUnauthorized());
+        mvc.perform(post("/api/admin/transactions/21/decline")).andExpect(status().isUnauthorized());
+        var customer = session("CUSTOMER");
+        String token = token(customer);
+        mvc.perform(get("/api/admin/transactions/hard-holds").session(customer)).andExpect(status().isForbidden());
+        mvc.perform(post("/api/admin/transactions/21/decline").session(customer)
+                .header("X-CSRF-TOKEN",token).header("Idempotency-Key","k")).andExpect(status().isForbidden());
+        verifyNoInteractions(service);
+    }
+    @Test void declineRequiresCsrfAndKeyAndUsesOnlySessionActor() throws Exception {
+        var admin = session("ADMIN"); String token = token(admin); clearInvocations(service);
+        mvc.perform(post("/api/admin/transactions/21/decline").session(admin).header("Idempotency-Key","k"))
+                .andExpect(status().isForbidden());
+        mvc.perform(post("/api/admin/transactions/21/decline").session(admin).header("X-CSRF-TOKEN",token))
+                .andExpect(status().isBadRequest());
+        verifyNoInteractions(service);
+        mvc.perform(post("/api/admin/transactions/21/decline").session(admin).header("X-CSRF-TOKEN",token)
+                .header("Idempotency-Key","k").param("actorId","999")).andExpect(status().isOk());
+        verify(service).decline(21L,principal("ADMIN"),"k");
+    }
+    @Test void changedOrSuspendedAdminSessionCannotDecline() throws Exception {
+        var admin = session("ADMIN"); String token = token(admin); clearInvocations(service);
+        when(currentSessions.isCurrent(any())).thenReturn(false);
+        mvc.perform(post("/api/admin/transactions/21/decline").session(admin).header("X-CSRF-TOKEN",token)
+                .header("Idempotency-Key","k")).andExpect(status().isUnauthorized());
+        verifyNoInteractions(service);
+    }
+
 }

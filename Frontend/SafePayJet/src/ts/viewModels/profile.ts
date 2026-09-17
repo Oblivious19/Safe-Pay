@@ -1,60 +1,45 @@
 import * as ko from "knockout";
 import app from "../appController";
-import * as AccUtils from "../accUtils";
-import { users } from "../services/api";
-import { CustomerProfile } from "../services/types";
-import { endExpiredSession } from "../services/customerSession";
+import { accountService } from "../services/accountService";
+import { ApiError } from "../services/apiError";
+import { Account } from "../services/types";
+import { profileService } from "../services/profileService";
 
 class ProfileViewModel {
-  name = ko.observable("");
-  email = ko.observable("");
-  phone = ko.observable("");
-  password = ko.observable("");
-  status = ko.observable("");
-  loading = ko.observable(false);
-  saving = ko.observable(false);
+  loading = ko.observable(true);
   error = ko.observable("");
-  success = ko.observable("");
-  private active = false;
-  private revision = 0;
-  private expired(error: unknown): boolean {
-    return endExpiredSession(error, () => {
-      this.active = false; this.revision++;
-      this.name(""); this.email(""); this.phone(""); this.password(""); this.status("");
-      this.error("Your session has expired. Please sign in again.");
-    });
-  }
-  private show(profile: CustomerProfile): void {
-    this.name(profile.name); this.email(profile.email); this.phone(profile.phone || ""); this.status(profile.status);
-  }
+  accounts = ko.observableArray<Account>([]);
+  selectedAccountId = ko.observable<number | null>(null);
+  accountOption = (a: Account): string => a.accountType + " •••• " + a.accountNumber.slice(-4) + " · " + a.status;
+  account = ko.observable<Account | null>(null);
+  name = ko.pureComputed(() => app.profile()?.name || "Your SafePay");
+  email = ko.pureComputed(() => app.profile()?.email || "");
+  initials = ko.pureComputed(() => (this.name() || "?").slice(0, 1).toUpperCase());
+  simulated = ko.pureComputed(() => false);
+  phone = ko.pureComputed(() => app.profile()?.phone || "");
+  mask = (value: string): string => value && value.length > 4 ? "•••• " + value.slice(-4) : "Account number unavailable";
+  accountLabel = (value: string): string => value === "SAVINGS" ? "Savings account" : value === "CURRENT" ? "Current account" : "Your account";
+  money = (value: number): string => new Intl.NumberFormat("en-IN", {
+    style: "currency", currency: "INR", minimumFractionDigits: 2, maximumFractionDigits: 2
+  }).format(value);
+  private alive = true;
   load = async (): Promise<void> => {
-    const revision = ++this.revision;
-    this.loading(true); this.error("");
+    this.loading(true); this.error(""); this.account(null);
     try {
-      const profile = await users.getCurrent();
-      if (this.active && revision === this.revision) this.show(profile);
+      const [accounts,profile]=await Promise.all([accountService.list(),profileService.getCurrent()]);
+      if(!this.alive)return;app.profile(profile);this.accounts(accounts);
+      this.selectedAccountId((accounts.find(a=>a.accountId===this.selectedAccountId()) || accounts[0])?.accountId || null);this.selectAccount();
     } catch (error) {
-      if (this.active && revision === this.revision && !this.expired(error)) this.error(error instanceof Error ? error.message : "Could not load your profile.");
-    } finally { if (this.active && revision === this.revision) this.loading(false); }
+      if (!this.alive) return;
+      if (error instanceof ApiError && error.status === 401) {
+        window.location.replace("/login?reason=session-expired");
+        return;
+      }
+      this.error("We couldn’t load your profile details. Please try again.");
+    } finally { if (this.alive) this.loading(false); }
   };
-  save = async (): Promise<void> => {
-    if (this.saving() || this.loading()) return;
-    const revision = ++this.revision;
-    this.saving(true); this.error(""); this.success("");
-    const password = this.password(); this.password("");
-    try {
-      const profile = await users.updateCurrent({ name: this.name().trim(), email: this.email().trim(),
-        phone: this.phone().trim(), ...(password ? { password } : {}) });
-      if (!this.active || revision !== this.revision) return;
-      this.show(profile); this.success("Your profile has been updated.");
-      await app.loadProfile();
-    } catch (error) {
-      if (this.active && revision === this.revision && !this.expired(error)) this.error(error instanceof Error ? error.message : "Could not update your profile.");
-    } finally { if (this.active && revision === this.revision) this.saving(false); }
-  };
-  connected(): void {
-    this.active = true; this.saving(false); AccUtils.announce("Profile page loaded."); document.title = "My Profile | SafePay"; void this.load();
-  }
-  disconnected(): void { this.active = false; this.revision++; this.password(""); }
+  selectAccount = (): void => {this.account(this.accounts().find(a=>a.accountId===this.selectedAccountId()) || null);};
+  connected(): void { this.alive=true; document.title = "Profile | SafePay"; void this.load(); }
+  disconnected(): void { this.alive = false; }
 }
 export = ProfileViewModel;

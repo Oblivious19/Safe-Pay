@@ -5,8 +5,13 @@
     <p class="login-overline">A LITTLE MORE PEACE OF MIND</p>
     <h1 id="login-title">Welcome back</h1>
     <p class="login-intro">Sign in to your SafePay account.</p>
-    <p class="auth-success" role="status" data-bind="visible: notice, text: notice"></p>
     <form novalidate data-bind="submit: login, attr: {'aria-busy': submitting}">
+      <!-- ko if: mode() !== 'email' -->
+      <div class="login-field"><label for="login-phone">Mobile number (+91)</label>
+        <input id="login-phone" type="tel" inputmode="numeric" autocomplete="username" maxlength="10" aria-describedby="login-phone-error" data-bind="textInput: phone, disable: submitting">
+        <p id="login-phone-error" class="login-inline-error" role="status" data-bind="text: phoneError"></p></div>
+      <!-- /ko -->
+      
       <!-- ko if: mode() === 'email' -->
       <div class="login-field">
         <label for="login-email">Email</label>
@@ -15,11 +20,7 @@
         <p id="login-email-error" class="login-inline-error" aria-live="polite" data-bind="text: emailError, visible: emailError"></p>
       </div>
       <!-- /ko -->
-      <!-- ko if: mode() === 'phone' -->
-      <div class="login-field"><label for="login-phone">Registered mobile number</label>
-        <input id="login-phone" type="tel" inputmode="numeric" autocomplete="username" maxlength="10" required aria-describedby="login-phone-error" data-bind="textInput: phone, disable: submitting, attr: {'aria-invalid': !!phoneError()}">
-        <p id="login-phone-error" class="login-inline-error" role="status" data-bind="text: phoneError"></p>
-      </div><!-- /ko -->
+      <!-- ko if: mode() !== 'pin' -->
       <div class="login-field">
         <label for="login-password">Password</label>
         <div class="login-password-wrap"><input id="login-password" name="password" type="password" autocomplete="current-password" required placeholder="Enter your password"
@@ -28,12 +29,13 @@
         </div>
         <p id="login-password-error" class="login-inline-error" aria-live="polite" data-bind="text: passwordError, visible: passwordError"></p>
       </div>
+      <!-- /ko -->
       <div class="login-message" role="alert" data-bind="visible: error, text: error"></div>
-      <button class="login-submit" type="submit" data-bind="disable: submitting"><span data-bind="text: submitting() ? 'Signing in…' : 'Login'"></span><span aria-hidden="true" data-bind="visible: !submitting()">↗</span></button>
-      <p class="login-progress" role="status" data-bind="visible: submitting">Please wait while we sign you in.</p>
+      <oj-button class="login-submit" chroming="callToAction" type="submit" data-bind="disable: submitting"><span class="spin" aria-hidden="true" data-bind="visible: submitting"></span><span data-bind="text: submitting() ? 'Signing in…' : 'Login'"></span></oj-button>
+      <p class="login-progress load-row" role="status" data-bind="visible: submitting"><span class="spin" aria-hidden="true"></span><span>Please wait while we sign you in.</span></p>
     </form>
-    <button class="dashboard-secondary" type="button" data-bind="click: switchMode, disable: submitting, text: mode() === 'email' ? 'Use mobile number and password' : 'Use email and password'"></button>
-    <div class="login-registration"><span>New to SafePay?</span><a href="/register">Create an account</a></div>
+    <button class="onboarding-secondary" type="button" data-bind="click: switchMode, disable: submitting, text: mode() !== 'email' ? 'Use email and password instead' : 'Use mobile number and password instead'"></button>
+    <div class="login-registration"><span>New to SafePay?</span> <a href="/register">Create an account</a></div>
   </div>
   <div class="login-simulation"><span aria-hidden="true">◇</span> Simulated Environment</div>
   <p class="login-footnote">A little more control. A little more confidence.</p>

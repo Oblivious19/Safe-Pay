@@ -1,20 +1,33 @@
-<div class="safepay-page"><p class="eyebrow">YOUR ACCOUNT</p><h1>My Profile</h1>
-  <div class="payment-shell"><h2>Contact details</h2>
-    <p>Keep your name and contact details up to date. Use your updated email the next time you sign in.</p>
-    <p>Status: <span class="status-pill" data-bind="text: status"></span></p>
-    <form data-bind="submit: save">
-      <div class="form-grid">
-        <label>Name<input required maxlength="100" autocomplete="name" data-bind="textInput: name, disable: loading() || saving()" /></label>
-        <label>Email<input required type="email" autocomplete="email" data-bind="textInput: email, disable: loading() || saving()" /></label>
-        <label>Phone<input required type="tel" autocomplete="tel" data-bind="textInput: phone, disable: loading() || saving()" /></label>
-        <label>New password (optional)<input type="password" autocomplete="new-password" data-bind="textInput: password, disable: loading() || saving()" /><small>Leave blank to keep your current password.</small></label>
-      </div>
-      <div class="form-actions">
-        <button class="safe-button" type="submit" data-bind="disable: saving() || loading(), text: saving() ? 'Saving…' : 'Save profile'"></button>
-        <button class="safe-button secondary" type="button" data-bind="click: load, disable: saving() || loading()">Reload profile</button>
-      </div>
-    </form>
-    <p class="form-error" role="alert" data-bind="visible: error, text: error"></p>
-    <p class="form-success" role="status" data-bind="visible: success, text: success"></p>
+<section class="profile-page" aria-labelledby="profile-title" data-bind="attr: {'aria-busy': loading}">
+  <p class="dash-overline">YOUR ACCOUNT</p>
+  <h1 id="profile-title">Profile</h1>
+<div class="integration-account"><label for="profile-account">Account</label><select id="profile-account" data-bind="options: accounts, optionsText: accountOption, optionsValue: 'accountId', value: selectedAccountId, optionsCaption: 'Select account', valueAllowUnset: true, event: {change: selectAccount}, disable: loading"></select></div>
+
+  <p class="send-subtitle">Signed-in details for this simulated session. SafePay does not move real money.</p>
+  <div class="dash-skeleton" data-bind="visible: loading" role="status" aria-label="Loading profile"><span class="sk sk-small"></span><span class="sk sk-money"></span><span class="sk sk-line"></span><span class="sk sk-line"></span></div>
+  <p class="recipient-error" role="alert" data-bind="visible: error, text: error"></p>
+  <button type="button" class="dashboard-secondary" data-bind="visible: error, click: load">Try again</button>
+  <!-- ko if: !loading() && !error() -->
+  <article class="profile-card">
+    <div class="profile-avatar-ring" aria-hidden="true"><span data-bind="text: initials"></span></div>
+    <h2 data-bind="text: name"></h2>
+    <p data-bind="text: email"></p>
+    <p class="profile-phone" data-bind="visible: phone, text: phone"></p>
+    <span class="simulation-label" data-bind="visible: simulated">Simulated Environment</span>
+  </article>
+  <!-- ko if: account -->
+  <article class="profile-account">
+    <p class="dash-overline">LINKED ACCOUNT</p>
+    <strong data-bind="text: accountLabel(account().accountType)"></strong>
+    <p data-bind="text: mask(account().accountNumber)"></p>
+    <p>Account balance <b data-bind="text: money(account().balance)"></b></p>
+    <small data-bind="text: account().status === 'ACTIVE' ? 'Active · INR' : account().status"></small>
+  </article>
+  <!-- /ko -->
+  <div class="profile-links">
+    <a href="/send-money">Send money</a>
+    <a href="/transactions">Transactions</a>
+    <a href="/beneficiaries">Beneficiaries</a>
   </div>
-</div>
+  <!-- /ko -->
+</section>

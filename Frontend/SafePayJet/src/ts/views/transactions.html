@@ -1,36 +1,77 @@
-<div class="safepay-page"><p class="eyebrow">PAYMENT HISTORY</p><h1>Transactions</h1>
-  <div class="payment-shell"><h2>Payment status</h2>
-    <p>Pending payments refresh every five seconds while this page is open.</p>
-    <div class="inline-form">
-      <label>Signed in as<input type="email" readonly data-bind="value: signedInEmail, attr: {placeholder: 'Profile unavailable'}" /></label>
-      <label>Status<select data-bind="value: stateFilter, event: {change: load}, disable: busyId() !== null">
-        <option value="">All payments</option><option value="PROTECTED">Protected</option><option value="HARD_HOLD">Awaiting admin approval</option><option value="SETTLED">Settled</option><option value="CANCELLED">Cancelled</option>
-      </select></label>
-      <button class="safe-button" data-bind="click: load, disable: loading() || busyId() !== null"><span data-bind="text: loading() ? 'Refreshing…' : 'Refresh'"></span></button>
+<section class="tx-page" aria-labelledby="tx-title" data-bind="attr: {'aria-busy': loading}">
+  <header class="tx-heading">
+    <div>
+      <p class="dash-overline">PAYMENT HISTORY</p>
+      <h1 id="tx-title">Transactions</h1>
+      <p class="send-subtitle">Every pause, settlement and cancellation in one place.</p>
     </div>
-    <p class="form-error" role="alert" data-bind="visible: error, text: error"></p>
-    <p class="form-error" role="status" data-bind="visible: refreshError, text: refreshError"></p>
-    <p class="form-success" role="status" data-bind="visible: success, text: success"></p>
-    <div class="transaction-list" data-bind="foreach: transactions"><article class="transaction-row">
-      <div class="transaction-details"><div class="transaction-heading"><strong data-bind="text: transactionRef"></strong><b data-bind="text: $parent.formatMoney(amount)"></b></div>
-        <dl>
-          <div><dt>To</dt><dd data-bind="text: beneficiaryName"></dd></div>
-          <div><dt>Beneficiary account</dt><dd data-bind="text: $parent.maskAccountNumber(beneficiaryBankAccountNumber) + ' · ' + beneficiaryIfsc"></dd></div>
-          <div><dt>From account</dt><dd data-bind="text: fromAccountId"></dd></div>
-          <div><dt>Purpose</dt><dd data-bind="text: purpose || 'Not provided'"></dd></div>
-          <div><dt>Created</dt><dd data-bind="text: $parent.formatDate(createdAt)"></dd></div>
-          <div><dt>Risk decision</dt><dd data-bind="text: riskReason"></dd></div>
-          <div data-bind="visible: protectionExpiresAt"><dt>Protection ends</dt><dd data-bind="text: $parent.formatDate(protectionExpiresAt)"></dd></div>
-          <div data-bind="visible: settledAt"><dt>Settled</dt><dd data-bind="text: $parent.formatDate(settledAt)"></dd></div>
-          <div data-bind="visible: cancelledAt"><dt>Cancelled</dt><dd data-bind="text: $parent.formatDate(cancelledAt)"></dd></div>
-        </dl>
+    <oj-button chroming="outlined" data-bind="click: load, disable: loading"><span class="spin" aria-hidden="true" data-bind="visible: loading"></span><span data-bind="text: loading() ? 'Loading…' : 'Refresh'"></span></oj-button>
+  </header>
+  <p class="tx-identity">Signed in as <span data-bind="text: signedInEmail"></span></p>
+  <p class="recipient-error" role="alert" data-bind="visible: error, text: error"></p>
+  <div class="dash-skeleton" role="status" aria-label="Loading your payments" data-bind="visible: loading"><span class="sk sk-small"></span><span class="sk sk-line"></span><span class="sk sk-line"></span><span class="sk sk-line"></span></div>
+  <div class="sk-cards" aria-hidden="true" data-bind="visible: loading"><span class="sk-card"></span><span class="sk-card"></span><span class="sk-card"></span></div>
+  <ul class="tx-list" data-bind="foreach: transactions">
+    <li class="tx-row" data-bind="click: $parent.openDetail, css: $parent.riskClass($data)">
+      <oj-avatar size="xs" data-bind="attr: {initials: $parent.initials(beneficiaryName)}"></oj-avatar>
+      <div class="tx-copy">
+        <strong data-bind="text: beneficiaryName || transactionRef"></strong>
+        <span data-bind="text: $parent.formatDate(createdAt)"></span>
+        <div class="flux-bar flux-bar-mini" data-bind="visible: state === 'PROTECTED', style: {'--flux': $parent.fluxPercent($data)}"><i></i></div>
+        <small data-bind="visible: $parent.countdownText($data), text: $parent.countdownText($data)"></small>
       </div>
-      <div class="transaction-actions">
-        <span class="status-pill" data-bind="text: state"></span><span class="risk-pill" data-bind="text: riskTier"></span>
-        <button class="text-button" data-bind="visible: $parent.canCancel($data), click: function() { return $parent.cancel($data); }, disable: $parent.busyId() !== null">Cancel</button>
-        <span role="status" data-bind="visible: state === 'HARD_HOLD'">Awaiting admin approval</span>
+      <div class="tx-meta">
+        <b data-bind="text: $parent.formatMoney(amount)"></b>
+        <span class="payment-status" data-bind="text: $parent.statusLabel(state), css: $parent.riskClass($data)"></span>
+        <span class="tx-tier" data-bind="text: $parent.tierLabel(riskTier)"></span>
+        <!-- ko if: $parent.canCancel($data) -->
+        <button type="button" class="tx-row-action" data-bind="click: function(data, event) { event.stopPropagation(); $parent.requestCancel($data); }">Cancel</button>
+        <!-- /ko -->
+        <!-- ko if: $parent.needsCall($data) -->
+        <button type="button" class="tx-row-action tx-row-call" data-bind="click: function(data, event) { event.stopPropagation(); $parent.startCall($data); }">Verify by call</button>
+        <!-- /ko -->
       </div>
-    </article></div>
-    <div class="empty-state" data-bind="visible: !loading() && !transactions().length"><span>⌁</span><h3>No transactions found</h3><p>Payments matching the selected status will appear here.</p></div>
-  </div>
-</div>
+    </li>
+  </ul>
+  <div class="dashboard-empty" data-bind="visible: !loading() && !transactions().length"><span class="state-symbol" aria-hidden="true">⌁</span><h3>No transactions found</h3><p>Your payments will appear here after you send money.</p></div>
+
+  <oj-drawer-popup class="tx-drawer" edge="end" opened="{{detailOpen}}" modality="modal">
+    <div class="tx-drawer-body">
+      <header class="tx-drawer-head"><h2 data-bind="text: selectedTitle"></h2><oj-button chroming="borderless" on-oj-action="[[closeDetail]]">Close</oj-button></header>
+      <!-- ko with: selected -->
+      <p class="send-review-amount" data-bind="text: $parent.formatMoney(amount)"></p>
+      <p class="protect-copy" data-bind="text: $parent.selectedCountdown"></p>
+      <dl class="send-review-details">
+        <div><dt>To</dt><dd data-bind="text: beneficiaryName"></dd></div>
+        <div><dt>Account</dt><dd data-bind="text: $parent.maskAccountNumber(beneficiaryBankAccountNumber) + ' · ' + beneficiaryIfsc"></dd></div>
+        <div><dt>Reference</dt><dd data-bind="text: transactionRef"></dd></div>
+        <div><dt>Purpose</dt><dd data-bind="text: purpose || 'Not provided'"></dd></div>
+        <div><dt>Status</dt><dd data-bind="text: $parent.statusLabel(state)"></dd></div>
+        <div><dt>Pause</dt><dd data-bind="text: $parent.tierLabel(riskTier)"></dd></div>
+        <div data-bind="visible: settledAt"><dt>Settled</dt><dd data-bind="text: $parent.formatDate(settledAt)"></dd></div>
+        <div data-bind="visible: cancelledAt"><dt>Cancelled</dt><dd data-bind="text: $parent.formatDate(cancelledAt)"></dd></div>
+      </dl>
+      <!-- /ko -->
+      <!-- ko if: selectedReasons().length -->
+      <section class="protect-why"><h3>Why SafePay paused this</h3><ul data-bind="foreach: selectedReasons"><li data-bind="text: $data"></li></ul></section>
+      <!-- /ko -->
+      <!-- ko if: selected() && canCancel(selected()) -->
+      <oj-button chroming="solid" class="send-continue" data-bind="click: function() { requestCancel(selected()); }">Cancel this payment</oj-button>
+      <!-- /ko -->
+      <!-- ko if: selected() && needsCall(selected()) -->
+      <p class="protect-copy">This payment is waiting for administrator approval. Only an administrator can approve and settle it.</p>
+      <oj-button chroming="callToAction" class="send-continue" data-bind="click: function() { startCall(selected()); }">Take the verification call</oj-button>
+      <!-- /ko -->
+    </div>
+  </oj-drawer-popup>
+
+  
+
+  <oj-dialog id="tx-cancel-dialog" class="protect-dialog" dialog-title="Cancel this payment?" cancel-behavior="icon" opened="{{cancelOpen}}">
+    <div slot="body"><p>This payment has not settled yet. Cancelling keeps the amount in your account.</p></div>
+    <div slot="footer">
+      <oj-button chroming="outlined" on-oj-action="[[closeCancel]]">Keep waiting</oj-button>
+      <oj-button chroming="solid" on-oj-action="[[confirmCancel]]">Cancel payment</oj-button>
+    </div>
+  </oj-dialog>
+</section>

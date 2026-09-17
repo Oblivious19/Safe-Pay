@@ -1,0 +1,184 @@
+<section class="send-flow" aria-labelledby="send-title" data-bind="attr: {'aria-busy': loading() || busy()}">
+<header class="send-flow-header">
+  <oj-button chroming="borderless" class="send-back" data-bind="click: back, disable: busy() || attemptLocked(), visible: step() !== 'result'">Back</oj-button>
+  <strong>Send Money</strong>
+  <span data-bind="text: step() === 'result' ? 'Payment status' : step() === 'review' ? '3 of 3' : step() === 'details' ? '2 of 3' : '1 of 3'"></span>
+</header>
+<p class="recipient-error" role="alert" data-bind="visible: error, text: error"></p>
+<oj-button chroming="outlined" data-bind="visible: error, click: load, disable: loading">Try again</oj-button>
+<div class="dash-skeleton" role="status" aria-label="Loading your recipients and account" data-bind="visible: loading"><span class="sk sk-small"></span><span class="sk sk-money"></span><span class="sk sk-line"></span></div>
+<div class="send-people" data-bind="css: {'is-dimmed': sheetOpen}">
+<h1 id="send-title">Who do you want to pay?</h1>
+<div class="integration-account"><label for="payment-account">Account</label><select id="payment-account" data-bind="options: accounts, optionsText: accountOption, optionsValue: 'accountId', value: selectedAccountId, optionsCaption: 'Select account', valueAllowUnset: true, event: {change: selectAccount}, disable: loading() || busy() || attemptLocked() || !!result()"></select></div>
+
+<p class="send-subtitle">Tap a person to open the payment sheet. Choose one of your saved recipients.</p>
+<oj-train id="send-train" class="send-train" aria-label="Send money steps" data-bind="attr: {'selected-step': trainStep}" steps="[[trainSteps]]"></oj-train>
+<a class="recipient-link" href="/beneficiaries?action=add">+ Add Beneficiary</a>
+<!-- ko if: !loading() && !error() && !beneficiaries().length --><div class="recipient-empty"><h2>No beneficiaries yet</h2><p>Add someone using their bank details to get started.</p><a class="recipient-secondary" href="/beneficiaries?action=add">Add Beneficiary</a></div><!-- /ko -->
+<div class="send-recipient-list" data-bind="foreach: beneficiaries">
+<button class="send-recipient" data-bind="click: $parent.pick, css: {'is-selected': $parent.selected() === $data}, attr: {'aria-pressed': $parent.selected() === $data}, disable: $parent.busy">
+<oj-avatar size="sm" data-bind="attr: {initials: $parent.initials(beneficiaryName)}"></oj-avatar>
+<span class="send-recipient-copy"><strong data-bind="text: beneficiaryName"></strong><span data-bind="text: $parent.mask(bankAccountNumber)"></span><small data-bind="text: 'IFSC ' + ifsc"></small><small data-bind="text: $parent.added(createdAt)"></small><span class="send-status" data-bind="text: status === 'ACTIVE' ? 'Active' : 'Inactive'"></span><small data-bind="visible: $parent.isNew(createdAt)">New beneficiary — first payments may pause</small></span>
+<span aria-hidden="true" data-bind="text: $parent.selected() === $data ? '✓' : '○'"></span>
+</button></div>
+<button type="button" class="send-continue pay-cta" data-bind="click: next, disable: cannotContinue"><span class="spin" aria-hidden="true" data-bind="visible: busy"></span><span data-bind="text: busy() ? 'Opening…' : 'Continue'"></span></button>
+</div>
+<div class="pay-overlay" data-bind="css: {'is-open': sheetOpen}, attr: {'aria-hidden': !sheetOpen()}">
+  <button type="button" class="pay-backdrop" data-bind="click: back, disable: busy() || (attemptLocked() && !canLeave())" aria-label="Close payment sheet"></button>
+  <div class="pay-sheet" role="dialog" aria-modal="true" aria-labelledby="pay-sheet-title" data-bind="css: {'is-review': step() === 'review', 'is-status': step() === 'result'}">
+    <span class="pay-glow" aria-hidden="true"><span class="pay-orb"></span><span class="pay-orb pay-orb-two"></span></span>
+    <div class="pay-sheet-toolbar">
+    <header class="pay-sheet-head">
+      <button type="button" class="pay-sheet-back" data-bind="click: back, disable: busy() || attemptLocked(), visible: step() !== 'result'">Back</button>
+      <strong id="pay-sheet-title">Send Money</strong>
+      <span data-bind="text: step() === 'result' ? 'Status' : step() === 'review' ? 'Review' : 'Amount'"></span>
+    </header>
+    <div class="pay-steps" aria-hidden="true" data-bind="foreach: payPips"><i data-bind="css: {on: $data}"></i></div>
+      <!-- ko if: step() === 'result' && isProtected() && !isSettling() -->
+      <button type="button" class="send-continue pay-cta protect-cancel" data-bind="click: cancelPayment, disable: !canCancel()"><span class="spin" aria-hidden="true" data-bind="visible: busy"></span><span data-bind="text: busy() ? 'Cancelling…' : 'Cancel this payment'"></span></button>
+      <!-- /ko -->
+    </div>
+    <!-- ko if: step() === 'details' -->
+    <div class="pay-panel">
+    <!-- ko with: selected -->
+    <div class="pay-person"><span class="pay-face" data-bind="text: $parent.initials(beneficiaryName)"></span><div><strong data-bind="text: beneficiaryName"></strong><small data-bind="text: $parent.mask(bankAccountNumber) + ' · ' + ifsc"></small></div></div>
+    <!-- /ko -->
+    <form novalidate data-bind="submit: continueDetails">
+    <label class="pay-amount-label" for="payment-amount">Amount in rupees</label>
+    <div class="send-amount pay-amount" data-bind="css: {'is-invalid': !!amountMessage(), 'is-long': amountLong}"><span aria-hidden="true">₹</span><input id="payment-amount" inputmode="decimal" autocomplete="off" placeholder="0" maxlength="19" required aria-describedby="amount-error amount-preview" data-bind="textInput: amount, disable: busy, attr: {'aria-invalid': !!amountError(), size: amountSize}"></div>
+    <p id="amount-error" class="recipient-field-error pay-amount-error" data-bind="text: amountMessage"></p>
+    <p id="amount-preview" class="send-amount-preview" data-bind="text: amountPreview"></p>
+    <div class="pay-chips" role="group" aria-label="Suggested amounts"><!-- ko foreach: quickAmounts --><button type="button" class="pay-chip" data-bind="click: function(){ $parent.useAmount($data); }, text: '₹' + $data, css: {'is-on': $parent.amount() === $data}, disable: $parent.busy"></button><!-- /ko --></div>
+    <label class="pay-note-label" for="payment-purpose">What’s it for? <span class="send-optional">(optional)</span></label>
+    <input id="payment-purpose" class="send-note" maxlength="255" placeholder="Add a note" data-bind="textInput: purpose, disable: busy, attr: {'aria-invalid': !!purposeError()}">
+    <p id="purpose-error" class="recipient-field-error" data-bind="text: purposeError"></p>
+    <!-- ko with: account --><p class="pay-from">From <span data-bind="text: (accountType === 'SAVINGS' ? 'Savings' : 'Current') + ' ' + $parent.mask(accountNumber)"></span> · <span data-bind="text: $parent.money(balance)"></span></p><!-- /ko -->
+    <button type="submit" class="send-continue pay-cta pay-shimmer" data-bind="disable: busy() || loading() || !account() || !!error() || !amountReady()"><span class="spin" aria-hidden="true" data-bind="visible: busy"></span><span data-bind="text: busy() ? 'Checking…' : 'Continue'"></span></button>
+    <p class="send-subtitle">Next, review your payment details. Nothing is sent until you confirm.</p>
+    <p role="status" class="recipient-success" data-bind="visible: notice, text: notice"></p>
+    </form>
+    </div>
+    <!-- /ko -->
+    <!-- ko if: step() === 'review' -->
+    <div class="pay-panel">
+    <!-- ko with: selected -->
+    <div class="pay-person"><span class="pay-face" data-bind="text: $parent.initials(beneficiaryName)"></span><div><strong data-bind="text: beneficiaryName"></strong><small data-bind="text: $parent.mask(bankAccountNumber)"></small></div></div>
+    <!-- /ko -->
+    <p class="pay-pay-label">Paying</p>
+    <p class="send-review-amount" data-bind="text: amountPreview"></p>
+    <p class="pay-note-line" data-bind="text: purpose().trim() ? purpose() : 'No note added'"></p>
+    <!-- ko with: account -->
+    <p class="pay-from">From <span data-bind="text: (accountType === 'SAVINGS' ? 'Savings' : 'Current') + ' ' + $parent.mask(accountNumber)"></span></p>
+    <!-- /ko -->
+    <!-- ko if: showProcessFlux -->
+    <div class="flux-loader flux-loader-live" role="status" aria-live="polite">
+      <p class="flux-phase" data-bind="foreach: fluxChars"><span class="flux-char" data-bind="text: char, style: { 'animation-delay': delay }"></span></p>
+      <div class="flux-bar" data-bind="style: {'--flux': fluxPercent}"><i></i></div>
+      <p class="flux-caption">Checking this payment before it can settle.</p>
+    </div>
+    <!-- /ko -->
+    
+    <oj-messages id="send-review-messages" messages="[[paymentMessages]]" display="general"></oj-messages>
+    <p role="alert" class="recipient-error" data-bind="visible: paymentError, text: paymentError"></p>
+    
+    <button type="button" class="send-continue pay-cta pay-shimmer" data-bind="click: confirm, disable: busy"><span class="spin" aria-hidden="true" data-bind="visible: busy"></span><span data-bind="text: busy() ? 'Processing…' : attemptLocked() ? 'Retry same payment' : 'Confirm & Pay'"></span></button>
+    
+    
+    <p class="send-subtitle" data-bind="visible: attemptLocked">Keep this page open while checking the outcome. Retrying here uses the same payment request; do not start a second payment if the result is uncertain.</p>
+    <button type="button" class="pay-ghost" data-bind="click: back, disable: busy() || attemptLocked()">Go Back</button>
+    </div>
+    <!-- /ko -->
+    <!-- ko if: step() === 'result' && result() -->
+    <div class="pay-panel protect-stage">
+      <h2 data-bind="text: resultTitle"></h2>
+      <span class="pay-tone" data-bind="css: riskTone, text: riskBadge"></span>
+      <!-- ko if: sheetKind() === 'short' -->
+      <div class="protect-phone" aria-live="polite">
+        <div class="flux-gauge">
+          <svg viewBox="0 0 200 120" role="img" data-bind="attr: {'aria-label': countdown}">
+            <defs>
+                <linearGradient id="protectFlux" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stop-color="#0e554f"/>
+                  <stop offset="55%" stop-color="#19a38a"/>
+                  <stop offset="100%" stop-color="#cfe8e1"/>
+                </linearGradient>
+            </defs>
+            <path class="flux-track-arc" d="M18 105 A 82 82 0 0 1 182 105"/>
+            <path class="flux-value-arc" d="M18 105 A 82 82 0 0 1 182 105" pathLength="257.6" stroke-dasharray="257.6" data-bind="attr: {'stroke-dashoffset': arcOffset}"/>
+          </svg>
+          <p class="protect-clock" data-bind="text: isSettling() ? 'Settling' : countdownClock"></p>
+          <span class="flux-min">0%</span><span class="flux-max">100%</span>
+        </div>
+        <oj-progress-circle class="protect-ring send-off-screen" size="lg" data-bind="attr: {value: progressValue}"></oj-progress-circle>
+        <div class="flux-loader">
+          <p class="flux-phase" data-bind="foreach: fluxChars"><span class="flux-char" data-bind="text: char, style: { 'animation-delay': delay }"></span></p>
+          <div class="flux-bar" data-bind="style: {'--flux': fluxPercent}"><i></i></div>
+        </div>
+        <p class="protect-copy" data-bind="text: isSettling() ? 'The pause has ended. SafePay is settling this payment.' : 'Short pause. You can cancel until the timer ends.'"></p>
+      </div>
+      <!-- /ko -->
+      <!-- ko if: sheetKind() === 'long' -->
+      <div class="protect-phone protect-long" aria-live="polite">
+        <p class="protect-clock protect-clock-inline" data-bind="text: isSettling() ? 'Settling' : countdownClock"></p>
+        <div class="long-track" role="img" data-bind="attr: {'aria-label': countdown}, foreach: longTicks"><i data-bind="css: { on: $data }"></i></div>
+        <div class="flux-loader">
+          <p class="flux-phase" data-bind="foreach: fluxChars"><span class="flux-char" data-bind="text: char, style: { 'animation-delay': delay }"></span></p>
+        </div>
+        <p class="protect-copy" data-bind="text: isSettling() ? 'The longer pause has ended. SafePay is settling this payment.' : 'Longer pause. You can still cancel until this bar completes.'"></p>
+      </div>
+      <!-- /ko -->
+      <!-- ko if: sheetKind() === 'hold' -->
+      <div class="protect-phone protect-hold" aria-live="polite">
+        <div class="hold-pulse" aria-hidden="true"><i></i><i></i><i></i></div>
+        <p class="protect-copy">Awaiting administrator approval. Only an administrator can approve this payment. The status updates automatically.</p>
+      </div>
+      <!-- /ko -->
+      <!-- ko if: sheetKind() === 'done' -->
+      <div class="protect-done" aria-live="polite">
+        <span class="done-burst" aria-hidden="true">✓</span>
+        <p class="protect-copy" data-bind="text: result().protectionSeconds > 0 ? 'The protection window ended and this payment has now settled.' : 'SafePay checked this payment and released it with no pause.'"></p>
+      </div>
+      <!-- /ko -->
+      <!-- ko if: sheetKind() === 'cancelled' -->
+      <div class="protect-cancelled" aria-live="polite">
+        <div class="cancel-track"><i></i></div>
+        <p class="protect-copy">This payment was cancelled before settlement. The amount never left your account.</p>
+      </div>
+      <!-- /ko -->
+      <!-- ko with: result -->
+      <p class="send-review-amount" data-bind="text: $parent.money(amount)"></p>
+      <div class="pay-person"><div><strong data-bind="text: beneficiaryName"></strong><p data-bind="text: $parent.mask(beneficiaryBankAccountNumber || '')"></p></div></div>
+      <dl class="send-review-details">
+        <div><dt>Reference</dt><dd data-bind="text: transactionRef || transactionId"></dd></div>
+        <div><dt>Status</dt><dd data-bind="text: $parent.statusText"></dd></div>
+        <div><dt>Pause</dt><dd data-bind="text: $parent.pauseLabel"></dd></div>
+      </dl>
+      <!-- /ko -->
+      <!-- ko if: showReasons -->
+      <section class="protect-why" aria-label="Why SafePay decided this">
+        <h3 data-bind="text: isSettled() ? 'Why it settled this way' : 'Why this pause'"></h3>
+        <ul data-bind="foreach: reasons"><li data-bind="text: $data"></li></ul>
+        <p class="protect-why-foot">SafePay checked this payment.</p>
+      </section>
+      <!-- /ko -->
+
+      
+    <oj-messages id="send-result-messages" messages="[[paymentMessages]]" display="general"></oj-messages>
+    <p role="alert" class="recipient-error" data-bind="visible: paymentError, text: paymentError"></p>
+    <button type="button" class="pay-ghost" data-bind="click: refreshResult, disable: refreshing() || busy()"><span class="spin" aria-hidden="true" data-bind="visible: refreshing"></span><span data-bind="text: refreshing() ? 'Checking…' : 'Refresh status'"></span></button>
+    <a class="recipient-link" href="/transactions">View transactions</a>
+    <button type="button" class="send-continue pay-cta" data-bind="click: leave, visible: canLeave">Done</button>
+    </div>
+    <!-- /ko -->
+  </div>
+</div>
+
+<oj-dialog id="send-cancel-dialog" class="protect-dialog" dialog-title="Cancel this payment?" cancel-behavior="icon" opened="{{cancelOpen}}">
+  <div slot="body"><p>This payment has not settled yet. Cancelling keeps the amount in your account.</p></div>
+  <div slot="footer">
+    <oj-button chroming="outlined" on-oj-action="[[closeCancel]]">Keep waiting</oj-button>
+    <oj-button chroming="solid" on-oj-action="[[confirmCancel]]">Cancel payment</oj-button>
+  </div>
+</oj-dialog>
+<p class="recipient-footnote">◇ Simulated Environment</p>
+</section>

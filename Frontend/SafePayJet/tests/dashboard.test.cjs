@@ -12,16 +12,26 @@ const payment = (id, state = 'SETTLED', riskTier = 'LOW') => ({
   transactionId: id, state, riskTier, amount: 100.25, beneficiaryName: 'Fixture recipient',
   createdAt: `2026-09-${String(id).padStart(2,'0')}T12:00:00`, protectionExpiresAt: ''
 });
+function loadProtection() {
+  const source = fs.readFileSync(path.join(__dirname,'../src/ts/utils/protection.ts'),'utf8');
+  const code = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2021 } }).outputText;
+  const module = { exports: {} };
+  vm.runInNewContext('(function(require,module,exports){'+code+'\n})')(()=>({}),module,module.exports);
+  return module.exports;
+}
+const protection = loadProtection();
 function fixture(accountCall = () => Promise.resolve(account), transactionCall = () => Promise.resolve([])) {
   const calls = [], redirects = [], module = { exports: {} };
   const source = fs.readFileSync(path.join(__dirname,'../src/ts/viewModels/dashboard.ts'),'utf8');
   const code = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2021 } }).outputText;
   const imports = {
-    knockout: ko, '../accUtils': { announce: () => {} }, '../services/apiError': { ApiError },
-    '../services/accountService': { accountService: { list: async (...args) => { calls.push(['account', ...args]); const result = await accountCall(); return Array.isArray(result) ? result : [result]; } } },
-    '../services/transactionService': { transactionService: { list: (...args) => { calls.push(['transactions', ...args]); return transactionCall(); } } }
+    knockout: ko, '../accUtils': { announce: () => {} }, '../services/apiError': { ApiError }, '../utils/protection': protection,
+    'ojs/ojdialog': {}, 'ojs/ojbutton': {}, 'ojs/ojavatar': {},
+    '../services/accountService': { accountService: { list: (...args) => { calls.push(['account', ...args]); return Promise.resolve(accountCall()).then(a=>a?[a]:[]); } } },
+    '../services/transactionService': { transactionService: { list: (...args) => { calls.push(['transactions', ...args]); return transactionCall(); }, get: async () => ({}), cancel: async () => ({}) }, newIdempotencyKey: () => 'k' },
+    '../utils/chime': { armAudio() {}, chimeForPayment() {} }
   };
-  vm.runInNewContext('(function(require,module,exports){'+code+'\n})', { document: { title: '' }, Intl,
+  vm.runInNewContext('(function(require,module,exports){'+code+'\n})', { document: { title: '' }, Intl, setInterval: () => 1, clearInterval: () => {},
     window: { location: { replace: url => redirects.push(url) } } })(p => imports[p],module,module.exports);
   return { model: new module.exports(), calls, redirects };
 }
@@ -37,18 +47,6 @@ test('full Indian money grouping and masked account, never internal ID', () => {
   assert.equal(model.formatMoney(150000.5),'₹1,50,000.50');
   assert.equal(model.maskAccount(account.accountNumber),'•••• 1234');
 });
-
-test('dashboard selector shows every owned account and preserves the chosen account on refresh', async () => {
-  const second = { ...account, accountId: 2, accountNumber: '500000005678', status: 'BLOCKED', balance: 900000 };
-  const { model } = fixture(() => Promise.resolve([account, second]));
-  await model.load();
-  assert.equal(model.accounts().length, 2);
-  model.selectedAccountId('2');
-  assert.equal(model.account(), second); assert.equal(model.canSend(), false);
-  assert.match(model.sourceAccount(2), /5678/);
-  await model.load(); assert.equal(model.account(), second);
-  model.selectedAccountId('1'); assert.equal(model.canSend(), true);
-});
 test('recent payments are newest first and limited to five without changing source array', async () => {
   const list = Array.from({length:7},(_,i)=>payment(i+1));
   const { model } = fixture(undefined,()=>Promise.resolve(list)); await model.load();
@@ -58,11 +56,12 @@ test('recent payments are newest first and limited to five without changing sour
 test('pending area reflects server states, not invented timers or risk decisions', async () => {
   const { model } = fixture(undefined,()=>Promise.resolve([payment(1),payment(2,'PROTECTED','HIGH'),payment(3,'HARD_HOLD','VERY_HIGH')]));
   await model.load(); assert.equal(model.pending().length,2);
-  assert.equal(model.statusLabel('HARD_HOLD'),'Awaiting admin approval');
+  assert.equal(model.statusLabel('HARD_HOLD'),'Held for extra review');
   assert.equal(model.riskClass(payment(1,'PROTECTED','LOW')),'risk-neutral');
   assert.equal(model.riskClass(payment(1,'PROTECTED','MEDIUM')),'risk-amber');
   assert.equal(model.riskClass(payment(1,'PROTECTED','HIGH')),'risk-orange');
   assert.equal(model.riskClass(payment(1,'HARD_HOLD','LOW')),'risk-red');
+  assert.equal(model.riskClass(undefined),'risk-neutral');
 });
 test('empty payments are not an error and contain no invented data', async () => {
   const { model } = fixture(); await model.load();

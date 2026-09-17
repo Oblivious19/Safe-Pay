@@ -11,7 +11,14 @@ module.exports = function (configObj) {
   return new Promise((resolve, reject) => {
     console.log('Running before_serve hook.');
     // Serve the app shell for known browser routes, never for API or asset URLs.
-    const routes = new Set(['/login', '/register', '/admin', '/profile', '/dashboard', '/send-money', '/beneficiaries', '/transactions']);
+    const routes = new Set(['/login', '/dashboard', '/send-money', '/send-money/beneficiary', '/send-money/details', '/beneficiaries', '/transactions', '/profile']);
+    routes.add('/admin'); routes.add('/admin/dashboard'); routes.add('/admin/login');
+    routes.add('/admin/users');
+    routes.add('/admin/holds');
+    routes.add('/home');
+    routes.add('/send-money/review');
+    routes.add('/send-money/result');
+    ['', '/mobile', '/verify', '/details', '/kyc', '/password', '/success'].forEach(step => routes.add('/register' + step));
     configObj.preMiddleware = [...(configObj.preMiddleware || []), (req, res, next) => {
       const pathname = req.url.split('?')[0].replace(/\/$/, '');
       if ((req.method === 'GET' || req.method === 'HEAD') && routes.has(pathname)) {

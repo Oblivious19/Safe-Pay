@@ -29,7 +29,7 @@ public class AdminApprovalService {
 
     private void requireAdmin(LoginPrincipal caller) {
         if (caller == null || !"ADMIN".equals(caller.role()) || !sessions.isCurrent(caller)) {
-            throw new TransactionValidationException(403, "An active administrator must approve this payment");
+            throw new TransactionValidationException(403, "An active administrator must review this payment");
         }
     }
 
@@ -98,5 +98,42 @@ public class AdminApprovalService {
         // Unique request key, debit, state and administrator identity commit atomically.
         audits.saveAndFlush(audit);
         return VerifiedTransactionResponse.from(settled);
+    }
+
+    /** Declining releases the reservation; held funds were never debited. */
+    @Transactional
+    public VerifiedTransactionResponse decline(Long id, LoginPrincipal caller, String key) {
+        requireAdmin(caller);
+        if (id == null || id <= 0) throw new IllegalArgumentException("A valid transaction is required");
+        if (key == null || key.isBlank() || key.getBytes(StandardCharsets.UTF_8).length > 100)
+            throw new IllegalArgumentException("Idempotency-Key is required and must not exceed 100 UTF-8 bytes");
+        Long accountId = verifications.accountId(id)
+                .orElseThrow(() -> new ResourceNotFoundExcp("Transaction not found"));
+        accounts.findForSettlement(accountId).orElseThrow(() -> new ResourceNotFoundExcp("Account not found"));
+        AuditLog receipt = audits.findByRequestKey(key).orElse(null);
+        TransactionDb payment = verifications.findByTransactionId(id)
+                .orElseThrow(() -> new ResourceNotFoundExcp("Transaction not found"));
+        if (receipt != null) {
+            if (!"ADMIN_DECLINED_CANCELLED".equals(receipt.getAction())
+                    || !Objects.equals(receipt.getTransactionId(), id)
+                    || !Objects.equals(receipt.getUserId(), caller.userId())
+                    || payment.getState() != TransactionState.CANCELLED
+                    || !key.equals(payment.getCancelIdempotencyKey()))
+                throw new TransactionValidationException(409, "Idempotency-Key was already used for another operation");
+            return VerifiedTransactionResponse.from(payment);
+        }
+        if (transactions.findByCancelIdempotencyKey(key).isPresent())
+            throw new TransactionValidationException(409, "Idempotency-Key was already used for another cancellation");
+        if (payment.getState() != TransactionState.HARD_HOLD)
+            throw new TransactionValidationException(409, "Only a HARD_HOLD payment awaiting review may be declined");
+        if (verifications.declineHeld(id, payment.getVersion(), key) != 1)
+            throw new TransactionValidationException(409, "Payment changed concurrently; refresh before retrying");
+        TransactionDb declined = verifications.findByTransactionId(id)
+                .orElseThrow(() -> new ResourceNotFoundExcp("Transaction not found"));
+        AuditLog audit = new AuditLog(); audit.setTransactionId(id); audit.setUserId(caller.userId());
+        audit.setRequestKey(key); audit.setAction("ADMIN_DECLINED_CANCELLED");
+        audit.setOldState(TransactionState.HARD_HOLD.name()); audit.setNewState(TransactionState.CANCELLED.name());
+        audit.setCreatedAt(declined.getCancelledAt()); audits.saveAndFlush(audit);
+        return VerifiedTransactionResponse.from(declined);
     }
 }

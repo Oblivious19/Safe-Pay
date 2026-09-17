@@ -22,4 +22,10 @@ public class AdminApprovalController {
             @RequestHeader("Idempotency-Key") String key) {
         return service.approve(id, caller, key);
     }
+
+    @PostMapping("/{id}/decline")
+    public VerifiedTransactionResponse decline(@PathVariable Long id, @AuthenticationPrincipal LoginPrincipal caller,
+            @RequestHeader("Idempotency-Key") String key) {
+        return service.decline(id, caller, key);
+    }
 }

@@ -10,12 +10,11 @@ export const authService = {
     return apiClient.request("/api/auth/register", { method: "POST", body: { name, email, phone, password } });
   },
   async login(input: LoginRequest | PhonePasswordRequest): Promise<LoginResponse> {
-    requireText("phone" in input ? input.phone : input.email, "phone" in input ? "Mobile number" : "Email");
+    const body = "phone" in input ? { phone: input.phone, password: input.password } : { email: input.email, password: input.password };
     requireText(input.password, "Password");
+    if ("phone" in input) requireText(input.phone, "Phone"); else requireText(input.email, "Email");
     apiClient.clearSession();
-    const result = await apiClient.request<LoginResponse>("/api/auth/login", {
-      method: "POST", body: "phone" in input ? { phone: input.phone, password: input.password } : { email: input.email, password: input.password }
-    });
+    const result = await apiClient.request<LoginResponse>("/api/auth/login", { method: "POST", body });
     apiClient.useAdminCsrf(result.role === "ADMIN");
     return result;
   },
@@ -24,8 +23,11 @@ export const authService = {
     let csrf = true;
     try { await apiClient.ensureCsrfToken(); }
     catch (error) {
-      if (!(error instanceof ApiError) || error.status !== 401) throw error;
-      csrf = false; // Anonymous logout is explicitly exempt in the server configuration.
+      if (error instanceof ApiError && error.status === 403) {
+        apiClient.useAdminCsrf(true); await apiClient.refreshCsrfToken();
+      } else if (error instanceof ApiError && error.status === 401) {
+        csrf = false; // Backend explicitly permits anonymous logout.
+      } else throw error;
     }
     const result = await apiClient.request<MessageResponse>("/api/auth/logout", { method: "POST", csrf });
     apiClient.clearSession();

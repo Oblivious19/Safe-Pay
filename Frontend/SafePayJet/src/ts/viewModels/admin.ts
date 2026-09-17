@@ -1,271 +1,207 @@
 import * as ko from "knockout";
-import { adminService, AdminUser, AdminAccount, UserAccounts, CreditReceipt, ApprovalRequest } from "../services/adminService";
-import { adminReportService } from "../services/adminReportService";
-import { apiClient } from "../services/apiClient";
+import { adminHoldService } from "../services/adminHoldService";
+import { adminReportService, AdminBookRow, AdminUserSnapshot } from "../services/adminReportService";
 import { ApiError } from "../services/apiError";
-import { AccountType, UserStatus, TransactionSummary, DailyTransactionSummary } from "../services/types";
+import { authService } from "../services/authService";
+import { AdminUsersModel } from "./adminUsers";
+import { AdminHoldsModel } from "./adminHolds";
+import { DailyTransactionSummary, HeldPayment, TransactionSummary } from "../services/types";
+import { statusLabel, tierRisk } from "../utils/protection";
 
-import { CreditDraft, readCreditDraft, saveCreditDraft, clearCreditDraft, validCredit } from "../services/adminCreditDraft";
-import { RefreshLoop } from "../services/refreshLoop";
-import { withRetryKey } from "../services/api";
+const isoDate = (date: Date): string => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+const daysAgo = (n: number): string => {
+  const date = new Date();
+  date.setDate(date.getDate() - n);
+  return isoDate(date);
+};
+
 class AdminViewModel {
-  approvals = ko.observableArray<ApprovalRequest>([]);
-  approvalsError = ko.observable("");
-  approvalTarget = ko.observable<ApprovalRequest | null>(null);
-  private approvalPoll = new RefreshLoop(
-    () => adminService.pendingApprovals(),
-    rows => { if (this.verified()) { this.approvals(rows); this.approvalsError(""); } },
-    error => { this.approvalsError(this.message(error)); },
-    () => this.verified()
-  );
-  refreshApprovals = (): Promise<void> => this.approvalPoll.refresh();
-  reviewApproval = (request: ApprovalRequest): void => {
-    if (!this.disabled()) { this.approvalTarget(request); this.actionError(""); }
-  };
-  closeApproval = (): void => { if (!this.busy()) this.approvalTarget(null); };
-  approvePayment = async (): Promise<void> => {
-    const target = this.approvalTarget();
-    if (!target || this.disabled()) return;
-    const generation = this.generation;
-    this.approvalPoll.invalidate();
-    await this.mutate(async () => {
-      await withRetryKey("approve:" + target.transactionId, key => adminService.approve(target.transactionId, key));
-      if (generation !== this.generation || !this.verified()) return;
-      this.approvals.remove(item => item.transactionId === target.transactionId);
-      this.approvalTarget(null);
-    }, "Payment approved and settled. The administrator and approval time were recorded in the audit log.");
-    if (generation === this.generation && this.verified()) await this.approvalPoll.refresh();
-  };
-  private clearApprovals(): void { this.approvalPoll.stop(); this.approvals([]); this.approvalTarget(null); }
-
-  selectedUser = ko.observable<AdminUser | null>(null);
-  userAccounts = ko.observableArray<UserAccounts>([]);
-  detailLoading = ko.observable(false);
-  desiredStatus = ko.observable<UserStatus>("ACTIVE");
-  statusChoices = ko.pureComputed(() => {
-    const current = this.selectedUser()?.status;
-    return current === "SUSPENDED" ? ["SUSPENDED", "ACTIVE", "INACTIVE"]
-      : current === "INACTIVE" ? ["INACTIVE", "ACTIVE", "SUSPENDED"] : ["ACTIVE", "LOCKED", "SUSPENDED", "INACTIVE"];
-  });
-  provisionName = ko.observable(""); provisionEmail = ko.observable("");
-  provisionPhone = ko.observable(""); initialPassword = ko.observable("");
-  creditAccountId = ko.observable(""); creditAmount = ko.observable(""); creditConfirmed = ko.observable(false);
-  creditDraft = ko.observable<CreditDraft | null>(readCreditDraft());
-  creditReceipt = ko.observable<CreditReceipt | null>(null);
-  private detailGeneration = 0;
-  creditAccountLabel = (account: UserAccounts): string => account.accountType + " •••• " + account.accountNumber.slice(-4) + " — " + account.status;
-  exactMoney = (value: string): string => {
-    if (!/^-?[0-9]+(\.[0-9]{1,2})?$/.test(value)) return "Amount unavailable";
-    const [integer, fraction = ""] = value.split(".");
-    const negative = integer.startsWith("-");
-    const digits = negative ? integer.slice(1) : integer;
-    const tail = digits.slice(-3), head = digits.slice(0, -3).replace(/\B(?=(\d{2})+(?!\d))/g, ",");
-    return (negative ? "−" : "") + "₹" + (head ? head + "," : "") + tail + "." + fraction.padEnd(2, "0");
-  };
-  private clearDetails(): void {
-    this.detailGeneration++; this.selectedUser(null); this.userAccounts([]); this.detailLoading(false);
-    this.initialPassword(""); this.creditReceipt(null); this.creditAmount(""); this.creditConfirmed(false);
-  }
-  viewUser = async (user: AdminUser): Promise<void> => {
-    if (this.disabled()) return;
-    const generation = ++this.detailGeneration;
-    this.selectedUser(null); this.userAccounts([]); this.creditAccountId(""); this.creditAmount(""); this.creditReceipt(null);
-    this.creditConfirmed(false); this.detailLoading(true); this.actionError("");
-    try {
-      const [detail, accounts] = await Promise.all([adminService.user(user.userId), adminService.userAccounts(user.userId)]);
-      if (generation !== this.detailGeneration || !this.verified()) return;
-      this.selectedUser(detail); this.desiredStatus(detail.status); this.userAccounts(accounts);
-      if (accounts.length) this.creditAccountId(String(accounts[0].accountId));
-    } catch (error) { if (generation === this.detailGeneration) this.actionError(this.message(error)); }
-    finally { if (generation === this.detailGeneration) this.detailLoading(false); }
-  };
-  provision = async (): Promise<void> => {
-    const generation = this.generation;
-    await this.mutate(async () => {
-      const saved = await adminService.createUser({ name: this.provisionName(), email: this.provisionEmail(), phone: this.provisionPhone().trim(), initialPassword: this.initialPassword() });
-      if (generation !== this.generation) return;
-      this.users.push(saved); this.provisionName(""); this.provisionEmail(""); this.provisionPhone("");
-    }, "Administrator created without a bank account. Share the initial password with the intended administrator through your normal secure process.");
-    this.initialPassword("");
-  };
-  saveUserStatus = async (): Promise<void> => {
-    const user = this.selectedUser();
-    if (!user) return;
-    const generation = this.generation;
-    await this.mutate(async () => {
-      const saved = await adminService.setUserStatus(user.userId, this.desiredStatus());
-      if (generation !== this.generation) return;
-      const previous = this.users().find(item => item.userId === saved.userId);
-      if (previous) this.users.replace(previous, saved);
-      this.selectedUser(saved); this.desiredStatus(saved.status);
-    }, "User status updated. The server recorded this change in the audit log.");
-  };
-  submitCredit = async (): Promise<void> => {
-    if (!this.verified() || this.loading() || this.busy() || this.detailLoading()) return;
-    let operation = this.creditDraft();
-    if (!operation) {
-      const account = this.userAccounts().find(item => item.accountId === Number(this.creditAccountId()));
-      const amount = this.creditAmount().trim();
-      if (!account || account.status !== "ACTIVE" || !validCredit(amount) || !this.creditConfirmed()) {
-        this.actionError("Choose an active account, enter a positive amount with up to two decimals, and confirm the simulated credit."); return;
-      }
-      operation = { accountId: account.accountId, amount, key: crypto.randomUUID() };
-      saveCreditDraft(operation); this.creditDraft(operation);
-    }
-    const generation = this.generation;
-    this.busy(true); this.actionError(""); this.notice("");
-    try {
-      const receipt = await adminService.credit(operation.accountId, operation.amount, operation.key);
-      // Confirmed completion clears durable retry state even if this page was left meanwhile.
-      if (readCreditDraft()?.key === operation.key) clearCreditDraft();
-      if (generation !== this.generation || !this.verified()) return;
-      this.creditDraft(null); this.creditReceipt(receipt); this.creditAmount(""); this.creditConfirmed(false);
-      this.userAccounts(this.userAccounts().map(account => account.accountId === receipt.accountId ? { ...account, balance: receipt.balanceAfter } : account));
-      this.accounts(this.accounts().map(account => account.accountId === receipt.accountId ? { ...account, balance: receipt.balanceAfter } : account));
-      this.notice("Simulated bank interest credit confirmed and recorded in the audit log.");
-    } catch (error) {
-      if (generation === this.generation) {
-        if (error instanceof ApiError && error.status === 400) { clearCreditDraft(); this.creditDraft(null); }
-        this.actionError(this.message(error));
-      }
-    } finally { if (generation === this.generation) this.busy(false); }
-  };
-  users = ko.observableArray<AdminUser>([]);
-  accounts = ko.observableArray<AdminAccount>([]);
+  usersPage = ko.observable<AdminUsersModel | null>(null);
+  holdsPage = ko.observable<AdminHoldsModel | null>(null);
   summary = ko.observable<TransactionSummary | null>(null);
   daily = ko.observableArray<DailyTransactionSummary>([]);
-  loading = ko.observable(false);
-  busy = ko.observable(false);
-  reportsLoading = ko.observable(false);
-  dailyLoaded = ko.observable(false);
-  verified = ko.observable(false);
-  usersError = ko.observable("");
-  accountsError = ko.observable("");
-  summaryError = ko.observable("");
-  reportError = ko.observable("");
-  actionError = ko.observable("");
-  notice = ko.observable("");
-  editingId = ko.observable<number | null>(null);
-  balance = ko.observable("");
-  accountType = ko.observable<AccountType>("SAVINGS");
-  from = ko.observable(new Date().toISOString().slice(0, 10));
-  to = ko.observable(new Date().toISOString().slice(0, 10));
+  holds = ko.observableArray<HeldPayment>([]);
+  ledger = ko.observableArray<AdminBookRow>([]);
+  people = ko.observableArray<AdminUserSnapshot>([]);
+  directoryError=ko.observable("");holdsError=ko.observable("");
+  loading = ko.observable(false); signingOut = ko.observable(false);
+  forbidden = ko.observable(false); error = ko.observable("");
+  from = ko.observable(daysAgo(13));
+  to = ko.observable(isoDate(new Date()));
+  loadedFrom = ko.observable(""); loadedTo = ko.observable(""); updated = ko.observable("");
   private generation = 0;
-  private reportGeneration = 0;
-  disabled = ko.pureComputed(() => this.loading() || this.busy() || !this.verified() || !!this.creditDraft());
-  formatMoney = (amount: number | string): string => new Intl.NumberFormat("en-IN", {
+  constructor(private context: any = {}) {}
+  money = (value: number): string => new Intl.NumberFormat("en-IN", {
     style: "currency", currency: "INR", minimumFractionDigits: 2, maximumFractionDigits: 2
-  }).format(Number(amount));
-
-  private message(error: unknown): string {
-    if (error instanceof ApiError && error.status === 401) {
-      this.clearApprovals(); this.clearDetails(); this.creditDraft(null); clearCreditDraft();
-      this.reportGeneration++;
-      this.reportsLoading(false);
-      this.verified(false); this.users([]); this.accounts([]); this.summary(null); this.daily([]);
-      window.location.replace("/login?reason=session-expired");
-      return "Please sign in to continue.";
+  }).format(value);
+  count = (value: number): string => new Intl.NumberFormat("en-IN").format(value);
+  date = (value: string): string => new Intl.DateTimeFormat("en-IN", {
+    day: "numeric", month: "short", year: "numeric"
+  }).format(new Date(value + "T00:00:00"));
+  shortDate = (value: string): string => new Intl.DateTimeFormat("en-IN", {
+    day: "numeric", month: "short"
+  }).format(new Date(value + "T00:00:00"));
+  pendingHolds = ko.pureComputed(() => this.holds().filter((row) => row.decision === "PENDING"));
+  decidedHolds = ko.pureComputed(() => this.holds().filter((row) => row.decision !== "PENDING"));
+  heldAmount = ko.pureComputed(() => this.pendingHolds().reduce((total, row) => total + (Number(row.amount) || 0), 0));
+  settleRate = ko.pureComputed(() => this.share(this.summary()?.settledTransactions));
+  holdRate = ko.pureComputed(() => this.share(this.summary()?.hardHolds));
+  protectRate = ko.pureComputed(() => this.share(this.summary()?.protectedTransactions));
+  highRiskRate = ko.pureComputed(() => this.share(this.summary()?.highRiskTransactions));
+  outcomeBars = ko.pureComputed(() => {
+    const row = this.summary();
+    if (!row) return [];
+    const items = [
+      { key: "settled", label: "Settled", value: row.settledTransactions, color: "#12675f" },
+      { key: "protected", label: "Protected", value: row.protectedTransactions, color: "#bd8a27" },
+      { key: "holds", label: "Hard holds", value: row.hardHolds, color: "#b23c3c" },
+      { key: "cancelled", label: "Cancelled", value: row.cancelledTransactions, color: "#5b7470" },
+      { key: "rejected", label: "Rejected", value: row.rejectedTransactions, color: "#8a2f2f" }
+    ];
+    const peak = Math.max(1, ...items.map((item) => item.value));
+    const total = Math.max(1, row.totalTransactions);
+    return items.map((item) => ({
+      ...item,
+      share: Math.round((item.value / total) * 100),
+      pct: Math.round((item.value / peak) * 100)
+    }));
+  });
+  riskBars = ko.pureComputed(() => {
+    const counts = { LOW: 0, MEDIUM: 0, HIGH: 0, VERY_HIGH: 0 };
+    for (const row of this.ledger()) {
+      const tier = row.riskTier === "HARD_HOLD" ? "VERY_HIGH" : row.riskTier;
+      if (tier in counts) counts[tier as keyof typeof counts] += 1;
     }
-    if (error instanceof ApiError && error.status === 403) {
-      this.clearApprovals(); this.clearDetails(); this.verified(false); this.users([]); this.accounts([]); this.summary(null); this.daily([]);
-      return "Administrator access or a refreshed security token is required. Reload and try again.";
-    }
-    return error instanceof ApiError ? error.message : "We couldn’t complete this request. Please try again.";
+    const items = [
+      { label: "Low", value: counts.LOW, color: "#12675f" },
+      { label: "Medium", value: counts.MEDIUM, color: "#bd8a27" },
+      { label: "High", value: counts.HIGH, color: "#7a4ea3" },
+      { label: "Very high", value: counts.VERY_HIGH, color: "#b23c3c" }
+    ];
+    const peak = Math.max(1, ...items.map((item) => item.value));
+    const total = Math.max(1, this.ledger().length);
+    return items.map((item) => ({
+      ...item,
+      share: Math.round((item.value / total) * 100),
+      pct: Math.round((item.value / peak) * 100)
+    }));
+  });
+  amountBars = ko.pureComputed(() => {
+    const row = this.summary();
+    if (!row) return [];
+    const items = [
+      { label: "All recorded volume", value: row.totalAmount, color: "#244f59" },
+      { label: "Settled volume", value: row.settledAmount, color: "#12675f" },
+      { label: "Still on hold", value: this.heldAmount(), color: "#b23c3c" }
+    ];
+    const peak = Math.max(1, ...items.map((item) => item.value));
+    return items.map((item) => ({ ...item, pct: Math.round((item.value / peak) * 100) }));
+  });
+  dailyBars = ko.pureComputed(() => {
+    const rows = this.chartDays();
+    const peak = Math.max(1, ...rows.map((row) => row.summary.totalTransactions));
+    return rows.map((row) => ({
+      date: row.date,
+      label: this.shortDate(row.date),
+      value: row.summary.totalTransactions,
+      settled: row.summary.settledTransactions,
+      holds: row.summary.hardHolds,
+      height: row.summary.totalTransactions ? Math.max(8, Math.round((row.summary.totalTransactions / peak) * 140)) : 3,
+      settledPct: row.summary.totalTransactions
+        ? Math.round((row.summary.settledTransactions / row.summary.totalTransactions) * 100) : 0
+    }));
+  });
+  donutStyle = ko.pureComputed(() => {
+    const row = this.summary();
+    if (!row || !row.totalTransactions) return "conic-gradient(#dce3e6 0 100%)";
+    const settled = (row.settledTransactions / row.totalTransactions) * 100;
+    const protectedShare = settled + (row.protectedTransactions / row.totalTransactions) * 100;
+    const holds = protectedShare + (row.hardHolds / row.totalTransactions) * 100;
+    const cancelled = holds + (row.cancelledTransactions / row.totalTransactions) * 100;
+    return `conic-gradient(#12675f 0 ${settled}%, #bd8a27 ${settled}% ${protectedShare}%, #b23c3c ${protectedShare}% ${holds}%, #5b7470 ${holds}% ${cancelled}%, #8a2f2f ${cancelled}% 100%)`;
+  });
+  private share(value: number | undefined): string {
+    const total = this.summary()?.totalTransactions || 0;
+    if (!total) return "0%";
+    return `${Math.round(((value || 0) / total) * 100)}%`;
   }
-
+  private chartDays(): DailyTransactionSummary[] {
+    return this.daily().slice().sort((a, b) => a.date.localeCompare(b.date));
+  }
+  stateLabel = (state: string): string => statusLabel(state);
+  riskLabel = (tier: string): string => tierRisk(tier);
+  stateClass = (state: string): string => "admin-pill admin-pill-" + (state || "").toLowerCase().replace(/_/g, "-");
+  masked = (accountNumber: string): string => accountNumber ? "•••• " + accountNumber.slice(-4) : "—";
+  when = (value: string): string => value
+    ? new Intl.DateTimeFormat("en-IN", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value))
+    : "—";
   load = async (): Promise<void> => {
-    if (this.busy()) return;
+    if (this.loading()) return;
+    const from = this.from(), to = this.to();
+    const valid = (v: string): boolean => /^\d{4}-\d{2}-\d{2}$/.test(v) && Number.isFinite(Date.parse(v)) && new Date(v).toISOString().slice(0, 10) === v;
+    if (!valid(from) || !valid(to) || from > to || Date.parse(to) - Date.parse(from) > 365 * 86400000) {
+      this.error("Choose a valid date range of at most 366 days."); return;
+    }
     const generation = ++this.generation;
-    this.clearApprovals(); this.loading(true); this.verified(false); this.clearDetails(); this.creditDraft(readCreditDraft());
-    this.users([]); this.accounts([]); this.summary(null);
-    this.usersError(""); this.accountsError(""); this.summaryError("");
+    this.loading(true); this.error("");this.directoryError("");this.holdsError(""); this.forbidden(false); this.summary(null); this.daily([]); this.updated("");
     try {
-      // This protected request establishes that the current server session is an administrator.
-      const users = await adminService.users();
+      const summary = await adminReportService.summary();
       if (generation !== this.generation) return;
-      this.users(users); this.verified(true); apiClient.useAdminCsrf(true); this.approvalPoll.start();
-    } catch (error) {
-      if (generation === this.generation) { this.usersError(this.message(error)); this.loading(false); }
-      return;
-    }
-    const [accounts, summary] = await Promise.allSettled([adminService.accounts(), adminReportService.summary()]);
-    if (generation !== this.generation) return;
-    if (accounts.status === "fulfilled") this.accounts(accounts.value);
-    else this.accountsError(this.message(accounts.reason));
-    if (summary.status === "fulfilled" && this.verified()) this.summary(summary.value);
-    else if (summary.status === "rejected") this.summaryError(this.message(summary.reason));
-    this.loading(false);
+      const daily = await adminReportService.daily(from, to);
+      if (generation !== this.generation) return;
+      this.loadedFrom(from); this.loadedTo(to);
+      this.daily(daily.slice().sort((a, b) => b.date.localeCompare(a.date)));
+      this.summary(summary);
+      this.updated(new Date().toLocaleTimeString("en-IN"));
+      try {
+        const holds = await adminHoldService.list();
+        if (generation === this.generation) this.holds(holds.slice().sort((a, b) => b.createdAt.localeCompare(a.createdAt)));
+      } catch { if (generation === this.generation) {this.holds([]);this.holdsError("Held payments could not be loaded. Refresh to retry.");} }
+      try {
+        const book = await adminReportService.book();
+        if (generation === this.generation) {
+          this.ledger(book.payments);
+          this.people(book.users);
+        }
+      } catch { if (generation === this.generation) { this.ledger([]); this.people([]);this.directoryError("The user directory could not be loaded."); } }
+    } catch (e) {
+      if (generation !== this.generation) return;
+      this.summary(null); this.daily([]); this.holds([]); this.ledger([]); this.people([]);
+      if (e instanceof ApiError && e.status === 401) window.location.replace("/admin/login");
+      else if (e instanceof ApiError && e.status === 403) this.forbidden(true);
+      else this.error("Reports are unavailable right now. Please try again.");
+    } finally { if (generation === this.generation) this.loading(false); }
   };
-
-  loadDaily = async (): Promise<void> => {
-    if (this.reportsLoading() || !this.verified()) return;
-    const generation = ++this.reportGeneration;
-    this.reportsLoading(true); this.dailyLoaded(false); this.reportError(""); this.daily([]);
+  logout = async (): Promise<void> => {
+    if (this.signingOut()) return;
+    this.signingOut(true);
     try {
-      const rows = await adminReportService.daily(this.from(), this.to());
-      if (generation === this.reportGeneration && this.verified()) { this.daily(rows); this.dailyLoaded(true); }
-    } catch (error) {
-      if (generation === this.reportGeneration) this.reportError(this.message(error));
-    } finally {
-      if (generation === this.reportGeneration) this.reportsLoading(false);
+      await authService.logout();
+      window.location.replace("/login");
+    } catch {
+      this.signingOut(false);
+      this.error("We couldn’t sign you out. Please try again.");
     }
   };
-
-  private async mutate(action: () => Promise<void>, success: string): Promise<void> {
-    if (this.disabled()) return;
-    const generation = this.generation;
-    this.busy(true); this.actionError(""); this.notice("");
-    try {
-      await action();
-      if (generation === this.generation) this.notice(success);
-    } catch (error) {
-      if (generation === this.generation) this.actionError(this.message(error));
-    } finally {
-      if (generation === this.generation) this.busy(false);
-    }
+  parametersChanged(params:{page?:string}):void{
+    this.generation++;this.usersPage()?.disconnected();this.holdsPage()?.disconnected();this.usersPage(null);this.holdsPage(null);this.loading(false);
+    this.context.params=params;this.connected();
   }
-
-  toggleUser = (user: AdminUser): Promise<void> => {
-    if (!["ACTIVE", "SUSPENDED"].includes(user.status)) return Promise.resolve();
-    const generation = this.generation;
-    return this.mutate(async () => {
-      const saved = await adminService.setUserStatus(user.userId, user.status === "ACTIVE" ? "SUSPENDED" : "ACTIVE");
-      if (generation === this.generation) this.users.replace(user, saved);
-    }, `User ${user.userId} status updated.`);
-  };
-  toggleAccount = (account: AdminAccount): Promise<void> => {
-    if (!["ACTIVE", "BLOCKED"].includes(account.status)) return Promise.resolve();
-    const generation = this.generation;
-    return this.mutate(async () => {
-      const saved = await adminService.setAccountStatus(account.accountId, account.status === "ACTIVE" ? "BLOCKED" : "ACTIVE");
-      if (generation === this.generation) this.accounts.replace(account, { ...account, ...saved });
-    }, `Account ${account.accountId} status updated.`);
-  };
-  editAccount = (account: AdminAccount): void => {
-    if (this.disabled()) return;
-    this.editingId(account.accountId); this.accountType(account.accountType);
-    // Require an explicit decimal value; do not round-trip a JSON numeric balance into a money edit.
-    this.balance(""); this.actionError(""); this.notice("");
-    document.getElementById("admin-balance")?.focus();
-  };
-  cancelEdit = (): void => { if (!this.busy()) { this.editingId(null); this.balance(""); } };
-  saveAccount = (): Promise<void> => {
-    const id = this.editingId();
-    if (id === null) return Promise.resolve();
-    const generation = this.generation;
-    return this.mutate(async () => {
-      const saved = await adminService.updateAccount(id, this.balance().trim(), this.accountType());
-      if (generation !== this.generation) return;
-      const old = this.accounts().find(account => account.accountId === id);
-      if (old) this.accounts.replace(old, saved);
-      this.editingId(null); this.balance("");
-    }, `Account ${id} balance and type updated.`);
-  };
-  connected(): void { document.title = "Administration | SafePay"; void this.load(); }
+  connected(): void {
+    if (this.context.params?.page === "users") {
+      const model = new AdminUsersModel(); this.usersPage(model);
+      document.title = "Admin users | SafePay"; void model.load(); return;
+    }
+    if (this.context.params?.page === "holds") {
+      const model = new AdminHoldsModel(); this.holdsPage(model);
+      document.title = "Held payments | SafePay"; void model.load(); return;
+    }
+    if (this.context.params?.page !== "dashboard") { window.location.replace("/login?admin=1&reason=session-expired"); return; }
+    document.title = "Admin dashboard | SafePay"; void this.load();
+  }
   disconnected(): void {
-    this.clearApprovals(); this.generation++; this.reportGeneration++; this.verified(false); this.clearDetails();
-    this.busy(false); this.loading(false); this.reportsLoading(false); this.dailyLoaded(false);
-    this.editingId(null); this.balance(""); this.users([]); this.accounts([]); this.summary(null); this.daily([]);
+    this.generation++; this.summary(null); this.daily([]); this.holds([]); this.ledger([]); this.people([]);
+    this.usersPage()?.disconnected(); this.holdsPage()?.disconnected();
   }
 }
 export = AdminViewModel;

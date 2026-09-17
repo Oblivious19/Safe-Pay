@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en-IN">
+<head>
+  <meta charset="UTF-8">
+  <base href="/">
+  <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#102e35">
+  <title>SafePay — Your everyday payments</title>
+  <!-- injector:theme -->
+  <!-- endinjector -->
+  <!-- injector:font -->
+  <!-- endinjector:font -->
+  <link rel="stylesheet" href="css/app.css">
+  <link rel="stylesheet" href="css/customer-dashboard.css">
+  <link rel="stylesheet" href="css/login.css">
+  <link rel="stylesheet" href="css/auth-admin.css">
+  <link rel="stylesheet" href="css/responsive.css">
+</head>
+<body class="oj-web-applayout-body customer-shell">
+  <div id="globalBody">
+    <a class="skip-link" href="#main-content">Skip to content</a>
+    <div id="announce" class="send-off-screen" data-bind="attr: {'aria-live': manner}" aria-atomic="true"><p data-bind="text: message"></p></div>
+    <header class="customer-header" data-bind="visible: selection.path() !== 'login' && selection.path() !== 'register'">
+      <div class="customer-header-inner">
+        <a class="customer-brand" href="/dashboard" data-bind="attr: {href: sessionRole() === 'ADMIN' ? '/admin' : '/dashboard'}" aria-label="SafePay home"><span class="customer-logo" aria-hidden="true">S<span>✓</span></span>SafePay<span class="brand-dot" aria-hidden="true">.</span></a>
+        <div class="customer-header-tools">
+          <button class="dashboard-secondary" data-bind="click: logout, disable: loggingOut, text: loggingOut() ? 'Signing out…' : 'Logout'">Logout</button>
+          <details class="header-disclosure" data-bind="visible: sessionRole() === 'CUSTOMER'"><summary aria-label="Payment updates"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M5 17h14l-2-3V9a5 5 0 0 0-10 0v5l-2 3ZM10 20h4"/></svg></summary><div class="header-popover"><strong>Payment updates</strong><p>Check Transactions for the latest status of your payments.</p><a href="/transactions">View transactions →</a></div></details>
+          <details class="header-disclosure"><summary aria-label="Profile and menu"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 21v-2a7 7 0 0 1 14 0v2"/></svg><span class="profile-label" data-bind="text: profile() ? profile().name : sessionRole() === 'ADMIN' ? 'Administrator' : 'My account'">My account</span><span aria-hidden="true">⌄</span></summary><div class="header-popover"><strong data-bind="text: profile() ? profile().name : sessionRole() === 'ADMIN' ? 'Administration' : 'Your SafePay'"></strong><p data-bind="text: profile() ? profile().email : profileLoading() ? 'Verifying your session…' : sessionRole() === 'ADMIN' ? 'Administrator session verified' : 'Profile unavailable. Please refresh to try again.'"></p><a href="/profile" data-bind="visible: sessionRole() === 'CUSTOMER'">Manage profile →</a><a href="/dashboard" data-bind="visible: sessionRole() === 'CUSTOMER'">Dashboard →</a><a href="/admin" data-bind="visible: sessionRole() === 'ADMIN'">Administration →</a></div></details>
+        </div>
+      </div>
+      <nav class="customer-nav" aria-label="Main navigation"><div data-bind="foreach: navItems"><a data-bind="attr: {href: '/' + path, 'aria-current': $parent.selection.path() === path ? 'page' : null}"><span aria-hidden="true" data-bind="text: icon"></span><span data-bind="text: label"></span></a></div></nav>
+    </header>
+    <p role="alert" class="login-message" data-bind="visible: logoutError, text: logoutError"></p>
+    <p role="alert" class="login-message" data-bind="visible: sessionError, text: sessionError"></p>
+    <main id="main-content" tabindex="-1"><oj-module config="[[moduleAdapter.koObservableConfig]]"></oj-module></main>
+    <footer class="customer-footer"><strong>SafePay<span aria-hidden="true"> ◇</span></strong><p>SafePay is a simulated risk-adaptive pre-settlement transaction-control layer.</p><span>Simulated payments. No real money is moved.</span></footer>
+  </div>
+  <!-- injector:scripts -->
+  <!-- endinjector -->
+</body>
+</html>

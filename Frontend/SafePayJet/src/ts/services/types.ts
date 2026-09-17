@@ -3,19 +3,15 @@ export type UserStatus = "ACTIVE" | "LOCKED" | "SUSPENDED" | "INACTIVE";
 export type AccountStatus = "ACTIVE" | "BLOCKED" | "CLOSED";
 export type AccountType = "SAVINGS" | "CURRENT";
 // The current HTTP/JPA contract still includes legacy values, not future states.
-export type TransactionState = "CREATED" | "AUTHORIZED" | "RISK_ASSESSED" | "PROTECTED" | "HARD_HOLD" | "CANCELLED" | "SETTLED";
+export type TransactionState = "CREATED" | "AUTHORIZED" | "RISK_ASSESSED" | "PROTECTED" | "HARD_HOLD" | "CANCELLED" | "REJECTED" | "SETTLED";
 export type RiskTier = "LOW" | "MEDIUM" | "HIGH" | "VERY_HIGH" | "HARD_HOLD";
+/** Step-up authentication state of a held payment. Absent on payments that never needed it. */
 export interface LoginRequest { email: string; password: string; }
 export interface PhonePasswordRequest { phone: string; password: string; }
 export interface RegistrationRequest extends LoginRequest { name: string; phone: string; }
 export interface LoginResponse { userId: number; name: string; email: string; role: UserRole; status: UserStatus; }
 export interface MessageResponse { message: string; }
 export interface RegistrationResponse extends MessageResponse { userId: number; email: string; }
-export interface CustomerProfile {
-  userId: number; name: string; email: string; phone: string;
-  status: UserStatus; createdAt: string; updatedAt: string;
-}
-export interface ProfileUpdate { name: string; email: string; phone: string; password?: string; }
 export interface Account {
   accountId: number; userId: number; accountNumber: string; accountType: AccountType;
   balance: number; status: AccountStatus; createdAt: string; updatedAt: string;
@@ -31,9 +27,18 @@ export interface PaymentTransaction {
   beneficiaryBankAccountNumber: string; beneficiaryIfsc: string;
   state: TransactionState; riskTier: RiskTier; riskReason: string;
   protectionSeconds: number; protectionExpiresAt: string; createdAt: string;
-  settledAt: string; cancelledAt: string; verifiedAt?: string;
-  protectionRemainingMillis?: number | null; canCancel?: boolean;
+  settledAt: string; cancelledAt: string;
+  protectionRemainingMillis?: number | null; canCancel?: boolean; protectionDeadline?: number;
+  verifiedAt?: string;
 }
+/** A held payment as the bank sees it: one row of the admin review queue. */
+export interface HeldPayment {
+  transactionId: number; transactionRef: string; customerName: string; customerEmail: string;
+  amount: number; purpose: string; beneficiaryName: string; beneficiaryBankAccountNumber: string;
+  riskTier: RiskTier; riskReason: string; createdAt: string;
+  decision: HoldDecision;
+}
+export type HoldDecision = "PENDING" | "RELEASED" | "REJECTED";
 export interface TransactionSummary {
   totalTransactions: number; settledTransactions: number; protectedTransactions: number;
   cancelledTransactions: number; rejectedTransactions: number; hardHolds: number;

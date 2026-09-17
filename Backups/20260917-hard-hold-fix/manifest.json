@@ -1,0 +1,188 @@
+[
+  {
+    "Source": "C:\\Users\\GAURAV~1\\AppData\\Local\\Temp\\safepay-hard-hold-fix-20260918\\Backend\\src\\main\\java\\com\\ofss\\config\\AdminSecurityConfig.java",
+    "Target": "C:\\Shreya\\Safe-Pay\\Backend\\src\\main\\java\\com\\ofss\\config\\AdminSecurityConfig.java",
+    "Before": "87CB3C80AE28980532DEC46A5D82BE3FE1FDADB7783FA67B93B052A12DF29578",
+    "After": "9E5E36DFD5614481EA2A9FC7EE2349923AF9410B86FC7BF96447509E409A10FC"
+  },
+  {
+    "Source": "C:\\Users\\GAURAV~1\\AppData\\Local\\Temp\\safepay-hard-hold-fix-20260918\\Backend\\src\\main\\java\\com\\ofss\\controller\\AccountFundsController.java",
+    "Target": "C:\\Shreya\\Safe-Pay\\Backend\\src\\main\\java\\com\\ofss\\controller\\AccountFundsController.java",
+    "Before": null,
+    "After": "FD464CAF0D56958E67D62DE7FD7D18BC3CEFC8DC72859B05B1DE84538D3EEFA1"
+  },
+  {
+    "Source": "C:\\Users\\GAURAV~1\\AppData\\Local\\Temp\\safepay-hard-hold-fix-20260918\\Backend\\src\\main\\java\\com\\ofss\\controller\\AdminApprovalController.java",
+    "Target": "C:\\Shreya\\Safe-Pay\\Backend\\src\\main\\java\\com\\ofss\\controller\\AdminApprovalController.java",
+    "Before": "D876B83DC761AF65EC2DC372624DD602FA6381EDB814490342DD2C2F21835B2E",
+    "After": "1DFBA56C94556075C54902A1A5E792A195AFCE33B060C7654FA7CFF3ED22CF5F"
+  },
+  {
+    "Source": "C:\\Users\\GAURAV~1\\AppData\\Local\\Temp\\safepay-hard-hold-fix-20260918\\Backend\\src\\main\\java\\com\\ofss\\repository\\AccountFundsRepository.java",
+    "Target": "C:\\Shreya\\Safe-Pay\\Backend\\src\\main\\java\\com\\ofss\\repository\\AccountFundsRepository.java",
+    "Before": null,
+    "After": "7B7E7E6D373C9D71F91027EF8C290991D9B48C4958E182B9FA3FCF2F247A951F"
+  },
+  {
+    "Source": "C:\\Users\\GAURAV~1\\AppData\\Local\\Temp\\safepay-hard-hold-fix-20260918\\Backend\\src\\main\\java\\com\\ofss\\repository\\VerificationRepository.java",
+    "Target": "C:\\Shreya\\Safe-Pay\\Backend\\src\\main\\java\\com\\ofss\\repository\\VerificationRepository.java",
+    "Before": "062691FEB130483817A3E9B15BA84C5FEE8FD7ADBA413BBC143E9412EDFD5367",
+    "After": "5CCBBDFB8D5084540E515557E247A078CD0D3A00BC8BA68D632F6526F15B568A"
+  },
+  {
+    "Source": "C:\\Users\\GAURAV~1\\AppData\\Local\\Temp\\safepay-hard-hold-fix-20260918\\Backend\\src\\main\\java\\com\\ofss\\services\\AdminApprovalService.java",
+    "Target": "C:\\Shreya\\Safe-Pay\\Backend\\src\\main\\java\\com\\ofss\\services\\AdminApprovalService.java",
+    "Before": "AF82209B41122AEE7D8B3F13CEFA56139E84E73C8A305848D8927FA847A5E585",
+    "After": "A381316F9B281D826BFFD85DA25A2D4AD43510D0B13C5EBBD4B8FDCD081D65B2"
+  },
+  {
+    "Source": "C:\\Users\\GAURAV~1\\AppData\\Local\\Temp\\safepay-hard-hold-fix-20260918\\Backend\\src\\main\\java\\com\\ofss\\services\\TransactionPreRiskValidator.java",
+    "Target": "C:\\Shreya\\Safe-Pay\\Backend\\src\\main\\java\\com\\ofss\\services\\TransactionPreRiskValidator.java",
+    "Before": "3122192CC48D11E38EFE7198C9D91A3B96344AECA22217A9C23DBB777B12CF41",
+    "After": "801F09DCA0F1CEE406036892A24F358C4761F3A9F6DAB62913F31C4B0A275B17"
+  },
+  {
+    "Source": "C:\\Users\\GAURAV~1\\AppData\\Local\\Temp\\safepay-hard-hold-fix-20260918\\Backend\\src\\test\\java\\com\\ofss\\controller\\AdminApprovalAuthorizationTest.java",
+    "Target": "C:\\Shreya\\Safe-Pay\\Backend\\src\\test\\java\\com\\ofss\\controller\\AdminApprovalAuthorizationTest.java",
+    "Before": "AA930A75A1B29864B91478EA8C6CA1072DA3C0559C4D2BBEF3C73736A467BE4E",
+    "After": "188362F3F5EF54D7B58B83DEE04B4AAB7814613066778AFFAABB3B31A6932ABD"
+  },
+  {
+    "Source": "C:\\Users\\GAURAV~1\\AppData\\Local\\Temp\\safepay-hard-hold-fix-20260918\\Backend\\src\\test\\java\\com\\ofss\\services\\AdminApprovalServiceTest.java",
+    "Target": "C:\\Shreya\\Safe-Pay\\Backend\\src\\test\\java\\com\\ofss\\services\\AdminApprovalServiceTest.java",
+    "Before": "F52F75C03ED94EE2D466DEFEA2C031CB473D2428CBE0395EC69C813A34D66639",
+    "After": "18EC0605683C00F950B9EAE613DF4ECCDA441F34DA1E495E8D80EC2776725BB6"
+  },
+  {
+    "Source": "C:\\Users\\GAURAV~1\\AppData\\Local\\Temp\\safepay-hard-hold-fix-20260918\\Backend\\src\\test\\java\\com\\ofss\\services\\TransactionDatabaseTest.java",
+    "Target": "C:\\Shreya\\Safe-Pay\\Backend\\src\\test\\java\\com\\ofss\\services\\TransactionDatabaseTest.java",
+    "Before": "9C1F8DE01FD31EF79491006D40E955E7ADC8E5232CB7926A786EB54F5C50BAC2",
+    "After": "3E97537F95E756477267519ED6920F023DD9CEB10637B2F5DDEAF9B09A95D690"
+  },
+  {
+    "Source": "C:\\Users\\GAURAV~1\\AppData\\Local\\Temp\\safepay-hard-hold-fix-20260918\\Frontend\\src\\ts\\services\\accountService.ts",
+    "Target": "C:\\Shreya\\Safe-Pay\\Frontend\\SafePayJet\\src\\ts\\services\\accountService.ts",
+    "Before": "DCC186CC0B7395F8F6E9F82FD6A65E1F4E0E61EE1F7EC38DE755444AF9FE1DE3",
+    "After": "14079836722B81B9D0D011D84313D31C68EDC469F18999E5B01D02A59783424A"
+  },
+  {
+    "Source": "C:\\Users\\GAURAV~1\\AppData\\Local\\Temp\\safepay-hard-hold-fix-20260918\\Frontend\\src\\ts\\services\\adminHoldService.ts",
+    "Target": "C:\\Shreya\\Safe-Pay\\Frontend\\SafePayJet\\src\\ts\\services\\adminHoldService.ts",
+    "Before": "46D097DF3AEFFEAD0D77AA0F6340592C0E838E70D659D34B783E66F2AA55B160",
+    "After": "5B569A901EA4C221B2389F60BADF4D0A40ACA30D824BBE5FFC2152B0B0E2207D"
+  },
+  {
+    "Source": "C:\\Users\\GAURAV~1\\AppData\\Local\\Temp\\safepay-hard-hold-fix-20260918\\Frontend\\src\\ts\\viewModels\\adminHolds.ts",
+    "Target": "C:\\Shreya\\Safe-Pay\\Frontend\\SafePayJet\\src\\ts\\viewModels\\adminHolds.ts",
+    "Before": "37B8CC939C03BCF6A9A8C553216D561FCB2CE8CAFAC92F8589D1380BB41FCE59",
+    "After": "64B8DC206A1A6EE4C384040EF5EC747A222654AE417322FB7540F2F31B60D4D2"
+  },
+  {
+    "Source": "C:\\Users\\GAURAV~1\\AppData\\Local\\Temp\\safepay-hard-hold-fix-20260918\\Frontend\\src\\ts\\viewModels\\send-money.ts",
+    "Target": "C:\\Shreya\\Safe-Pay\\Frontend\\SafePayJet\\src\\ts\\viewModels\\send-money.ts",
+    "Before": "C775752D7650F5BB7CB351628562D353F56340575995C38E0F51B7DCB582F76C",
+    "After": "A150BDD421AD7BAED2F12C6D5CE057B062F7262D42BB70F5D50E8E150D41A979"
+  },
+  {
+    "Source": "C:\\Users\\GAURAV~1\\AppData\\Local\\Temp\\safepay-hard-hold-fix-20260918\\Frontend\\src\\ts\\views\\admin.html",
+    "Target": "C:\\Shreya\\Safe-Pay\\Frontend\\SafePayJet\\src\\ts\\views\\admin.html",
+    "Before": "FD5F8317098C92156671FA6EC27E133829009AF9651002BB1F80B710510B6FB5",
+    "After": "F8B0A0B5D05BAA3751FCBA9953EC358E58A68B53924542F2009BDDA7810817FB"
+  },
+  {
+    "Source": "C:\\Users\\GAURAV~1\\AppData\\Local\\Temp\\safepay-hard-hold-fix-20260918\\Frontend\\src\\ts\\views\\send-money.html",
+    "Target": "C:\\Shreya\\Safe-Pay\\Frontend\\SafePayJet\\src\\ts\\views\\send-money.html",
+    "Before": "8EE93C707ACE924BDDC818F5ABD93E9E7B817D805F5C1A0D989694B0F81D02E5",
+    "After": "806469CDC7D5A0C2B1CFF2C4D35BCE4DA8C9BCF74553B3353420CCFD33067BB2"
+  },
+  {
+    "Source": "C:\\Users\\GAURAV~1\\AppData\\Local\\Temp\\safepay-hard-hold-fix-20260918\\Frontend\\tests\\backend-integration.test.cjs",
+    "Target": "C:\\Shreya\\Safe-Pay\\Frontend\\SafePayJet\\tests\\backend-integration.test.cjs",
+    "Before": "E1369B8840C3E3D0541FC6E541456818875A20975AB6D9CAA1A9AE2D81D5954E",
+    "After": "BE9A90532AB2CB1EB58A7505C1F896FDC1CBB61574C012183D880FF951CF0BA4"
+  },
+  {
+    "Source": "C:\\Users\\GAURAV~1\\AppData\\Local\\Temp\\safepay-hard-hold-fix-20260918\\Frontend\\tests\\send-money.test.cjs",
+    "Target": "C:\\Shreya\\Safe-Pay\\Frontend\\SafePayJet\\tests\\send-money.test.cjs",
+    "Before": "2AEFB06342DAC066D025A575EF06A7CBE32526BE225376B4FDC011861547CE25",
+    "After": "822B512B3D7F6F407308A723340640D475D93A0DDD7C3CFAE1A168C1EFF6558A"
+  },
+  {
+    "Source": "C:\\Users\\GAURAV~1\\AppData\\Local\\Temp\\safepay-hard-hold-fix-20260918\\Frontend\\compiled\\viewModels\\adminHolds.js",
+    "Target": "C:\\Shreya\\Safe-Pay\\Frontend\\SafePayJet\\web\\js\\viewModels\\adminHolds.js",
+    "Before": "4CFCD7FE7432D768316A2787F1151C7CF7436A91A6F336945FBE36C5FA3D90F9",
+    "After": "08DA8EBE23419ED0E9F0B51E73F936B208299715D23482CA3C7AC98463E0F2C8"
+  },
+  {
+    "Source": "C:\\Users\\GAURAV~1\\AppData\\Local\\Temp\\safepay-hard-hold-fix-20260918\\Frontend\\compiled\\viewModels\\adminHolds.d.ts",
+    "Target": "C:\\Shreya\\Safe-Pay\\Frontend\\SafePayJet\\web\\js\\viewModels\\adminHolds.d.ts",
+    "Before": "BAF0279FE2331250E4A141F109F9A68FBD1E59FC7905082077FFDA2212BF5C61",
+    "After": "36F09ECB24B3C9774CE4C24DFEA75D499775BD1AD883E2347427F11BAACC5D49"
+  },
+  {
+    "Source": "C:\\Users\\GAURAV~1\\AppData\\Local\\Temp\\safepay-hard-hold-fix-20260918\\Frontend\\compiled\\viewModels\\send-money.js",
+    "Target": "C:\\Shreya\\Safe-Pay\\Frontend\\SafePayJet\\web\\js\\viewModels\\send-money.js",
+    "Before": "F7ADA18FEA01D641A6FECAF9E4E091EA6E458D3236B89C7C91188BF0DEB62BED",
+    "After": "3D64D0AAC4B2B024E807ED03EECB71AE958B4FBD33FED9105060AD736CBADBC7"
+  },
+  {
+    "Source": "C:\\Users\\GAURAV~1\\AppData\\Local\\Temp\\safepay-hard-hold-fix-20260918\\Frontend\\compiled\\viewModels\\send-money.d.ts",
+    "Target": "C:\\Shreya\\Safe-Pay\\Frontend\\SafePayJet\\web\\js\\viewModels\\send-money.d.ts",
+    "Before": "3C742F978BECD7C69F4316A5AECABD3CEFD55980862252C5E532BEFC43D21C05",
+    "After": "7C4E5C332CD4F3E1D417001DDD3AEB318A2323707D3BD542691353CF3B069BEE"
+  },
+  {
+    "Source": "C:\\Users\\GAURAV~1\\AppData\\Local\\Temp\\safepay-hard-hold-fix-20260918\\Frontend\\compiled\\services\\adminHoldService.js",
+    "Target": "C:\\Shreya\\Safe-Pay\\Frontend\\SafePayJet\\web\\js\\services\\adminHoldService.js",
+    "Before": "EEAD17118C5672834E7DD64AF1B5B59F02662554E07DDA6B41706394C3B59919",
+    "After": "5B2C9763F4BBC2FB401FC3C0E415ACED1BC02FB62A6C2725DBF853F175B6F6B7"
+  },
+  {
+    "Source": "C:\\Users\\GAURAV~1\\AppData\\Local\\Temp\\safepay-hard-hold-fix-20260918\\Frontend\\compiled\\services\\adminHoldService.d.ts",
+    "Target": "C:\\Shreya\\Safe-Pay\\Frontend\\SafePayJet\\web\\js\\services\\adminHoldService.d.ts",
+    "Before": "93090FE91EC70846FADFE7D085EB2ECF17A73FD52F0A303E459009C1F38089BC",
+    "After": "A49FD11C63CEB377B1BEAE06ED1E2067D91AA96DDE7E993323199921CAFF4C00"
+  },
+  {
+    "Source": "C:\\Users\\GAURAV~1\\AppData\\Local\\Temp\\safepay-hard-hold-fix-20260918\\Frontend\\compiled\\services\\accountService.js",
+    "Target": "C:\\Shreya\\Safe-Pay\\Frontend\\SafePayJet\\web\\js\\services\\accountService.js",
+    "Before": "BD9DA3C0CC5AD9B42A973A9689FCF37B51C781E006FD25B30A89B9015AB7700E",
+    "After": "84453910AFD904E1E0C76E9A8B7535614F4D213563A92BA05E72F2F4775C9D9D"
+  },
+  {
+    "Source": "C:\\Users\\GAURAV~1\\AppData\\Local\\Temp\\safepay-hard-hold-fix-20260918\\Frontend\\compiled\\services\\accountService.d.ts",
+    "Target": "C:\\Shreya\\Safe-Pay\\Frontend\\SafePayJet\\web\\js\\services\\accountService.d.ts",
+    "Before": "A0A6AB4B687F326189B88E56736E4F3A7F297F519D4575A76F3AE1D766DC69EB",
+    "After": "EEA788DF6667C88BCC6B7D3CBC0A75BBA7BBF3008272DB3241649C309F0386FD"
+  },
+  {
+    "Source": "C:\\Users\\GAURAV~1\\AppData\\Local\\Temp\\safepay-hard-hold-fix-20260918\\Frontend\\src\\ts\\views\\admin.html",
+    "Target": "C:\\Shreya\\Safe-Pay\\Frontend\\SafePayJet\\web\\js\\views\\admin.html",
+    "Before": "FD5F8317098C92156671FA6EC27E133829009AF9651002BB1F80B710510B6FB5",
+    "After": "F8B0A0B5D05BAA3751FCBA9953EC358E58A68B53924542F2009BDDA7810817FB"
+  },
+  {
+    "Source": "C:\\Users\\GAURAV~1\\AppData\\Local\\Temp\\safepay-hard-hold-fix-20260918\\Frontend\\src\\ts\\views\\send-money.html",
+    "Target": "C:\\Shreya\\Safe-Pay\\Frontend\\SafePayJet\\web\\js\\views\\send-money.html",
+    "Before": "8EE93C707ACE924BDDC818F5ABD93E9E7B817D805F5C1A0D989694B0F81D02E5",
+    "After": "806469CDC7D5A0C2B1CFF2C4D35BCE4DA8C9BCF74553B3353420CCFD33067BB2"
+  },
+  {
+    "Source": "C:\\Users\\GAURAV~1\\AppData\\Local\\Temp\\safepay-hard-hold-fix-20260918\\SafePay-hard-hold-fix.jar",
+    "Target": "C:\\Shreya\\Safe-Pay\\dist\\SafePay-hard-hold-fix.jar",
+    "Before": null,
+    "After": "54E5902258DAAB9BA39D44CE5D6C3B2C68B2F20E054AA7FE962FC43CE9B04D69"
+  },
+  {
+    "Source": "C:\\Users\\GAURAV~1\\AppData\\Local\\Temp\\safepay-hard-hold-fix-20260918\\start-backend.cmd",
+    "Target": "C:\\Shreya\\Safe-Pay\\start-backend.cmd",
+    "Before": "65A8132742048EE9BCD7B2426CA5042BFAD1F9BCD8404C1B9F114EAC0DF70236",
+    "After": "6F3FA7BB9B350F05F681A4FA8D38DEF927B13C4E2333D41FDC5828874843F5CB"
+  },
+  {
+    "Source": "C:\\Users\\GAURAV~1\\AppData\\Local\\Temp\\safepay-hard-hold-fix-20260918\\HARD_HOLD_FIX.md",
+    "Target": "C:\\Shreya\\Safe-Pay\\docs\\HARD_HOLD_FIX.md",
+    "Before": null,
+    "After": "E05DB0F5147771D4697C9E24AF5491A3FA96691E782386CD5CF03EA1A73999F5"
+  }
+]

@@ -232,4 +232,70 @@ class TransactionDatabaseTest {
             }
         });
     }
+
+    TransactionDb hardHold(String amount) {
+        return service.initiate(account.getAccountId(), beneficiary.getBeneficiaryId(), new BigDecimal(amount),
+                "medical", UUID.randomUUID().toString(), account.getUserId());
+    }
+    @Autowired AccountFundsRepository funds;
+    @Test void multipleHardHoldsAreAllowedAndDeclineFreesOnlyItsReservation() {
+        TransactionDb first = hardHold("200000.00"), second = hardHold("150000.00");
+        assertEquals(TransactionState.HARD_HOLD, first.getState());
+        assertEquals(TransactionState.HARD_HOLD, second.getState());
+        assertEquals("medical", approvals.pending(admin).stream().filter(p -> p.transactionId().equals(first.getTransactionId())).findFirst().orElseThrow().purpose());
+        var before = funds.funds(account.getAccountId(), account.getUserId(), java.util.List.of(TransactionState.PROTECTED, TransactionState.HARD_HOLD)).orElseThrow();
+        assertEquals(0, before.getReservedBalance().compareTo(new BigDecimal("350000.00")));
+        String key = UUID.randomUUID().toString();
+        assertEquals("CANCELLED", approvals.decline(first.getTransactionId(), admin, key).state());
+        assertEquals("CANCELLED", approvals.decline(first.getTransactionId(), admin, key).state());
+        assertEquals(new BigDecimal("500000.00"), accounts.findById(account.getAccountId()).orElseThrow().getBalance());
+        assertEquals(TransactionState.HARD_HOLD, transactions.findById(second.getTransactionId()).orElseThrow().getState());
+        var after = funds.funds(account.getAccountId(), account.getUserId(), java.util.List.of(TransactionState.PROTECTED, TransactionState.HARD_HOLD)).orElseThrow();
+        assertEquals(0, after.getReservedBalance().compareTo(new BigDecimal("150000.00")));
+        assertTrue(funds.funds(account.getAccountId(), -1L, java.util.List.of(TransactionState.HARD_HOLD)).isEmpty());
+        assertEquals(1, jdbc.queryForObject("select count(*) from audit_log where transaction_id=? and action='ADMIN_DECLINED_CANCELLED' and user_id=?",Integer.class,first.getTransactionId(),admin.userId()));
+        assertNotNull(transactions.findById(first.getTransactionId()).orElseThrow().getCancelledAt());
+        assertThrows(com.ofss.excp.TransactionValidationException.class, () -> approvals.approve(first.getTransactionId(), admin, UUID.randomUUID().toString()));
+        hardHold("200000.00");
+        approvals.approve(second.getTransactionId(), admin, UUID.randomUUID().toString());
+        assertEquals(new BigDecimal("350000.00"), accounts.findById(account.getAccountId()).orElseThrow().getBalance());
+    }
+    @Test void concurrentHardHoldsBothSucceedWhenFunded() throws Exception {
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        try {
+            Future<TransactionDb> one = pool.submit(() -> hardHold("200000.00"));
+            Future<TransactionDb> two = pool.submit(() -> hardHold("150000.00"));
+            assertEquals(TransactionState.HARD_HOLD, one.get(20,TimeUnit.SECONDS).getState());
+            assertEquals(TransactionState.HARD_HOLD, two.get(20,TimeUnit.SECONDS).getState());
+        } finally { pool.shutdownNow(); }
+        assertEquals(0, transactions.pendingAmount(account.getAccountId(),java.util.List.of(TransactionState.HARD_HOLD)).compareTo(new BigDecimal("350000.00")));
+    }
+    @Test void existingReservationCannotBeSpentTwiceAndExactMinimumIsAllowed() {
+        account.setBalance(new BigDecimal("289600.00")); accounts.saveAndFlush(account);
+        hardHold("200000.00");
+        var failure = assertThrows(com.ofss.excp.InsufficientBalanceException.class, () -> hardHold("150000.00"));
+        assertTrue(failure.getMessage().contains("84600"));
+        account = accounts.findById(account.getAccountId()).orElseThrow();
+        account.setBalance(new BigDecimal("355000.00")); accounts.saveAndFlush(account);
+        assertEquals(TransactionState.HARD_HOLD, hardHold("150000.00").getState());
+        assertThrows(com.ofss.excp.InsufficientBalanceException.class, () -> hardHold("150000.00"));
+    }
+    @Test void approvalAndDeclineRaceHasExactlyOneWinner() throws Exception {
+        var payment = hardHold("200000.00"); ExecutorService pool = Executors.newFixedThreadPool(2);
+        int completed = 0;
+        try {
+            var one = pool.submit(() -> approvals.approve(payment.getTransactionId(),admin,UUID.randomUUID().toString()));
+            var two = pool.submit(() -> approvals.decline(payment.getTransactionId(),admin,UUID.randomUUID().toString()));
+            for (var future : java.util.List.of(one,two)) {
+                try { future.get(20,TimeUnit.SECONDS); completed++; }
+                catch (ExecutionException e) { assertInstanceOf(com.ofss.excp.TransactionValidationException.class,e.getCause()); }
+            }
+        } finally { pool.shutdownNow(); }
+        assertEquals(1,completed);
+        var finalPayment=transactions.findById(payment.getTransactionId()).orElseThrow();
+        var expected=finalPayment.getState()==TransactionState.SETTLED ? "300000.00" : "500000.00";
+        assertEquals(new BigDecimal(expected),accounts.findById(account.getAccountId()).orElseThrow().getBalance());
+        assertEquals(1,jdbc.queryForObject("select count(*) from audit_log where transaction_id=? and action in ('ADMIN_APPROVED_SETTLED','ADMIN_DECLINED_CANCELLED')",Integer.class,payment.getTransactionId()));
+    }
+
 }

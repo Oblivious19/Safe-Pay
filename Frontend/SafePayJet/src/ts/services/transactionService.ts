@@ -3,12 +3,21 @@ import { ApiError, requireText, resourceId } from "./apiError";
 import { TransactionRequest, PaymentTransaction, TransactionState } from "./types";
 
 export function newIdempotencyKey(): string { return crypto.randomUUID(); }
+/** Anchor countdowns to the server duration, never interpret Oracle local timestamps as UTC. */
+export function receivedPayment(tx: PaymentTransaction, started: number): PaymentTransaction {
+  return {...tx, protectionDeadline: tx.state === "PROTECTED" && typeof tx.protectionRemainingMillis === "number"
+    ? started + Math.max(0, tx.protectionRemainingMillis) : undefined};
+}
+async function paymentRequest(path: string, options: Parameters<typeof apiClient.request>[1] = {}): Promise<PaymentTransaction> {
+  const started = Date.now(); return receivedPayment(await apiClient.request<PaymentTransaction>(path, options), started);
+}
 export const transactionService = {
-  list(state?: TransactionState): Promise<PaymentTransaction[]> {
-    return apiClient.request(`/api/transactions${state ? `?state=${encodeURIComponent(state)}` : ""}`);
+  async list(state?: TransactionState): Promise<PaymentTransaction[]> {
+    const started=Date.now(); const rows=await apiClient.request<PaymentTransaction[]>(`/api/transactions${state ? `?state=${encodeURIComponent(state)}` : ""}`);
+    return rows.map(row=>receivedPayment(row,started));
   },
   async get(id: number): Promise<PaymentTransaction> {
-    return apiClient.request(`/api/transactions/${resourceId(id)}`);
+    return paymentRequest(`/api/transactions/${resourceId(id)}`);
   },
   async create(input: TransactionRequest, idempotencyKey: string): Promise<PaymentTransaction> {
     resourceId(input.fromAccountId); resourceId(input.beneficiaryId); requireText(idempotencyKey, "Idempotency key");
@@ -19,18 +28,12 @@ export const transactionService = {
       throw new ApiError(400, "Purpose or idempotency key is too long.", "validation");
     }
     const { fromAccountId, beneficiaryId, amount, purpose } = input;
-    return apiClient.request("/api/transactions", {
+    return paymentRequest("/api/transactions", {
       method: "POST", csrf: true, idempotencyKey, body: { fromAccountId, beneficiaryId, amount, purpose }
     });
   },
   async cancel(id: number, idempotencyKey: string): Promise<PaymentTransaction> {
     resourceId(id); requireText(idempotencyKey, "Idempotency key");
-    return apiClient.request(`/api/transactions/${id}/cancel`, { method: "POST", csrf: true, idempotencyKey });
-  },
-  async verify(id: number, password: string, idempotencyKey: string): Promise<PaymentTransaction> {
-    resourceId(id); requireText(password, "Password"); requireText(idempotencyKey, "Idempotency key");
-    return apiClient.request(`/api/transactions/${id}/verify`, {
-      method: "POST", csrf: true, idempotencyKey, body: { password }
-    });
+    return paymentRequest(`/api/transactions/${id}/cancel`, { method: "POST", csrf: true, idempotencyKey });
   }
 };
