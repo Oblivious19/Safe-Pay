@@ -1,6 +1,7 @@
 import * as ko from "knockout";
 import { authService } from "../services/authService";
 import { ApiError } from "../services/apiError";
+import { requestDashboardEntryLoader } from "../utils/entryLoader";
 import "ojs/ojbutton";
 import "ojs/ojinputtext";
 
@@ -52,6 +53,7 @@ class LoginViewModel {
       const user = await authService.login(this.mode() === "phone" ? { phone: this.phone(), password: this.password() } : { email, password: this.password() });
       if (generation !== this.generation) return;
       this.password(""); this.showPassword(false);
+      if (user.role !== "ADMIN") requestDashboardEntryLoader();
       window.location.assign(user.role === "ADMIN" ? "/admin/dashboard" : "/dashboard");
       navigating = true;
     } catch (error) {

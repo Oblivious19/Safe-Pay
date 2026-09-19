@@ -39,11 +39,19 @@ test('guest sees public home, not a customer module', async () => {
   const home = shell(undefined, undefined, '/'); await Promise.resolve();
   assert.equal(home.syncs(), 1); assert.equal(home.routerConfig.routes[0].redirect, 'home');
 });
-test('route loader shows until the router settles on a state', async () => {
-  const f = shell(undefined, undefined, '/'); assert.equal(f.model.routeBusy(), true);
-  await Promise.resolve(); assert.equal(f.model.routeBusy(), false);
+test('route bar settles after public routing and tracks ordinary navigation', async () => {
+  const f = shell(undefined, undefined, '/'); assert.equal(f.model.routeBusy(), false);
+  assert.equal(f.model.entryLoaderBusy(), false);
   f.router().beforeStateChange({}); assert.equal(f.model.routeBusy(), true);
+  assert.equal(f.model.entryLoaderBusy(), false);
   f.router().currentState({}); assert.equal(f.model.routeBusy(), false);
+});
+test('full entry loader is never enabled by a normal feature route', async () => {
+  const login = shell(undefined, undefined, '/login');
+  assert.equal(login.model.entryLoaderBusy(), false);
+  login.router().beforeStateChange({}); assert.equal(login.model.entryLoaderBusy(), false);
+  const protectedPage = shell(undefined, undefined, '/dashboard');
+  assert.equal(protectedPage.model.entryLoaderBusy(), false);
 });
 test('private route waits for server session; customer then loads', async () => {
   let finish; const f = shell(undefined, undefined, '/dashboard', () => new Promise(r => finish=r));
@@ -58,9 +66,9 @@ test('unavailable session never renders customer data', async () => {
   const f = shell(undefined, undefined, '/beneficiaries', async () => ({kind:'unavailable'})); await Promise.resolve();
   assert.deepEqual(f.redirects,['/home?reason=unavailable']); assert.equal(f.syncs(),0);
 });
-test('signed-in customer opening home goes to dashboard', async () => {
+test('signed-in customer opening home moves to dashboard after public routing starts', async () => {
   const f = shell(undefined, undefined, '/', async () => ({kind:'customer',profile:{name:'Owner'}})); await Promise.resolve();
-  assert.deepEqual(f.redirects,['/dashboard']); assert.equal(f.syncs(),0);
+  assert.deepEqual(f.redirects,['/dashboard']); assert.equal(f.syncs(),1);
 });
 test('clean dashboard route uses root path adapter', () => {
   const f = shell(); assert.ok(f.routerConfig.routes.some(r => r.path === 'dashboard'));

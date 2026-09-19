@@ -19,9 +19,21 @@ class RootViewModel {
   logoutError = ko.observable("");
   profile = ko.observable<CustomerIdentity | null>(null);
   profileLoading = ko.observable(false);
-  // Session verification and route transitions both leave the page blank, so show a bar meanwhile.
+  // Keep the thin bar for ordinary in-app navigation.
   routeBusy = ko.observable(true);
+  // The full SafePay scene is intentionally reserved for entering the landing
+  // page and the one-time successful customer-login handoff to the dashboard.
+  entryLoaderBusy = ko.observable(false);
   private profileGeneration = 0;
+  private consumeDashboardEntryLoader = (): boolean => {
+    try {
+      if (window.sessionStorage?.getItem("safepay-dashboard-entry-loader") !== "1") return false;
+      window.sessionStorage.removeItem("safepay-dashboard-entry-loader");
+      return true;
+    } catch {
+      return false;
+    }
+  };
   loadProfile = async (): Promise<void> => {
     const generation = ++this.profileGeneration;
     this.profile(null); this.profileLoading(true);
@@ -76,23 +88,54 @@ class RootViewModel {
     this.moduleAdapter = new ModuleRouterAdapter(router);
     this.selection = new KnockoutRouterAdapter(router);
     router.beforeStateChange.subscribe(() => this.routeBusy(true));
-    router.currentState.subscribe(() => this.routeBusy(false));
+    const stopEntryLoader = (): void => {
+      this.entryLoaderBusy(false);
+      document.documentElement?.removeAttribute("data-safepay-entry-loader");
+    };
+    router.currentState.subscribe(() => {
+      this.routeBusy(false);
+      stopEntryLoader();
+    });
+    // State changes normally settle both indicators above. This fallback also
+    // clears the bootstrap scene if a router update rejects before it
+    // publishes a current state, so it can never block a feature page.
+    const syncRoute = (): void => {
+      void router.sync()
+        .catch(() => undefined)
+        .finally(() => {
+          this.routeBusy(false);
+          stopEntryLoader();
+        });
+    };
     // Do not instantiate private customer modules before session verification finishes.
     const path = window.location.pathname || "/login";
     const customerPage = this.navItems.some(item => path === "/" + item.path || path.startsWith("/" + item.path + "/"));
     const publicPage = path === "/" || path === "/home";
-    if (customerPage || publicPage) {
+    const dashboardEntry = path === "/dashboard" && this.consumeDashboardEntryLoader();
+    this.entryLoaderBusy(publicPage || dashboardEntry);
+    if (publicPage) {
+      // Home has no private content, so do not make its introductory motion
+      // wait on a session request. Signed-in visitors are still redirected as
+      // soon as their session is known.
+      syncRoute();
       void checkSessionRoute().then(session => {
         if (session.kind === "admin") { window.location.replace("/admin/dashboard"); return; }
         if (session.kind === "customer") {
           this.profile(session.profile);
-          if (publicPage) { window.location.replace("/dashboard"); return; }
-        } else if (customerPage) {
+          window.location.replace("/dashboard");
+        }
+      });
+    } else if (customerPage) {
+      void checkSessionRoute().then(session => {
+        if (session.kind === "admin") { window.location.replace("/admin/dashboard"); return; }
+        if (session.kind === "customer") {
+          this.profile(session.profile);
+        } else {
           window.location.replace(session.kind === "guest" ? "/home" : "/home?reason=unavailable"); return;
         }
-        void router.sync();
+        syncRoute();
       });
-    } else void router.sync();
+    } else syncRoute();
     Context.getPageContext().getBusyContext().applicationBootstrapComplete();
     // First tap anywhere unlocks Web Audio so later receipt/call tones are allowed.
     const unlock = (): void => { armAudio(); };

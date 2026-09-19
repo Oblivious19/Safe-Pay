@@ -18,7 +18,7 @@ test('phone password login preserves exact password and navigates', async () => 
 function fixture(call = () => Promise.resolve({}), search = '') {
   const calls = [], redirects = [], module = { exports: {} };
   const code = ts.transpileModule(read('ts/viewModels/login.ts'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2021 } }).outputText;
-  const imports = { knockout: ko, '../services/apiError': { ApiError }, '../services/authService': { authService: { login: data => { calls.push(data); return call(data); } } }, 'ojs/ojbutton': {}, 'ojs/ojinputtext': {} };
+  const imports = { knockout: ko, '../services/apiError': { ApiError }, '../services/authService': { authService: { login: data => { calls.push(data); return call(data); } } }, '../utils/entryLoader': { requestDashboardEntryLoader() {} }, 'ojs/ojbutton': {}, 'ojs/ojinputtext': {} };
   vm.runInNewContext('(function(require,module,exports){' + code + '\n})', {
     document: { title: '', getElementById: () => ({ focus() {} }) },
     URLSearchParams, window: { location: { search, assign: url => redirects.push(url) } }
