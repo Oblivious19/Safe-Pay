@@ -1,0 +1,36 @@
+Implementation completed
+- 2.7A: Added the canonical idempotency lifecycle, operation codes, and schema-exact IdempotencyRecord.
+- 2.7B: Added scoped normal and pessimistic-lock DAO queries, saveAndFlush support, and no delete operations.
+- 2.7C: Added deterministic SHA-256 request fingerprinting with recursive JSON property ordering.
+- 2.7D: Added execution/replay result contracts and safe RFC 7807-compatible idempotency conflicts.
+
+
+Key files include:
+- [IdempotencyRecord.java](C:/Users/Aditya Rao/Downloads/Training/Project/SafePay/backend/src/main/java/com/ofss/beans/IdempotencyRecord.java)
+- [IdempotencyOperation.java](C:/Users/Aditya Rao/Downloads/Training/Project/SafePay/backend/src/main/java/com/ofss/beans/IdempotencyOperation.java)
+- [IdempotencyStatus.java](C:/Users/Aditya Rao/Downloads/Training/Project/SafePay/backend/src/main/java/com/ofss/beans/IdempotencyStatus.java)
+- [IdempotencyRecordDao.java](C:/Users/Aditya Rao/Downloads/Training/Project/SafePay/backend/src/main/java/com/ofss/repository/IdempotencyRecordDao.java)
+- [RequestFingerprintService.java](C:/Users/Aditya Rao/Downloads/Training/Project/SafePay/backend/src/main/java/com/ofss/services/RequestFingerprintService.java)
+- [IdempotencyExecutionResult.java](C:/Users/Aditya Rao/Downloads/Training/Project/SafePay/backend/src/main/java/com/ofss/services/IdempotencyExecutionResult.java)
+- [IdempotencyConflictException.java](C:/Users/Aditya Rao/Downloads/Training/Project/SafePay/backend/src/main/java/com/ofss/excp/IdempotencyConflictException.java)
+
+Critical review results:
+The implementation now enforces:
+- Unique scope by authenticated user, operation and idempotency key.
+- Exact database status values: IN_PROGRESS, COMPLETED, and FAILED.
+- Exact V4 sequence, table, column lengths, relationships, CLOB response storage and optimistic version mapping.
+- Opaque, case-sensitive idempotency keys.
+- Lowercase 64-character hexadecimal SHA-256 request hashes.
+- Endpoint/action and concrete resource identity within the fingerprint.
+- Stable hashes despite JSON whitespace or nested property-order differences.
+- Array order preservation because array order may affect request meaning.
+- Exact HTTP status, response body and transaction identity preservation.
+- Safe 409 responses for a reused key with a different request or an already-running equivalent request.
+- No idempotency key or request content exposure through error messages.
+- UTC timestamps truncated to Oracle-compatible microsecond precision.
+- Expiration becomes effective exactly at expires_at.
+- No delete API on the idempotency repository.
+
+No migrations, grants, controllers, transaction services, or unrelated modules were changed.
+
+The expires_at retention duration remains open. Production code contains no default duration, property, or hidden assumption. The example hour values appear only inside tests to exercise the database invariant.

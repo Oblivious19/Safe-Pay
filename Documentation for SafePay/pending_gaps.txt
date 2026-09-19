@@ -1,0 +1,81 @@
+1. I found a concrete carry-forward gap: the approved plan requires three account-read endpoints, but the current source has the account services and DTOs without an AccountController.
+
+Three findings must remain visible:
+1. Account REST endpoints remain unfinished.
+   The [approved register (line 881)](/C:/Users/Aditya Rao/Downloads/Training/Project/SafePay/UPDATED_Decision_Register.md:881) specifies account list, detail, and balance endpoints. Their [service methods exist (line 27)](/C:/Users/Aditya Rao/Downloads/Training/Project/SafePay/backend/src/main/java/com/ofss/services/AccountServiceImpl.java:27), but no account controller or corresponding route mappings were found. The older context explicitly deferred this work. It should not disappear beneath a blanket “backend complete” statement.
+2. OpenAPI delivery remains unverified.
+   The [register requires it (line 1023)](/C:/Users/Aditya Rao/Downloads/Training/Project/SafePay/UPDATED_Decision_Register.md:1023), but I found no OpenAPI specification or generator dependency in the inspected project.
+
+---------------------------------------------
+
+**No—the administrator account-browsing APIs you described are not currently implemented.** I checked the controllers, account services/repository, DTOs, and authorization contract. No files were changed.
+
+| Requested capability | Current status |
+|---|---|
+| Administrator retrieves all customer accounts with pagination | **Missing** |
+| Administrator filters accounts for a particular customer | **Missing** |
+| Administrator retrieves an individual customer account | **Missing as an administrative API** |
+| Administrator retrieves account balances | **Missing as an administrative API** |
+| Customer retrieves their own accounts/detail/balance | Services and DTOs exist; the controller is the approved pending work |
+
+The existing [AdminUserSecurityController.java](</C:/Users/Aditya Rao/Downloads/Training/Project/SafePay/backend/src/main/java/com/ofss/controller/AdminUserSecurityController.java>) provides only:
+
+- User-status changes.
+- Role assignment/removal.
+- Session revocation.
+
+Its responses contain user identity/security information—not account details or balances. The paginated Risk Review and audit endpoints serve their respective workflows; they do not provide a general account dashboard.
+
+[AccountDao.java](</C:/Users/Aditya Rao/Downloads/Training/Project/SafePay/backend/src/main/java/com/ofss/repository/AccountDao.java>) has individual-account lookups and an owner-specific **unpaged list** query. It has no paginated cross-customer account search. Those internal lookup methods do not themselves grant administrators HTTP access.
+
+**Regarding “hashed balance”:** the existing [AccountBalanceResponse.java](</C:/Users/Aditya Rao/Downloads/Training/Project/SafePay/backend/src/main/java/com/ofss/dto/account/AccountBalanceResponse.java>) returns actual current, reserved, and available balances as decimal strings, such as `"25000.00"`. The **account number is masked**. Balances are not hashed.
+
+If you mean hiding a balance visually, that is *masking*. Hiding it in the dashboard alone does not prevent the browser from receiving it; backend field visibility must follow the approved role contract.
+
+One scope distinction matters: the current Decision Register describes `SYSTEM_ADMIN` account access as **operational metadata**, with separate review/audit access for the other authorities. A general administrator dashboard exposing customer balances therefore needs an explicit field-and-permission contract. It should not be silently added to the already-approved **customer-owned account API** work.
+
+Your earlier approval remains retained: customer account API closure first, compile checks only, tests executed by you with focused/combined/full-suite instructions and expected counts, and OpenAPI explicitly pending. **This turn completed only the additional read-only check you requested before implementation.** 
+
+----
+
+2026-09-19 - Current account API closure checkpoint
+This checkpoint supersedes the earlier account-API status above; prior notes are retained as history.
+
+1. Customer account APIs: IMPLEMENTED, MANUAL VERIFICATION PENDING (not locked).
+   GET /api/v1/accounts
+   GET /api/v1/accounts/{accountId}
+   GET /api/v1/accounts/{accountId}/balance
+   Reuses existing AccountService, ownership queries and masked/string-valued DTOs.
+   Adds exact CUSTOMER route/method protection; account listing remains unpaged as approved.
+   Offline production/test compilation passed. No JUnit, Oracle tests or application startup were executed by Codex.
+   Expected focused counts: AccountControllerTest 18; AccountEndpointSecurityTest 25;
+   AccountServiceImplTest 10; SecurityAuthorizationContractTest 7. Combined: 60.
+   Expected full suite: 918 (previous 870 expected baseline plus 48 new cases).
+   These are expected counts, not passing-test claims. Await focused and full console results before locking.
+
+2. Administrator account endpoints: DEFERRED until customer account API closure is verified and locked.
+   Next requires in-depth planning and an approved permission/field contract for customer lookup,
+   paginated account browsing, individual account details and balance visibility. No admin API was added.
+
+3. OpenAPI documentation: EXPLICITLY DEFERRED by the user.
+   Retain as a backend-contract completion item before frontend integration; remind the user then.
+   No OpenAPI dependency, specification, Swagger UI or documentation route was added.
+
+4. Master Backend Understanding Guide and separate phase API-test guides: still pending.
+   Resume only at the user-approved point after the current account verification and subsequent priorities.
+
+--------------------------------
+
+Customers POV remaining :
+1. Current transaction listing supports page and size; the richer account/status/date filters suggested in the original PRD are not implemented in that controller.
+
+2.One discrepancy needs explicit resolution: the Decision Register permits read-only review-queue access for auditors, but today both review GET endpoints require RISK_OFFICER. Audit timelines expose review events, but are not equivalent to a review directory/detail API
+
+-------------------------------------
+
+- Create 5 enums for categories - Medical, Loan, Friends & Family, Investments, Others( when others select separate note box should be given to user for entering short reason). Based on these enums, the risk officer should be able to get a filtered view on his dashboard - such that medicial emergency pending approval come at the top, then comes, loan, then friend and family likewise - so that urgency wise approval is easier for risk officer If possible create filter/pagination functionality rather than separate API or separate page, but let me know if separate API is must. Let me know (after thorough searching in SQL db migration files or all java files) if such categorisation already exists or not.
+---------------------
+Create a form page in frontend : for customer to input their issues, raise concerns, edit profile request, bank related issues etc. This request/claims should be redirected to the recipient mail - shawnlaisetti@gmail.com in a formatted manner.
+---------------
+
+

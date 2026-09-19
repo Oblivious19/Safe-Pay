@@ -1,0 +1,197 @@
+Phase 2.5 is now securely locked at **236/236 tests passing**. No remaining Phase 2.5 verification blocker exists.
+
+Cross-checked the reconciled Decision Register, implementation plan, V4 transaction migration, V9 vocabulary correction, V10 integrity constraints and runtime grants before forming the Phase 2.6 breakdown.
+
+## Phase 2.6 objective
+
+Phase 2.6 builds the canonical payment instruction and centralized transaction state engine.
+
+The major outcomes will be:
+
+- A `PAYMENT_TRANSACTION` JPA model with optimistic locking.
+- Append-only `TRANSACTION_RISK_FACTOR` evidence.
+- Strict customer/account/beneficiary ownership.
+- Separate transaction creation and authorization operations.
+- Atomic risk assessment, policy-snapshot persistence and fund reservation.
+- Tier-specific routing into `RELEASED`, `PROTECTED`, or `VERIFICATION_REQUIRED`.
+- Central enforcement of every allowed and forbidden state transition.
+- Ownership-scoped transaction retrieval and risk explanations.
+- Customer cancellation before release.
+- REST endpoints using DTOs rather than entity serialization.
+
+## Phase 2.6 subphase index
+
+| Subphase | Components | Purpose |
+|---|---|---|
+| **2.6A** | `TransactionState`, `TransactionDb`, `TransactionRiskFactor` | Map the complete V4/V9/V10 transaction model, lifecycle timestamps, risk snapshot, reservation fields and `@Version` locking. |
+| **2.6B** | `TransactionDao`, `TransactionRiskFactorDao` | Provide ownership-scoped reads, ordered history queries, locked mutation retrieval and append-only risk-evidence persistence. |
+| **2.6C** | Transaction request and response DTOs | Define validated creation, authorization, cancellation, summary, detail and risk-explanation contracts without exposing entities. |
+| **2.6D** | `TransactionStateService` and implementation | Centralize the canonical transition matrix, terminal-state rules and illegal-transition conflicts. |
+| **2.6E** | Transaction creation service | Validate customer ownership, account, beneficiary and amount, then create only a `CREATED` payment instruction with no reservation or assessment. |
+| **2.6F** | Authorization and risk orchestration | Revalidate the instruction, evaluate Phase 2.5 risk, persist the coherent policy snapshot and evidence, reserve funds, and route by tier atomically. |
+| **2.6G** | Cancellation workflow | Permit cancellation only from approved states, enforce protection deadlines, release reservations where applicable and record terminal information. |
+| **2.6H** | Transaction query and explanation workflow | Implement ownership-safe listing, detail retrieval and persisted customer-safe risk explanations. |
+| **2.6I** | `TransactionController`, integration verification and Phase 2.6 document | Expose the six planned `/api/v1/transactions` endpoints and verify the complete service/JPA/Oracle flow. |
+
+## Canonical state engine
+
+The complete state vocabulary will be:
+
+```text
+CREATED
+AUTHORIZED
+RISK_ASSESSED
+PROTECTED
+VERIFICATION_REQUIRED
+PENDING_RISK_REVIEW
+RELEASED
+SETTLED
+CANCELLED
+FAILED
+```
+
+Core routing after authorization:
+
+```text
+LOW         → RELEASED
+MEDIUM/HIGH → PROTECTED
+VERY_HIGH   → VERIFICATION_REQUIRED
+```
+
+The full transition matrix will exist centrally so future OTP, review, scheduler and settlement phases can reuse it without duplicating transition logic.
+
+## Important Phase 2.6 invariants
+
+- Creation and authorization remain separate operations.
+- Creation performs no risk assessment, reservation, release or settlement.
+- Customers cannot submit a risk tier, policy identity or transaction state.
+- Authorization revalidates customer, account, beneficiary, amount and current state.
+- The complete Phase 2.5 result is persisted as one coherent snapshot.
+- `riskScore` remains null for V1.
+- `TransactionRiskFactor` records only the approved `PAYMENT_AMOUNT` evidence.
+- MEDIUM and HIGH receive server-calculated deadlines.
+- VERY_HIGH never receives a timer.
+- Reservation and state routing occur in one transaction.
+- Terminal states never reopen.
+- Cross-customer access must appear as resource-not-found.
+- Concurrent modifications are detected through `VERSION_NO`.
+- No controller will reproduce risk-band or state-transition logic.
+
+## Explicit later-phase boundaries
+
+Phase 2.6 will prepare the state and persistence foundations but will not improperly absorb:
+
+- Phase 2.7 — durable idempotency processing.
+- Phase 2.8 — scheduled expiry and final Undo-versus-release race hardening.
+- Phase 2.9 — double-entry ledger settlement and transaction exceptions.
+- Phase 2.10 — OTP verification.
+- Phase 2.11 — Risk Officer review decisions.
+- Phase 2.12 — durable audit, notifications and WebSocket events.
+- Deferred security phase — final JWT/RBAC enforcement.
+
+For example, Phase 2.6 can route a LOW transaction safely into reservation-bearing `RELEASED`; Phase 2.9 will later perform its atomic double-entry simulated settlement and move it to `SETTLED`. That preserves the approved development order without pretending settlement already exists.
+
+The clean batching arrangement is **2.6A–C**, then **2.6D–F**, then **2.6G–I**, with separate and combined test gates after every authorized batch.
+
+----------------------------------------
+
+Phase 2.6A–2.6C implementation is complete and ready for your manual verification. No Phase 2.6D+ code was introduced.
+
+## Implemented files
+
+### 2.6A — Canonical transaction entities
+
+- [TransactionState.java](C:\Users\Aditya Rao\Downloads\Training\Project\SafePay\backend\src\main\java\com\ofss\beans\TransactionState.java)
+- [TransactionRiskFactorCode.java](C:\Users\Aditya Rao\Downloads\Training\Project\SafePay\backend\src\main\java\com\ofss\beans\TransactionRiskFactorCode.java)
+- [TransactionDb.java](C:\Users\Aditya Rao\Downloads\Training\Project\SafePay\backend\src\main\java\com\ofss\beans\TransactionDb.java)
+- [TransactionRiskFactor.java](C:\Users\Aditya Rao\Downloads\Training\Project\SafePay\backend\src\main\java\com\ofss\beans\TransactionRiskFactor.java)
+- [TransactionEntityTest.java](C:\Users\Aditya Rao\Downloads\Training\Project\SafePay\backend\src\test\java\com\ofss\beans\TransactionEntityTest.java)
+
+This includes:
+
+- All ten canonical transaction states.
+- Complete V4/V9/V10 column mappings.
+- Textual `policyVersion`.
+- Oracle monetary precision.
+- `VERSION_NO` optimistic locking.
+- Complete policy-snapshot and lifecycle fields.
+- Ownership validation during instruction construction.
+- Unassessed and unreserved `CREATED` construction.
+- Immutable `PAYMENT_AMOUNT` evidence.
+- Risk-factor values derived directly from the assessed transaction to prevent mismatched evidence.
+
+### 2.6B — Persistence layer
+
+- [TransactionDao.java](C:\Users\Aditya Rao\Downloads\Training\Project\SafePay\backend\src\main\java\com\ofss\repository\TransactionDao.java)
+- [TransactionRiskFactorDao.java](C:\Users\Aditya Rao\Downloads\Training\Project\SafePay\backend\src\main\java\com\ofss\repository\TransactionRiskFactorDao.java)
+- [TransactionDaoIntegrationTest.java](C:\Users\Aditya Rao\Downloads\Training\Project\SafePay\backend\src\test\java\com\ofss\repository\TransactionDaoIntegrationTest.java)
+
+The repositories provide:
+
+- Transaction insertion and managed updates.
+- Stable-reference lookup.
+- Ownership-scoped detail retrieval.
+- Newest-first paginated history.
+- Ownership-scoped pessimistic locking.
+- Ownership-scoped risk-factor retrieval.
+- No delete methods.
+- Joined retrieval without exposing another customer’s data.
+
+The integration test uses `SAFEPAY_OWNER` only for isolated fixture setup and cleanup. Production repository operations run through restricted `SAFEPAY_APP`.
+
+### 2.6C — Request and response contracts
+
+- [CreateTransactionRequest.java](C:\Users\Aditya Rao\Downloads\Training\Project\SafePay\backend\src\main\java\com\ofss\dto\transaction\CreateTransactionRequest.java)
+- [AuthorizeTransactionRequest.java](C:\Users\Aditya Rao\Downloads\Training\Project\SafePay\backend\src\main\java\com\ofss\dto\transaction\AuthorizeTransactionRequest.java)
+- [TransactionResponse.java](C:\Users\Aditya Rao\Downloads\Training\Project\SafePay\backend\src\main\java\com\ofss\dto\transaction\TransactionResponse.java)
+- [TransactionSummaryResponse.java](C:\Users\Aditya Rao\Downloads\Training\Project\SafePay\backend\src\main\java\com\ofss\dto\transaction\TransactionSummaryResponse.java)
+- [TransactionRiskExplanationResponse.java](C:\Users\Aditya Rao\Downloads\Training\Project\SafePay\backend\src\main\java\com\ofss\dto\transaction\TransactionRiskExplanationResponse.java)
+- Three corresponding DTO test classes.
+
+The DTO boundary enforces:
+
+- Positive account and beneficiary IDs.
+- ₹1.00 minimum.
+- Maximum two decimal places.
+- Oracle `NUMBER(18,2)` compatibility.
+- Explicit authorization confirmation.
+- String-form response IDs.
+- Masked source and beneficiary identifiers.
+- No internal policy IDs or matched-band codes in customer responses.
+- Customer-safe risk explanations.
+
+No migrations, configuration, dependencies, controllers, services or documentation files were changed.
+
+The approved offline `test-compile` command was attempted, but `mvn` remains unavailable on this terminal’s PATH. Nothing was installed or downloaded.
+
+--------------------------------------
+
+Implemented Phase 2.6D–G and stopped at the manual verification gate.
+
+Key safeguards implemented:
+- Canonical state-transition matrix with 409 STATE_TRANSITION_CONFLICT.
+- Oracle-aligned risk, reservation, deadline, and terminal-state invariants.
+- Transaction-first, account-second pessimistic lock ordering.
+- Creation remains CREATED, unassessed and unreserved.
+- Authorization performs fresh ownership and eligibility checks.
+- LOW → RELEASED; MEDIUM/HIGH → PROTECTED; VERY_HIGH → VERIFICATION_REQUIRED.
+- Risk configuration and insufficient-funds failures become persisted FAILED states without retaining funds.
+- Risk evidence remains derived from the canonical transaction snapshot.
+- Expired protection-window cancellation is rejected before touching account funds.
+- Cancellation releases account and transaction reservations atomically.
+- Returning from risk review to verification clears the previous verification result.
+Production and test compilation both completed successfully offline. No JUnit tests were executed.
+No migrations, configuration, dependencies, or out-of-scope files were changed.
+
+Implemented files
+- [TransactionDb.java](C:/Users/Aditya Rao/Downloads/Training/Project/SafePay/backend/src/main/java/com/ofss/beans/TransactionDb.java)
+- [TransactionStateService.java](C:/Users/Aditya Rao/Downloads/Training/Project/SafePay/backend/src/main/java/com/ofss/services/TransactionStateService.java)
+- [TransactionStateServiceImpl.java](C:/Users/Aditya Rao/Downloads/Training/Project/SafePay/backend/src/main/java/com/ofss/services/TransactionStateServiceImpl.java)
+- [TransactionService.java](C:/Users/Aditya Rao/Downloads/Training/Project/SafePay/backend/src/main/java/com/ofss/services/TransactionService.java)
+- [TransactionServiceImpl.java](C:/Users/Aditya Rao/Downloads/Training/Project/SafePay/backend/src/main/java/com/ofss/services/TransactionServiceImpl.java)
+- [InvalidStateTransitionException.java](C:/Users/Aditya Rao/Downloads/Training/Project/SafePay/backend/src/main/java/com/ofss/excp/InvalidStateTransitionException.java)
+- [GlobalExceptionHandler.java](C:/Users/Aditya Rao/Downloads/Training/Project/SafePay/backend/src/main/java/com/ofss/excp/GlobalExceptionHandler.java)
+
+Manual verification
+Run each command through your Maven configuration containing the five Oracle environment variables.
+

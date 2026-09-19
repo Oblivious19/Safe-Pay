@@ -1,0 +1,95 @@
+Phase 2.10 backend implementation is now locked at **583 passing tests**. The only remaining item is the documented manual Gmail receipt check with real development credentials; that is an environment verification, not a missing code component.
+
+## Phase 2.11 glimpse
+
+Phase 2.11 implements the Risk Officer workflow after successful OTP verification:
+
+```text
+OTP VERIFIED
+    ↓
+PENDING_RISK_REVIEW + new PENDING review round
+    ├─ Approve → RELEASED → Phase 2.9 settlement processor
+    ├─ Reject → CANCELLED + reservation released
+    ├─ Request re-verification → VERIFICATION_REQUIRED
+    │                              ↓
+    │                         new OTP required
+    │                              ↓
+    │                     new PENDING review round
+    └─ Customer cancellation wins → CANCELLED
+```
+
+This is a Risk Officer review workflow—not a complete corporate Maker-Checker system.
+
+## Proposed Phase 2.11 index
+
+| Subphase | Responsibility |
+|---|---|
+| **2.11A — Review domain and Oracle mapping** | Implement `RiskReview`, the five-status enum, round lifecycle, actor/timestamp fields, optimistic versioning and exact V5/V9/V10 mapping. |
+| **2.11B — Repository and safe review projections** | Add restricted repositories, pessimistic decision locks, pending queue queries, round calculation, pagination and masked summary/detail DTOs. |
+| **2.11C — Review-round lifecycle integration** | Atomically create review round 1 after first OTP success, create later rounds after re-verification, and close pending reviews when customer cancellation wins. |
+| **2.11D — Approval, rejection and re-verification** | Implement atomic officer decisions, legal transaction transitions, reservation handling, terminal review protection and competing-officer behavior. |
+| **2.11E — Internal notes and decision audit evidence** | Store append-only officer notes and audit decision actor, reason, previous/resulting states, correlation ID and idempotency identity. |
+| **2.11F — Authority, REST and idempotency contract** | Implement all six approved endpoints, exact `RISK_OFFICER` enforcement, validation, fingerprints, safe errors and replay responses. |
+| **2.11G — Race, Oracle and full-suite verification** | Verify officer-versus-officer and officer-versus-customer races, review rounds, audit completeness, Oracle constraints, authorization and create the Phase 2.11 guide. |
+
+No new Flyway migration is expected. Existing `RISK_REVIEW`, `SEQ_RISK_REVIEW_ID`, `AUDIT_LOG`, constraints, indexes, trigger and grants already support this phase.
+
+## Important implementation behavior
+
+- `PENDING` remains the only open review status.
+- Review statuses remain exactly:
+  `PENDING`, `APPROVED`, `REJECTED`, `REVERIFICATION_REQUESTED`, `CANCELLED`.
+- OTP success and creation of the corresponding pending review round will commit atomically.
+- Approval retains the reservation and moves the payment to `RELEASED`; Phase 2.9 performs settlement.
+- Rejection releases the reservation and changes the payment to `CANCELLED`.
+- Re-verification retains the reservation, clears the previous verification timestamp through the existing transition logic and requires a completely new OTP.
+- The prior completed review remains immutable. Successful new verification creates the next numbered review round.
+- Customer cancellation and officer approval will lock in the same order: transaction → review → account when necessary. Exactly one action can win.
+- The losing concurrent request receives `409`, with the review-detail endpoint providing the authoritative result.
+- Internal notes, OTP information, full account numbers and sensitive audit data never enter customer DTOs.
+
+## Decisions requiring approval
+
+I recommend these concrete V1 choices:
+
+| Decision | Recommendation |
+|---|---|
+| Officer claiming | No separate claim endpoint. The first valid decision atomically sets the assigned officer and `claimedAt`; therefore `claimedAt` may equal `decidedAt`. |
+| Decision reasons | Approval reason optional; rejection and re-verification reasons mandatory. Normalize to plain text with a 1,000-character maximum. |
+| Internal notes | Store notes as immutable `AUDIT_LOG` events using `RISK_REVIEW_NOTE_ADDED`, linked to the review and transaction. Do not overload `decision_reason` or add a twentieth table. |
+| Note eligibility | Notes may be added only while the review is `PENDING`; completed review rounds remain fully immutable. |
+| Queue behavior | Pending reviews ordered oldest-first, default page size 20, maximum 100, with no client-controlled database sorting. |
+| Read authorization | Pending queue and review detail require `RISK_OFFICER`. `SYSTEM_ADMIN` alone is denied. Auditor-oriented historical access remains in Phase 2.12. |
+| Detail behavior | List returns only pending reviews; detail may retrieve a terminal review read-only so race losers can obtain the authoritative decision. |
+| Notifications | Do not implement new delivery/WebSocket behavior here. Full review notifications remain explicitly assigned to Phase 2.12. |
+------------------
+
+Phase 2.11A–D implementation is complete and offline compilation/test-compilation succeeded. No JUnit or Oracle tests were executed.
+Key outcomes:
+- Exact RISK_REVIEW mapping using existing APPROVAL_ID and SEQ_RISK_REVIEW_ID.
+- No Flyway migration, new table, sequence, dependency, or unrelated change.
+- Restricted no-delete repository and masked queue/detail DTOs.
+- OTP success atomically creates the next review round.
+- Customer cancellation closes the pending review before releasing funds.
+- Approval → RELEASED, reservation retained.
+- Rejection → CANCELLED, reservation released.
+- Reverification → VERIFICATION_REQUIRED, reservation retained.
+- Transaction → review → account lock order enforced.
+- Active live RISK_OFFICER validation enforced; SYSTEM_ADMIN alone is insufficient.
+- Phase 2.11E–G work was not pulled forward.
+Core implementation: [RiskReviewServiceImpl.java](C:/Users/Aditya Rao/Downloads/Training/Project/SafePay/backend/src/main/java/com/ofss/services/RiskReviewServiceImpl.java), [RiskReview.java](C:/Users/Aditya Rao/Downloads/Training/Project/SafePay/backend/src/main/java/com/ofss/beans/RiskReview.java), and [RiskReviewDao.java](C:/Users/Aditya Rao/Downloads/Training/Project/SafePay/backend/src/main/java/com/ofss/repository/RiskReviewDao.java).
+
+------------
+
+Phase 2.11E–G implementation is complete. Phase 2.11 is ready for your manual verification but is not locked until the following tests pass.
+Implemented:
+- Immutable internal notes using existing AUDIT_LOG.
+- Complete decision audit evidence.
+- All six approved Risk Officer endpoints.
+- Exact RISK_OFFICER authorization with live database-role validation.
+- Idempotent approve, reject, re-verification and note operations.
+- Safe 403 ACCESS_DENIED responses.
+- Rollback-safe Oracle integration coverage.
+- Oracle terminal-review trigger verification.
+- No migration, table, dependency or unrelated change.
+Offline Maven compilation and test-compile succeeded. I did not execute JUnit or Oracle tests.

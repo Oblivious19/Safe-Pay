@@ -1,0 +1,99 @@
+Phase 2.7 is now locked at **380 tests passing, with zero failures, errors, or skipped tests**.
+
+## Phase 2.8 — Protection Scheduler and Cancellation Races
+
+Phase 2.8 makes protection-window expiry entirely server-authoritative. Its central guarantee is:
+
+> When customer Undo and automatic expiry compete, exactly one transition wins: `PROTECTED → CANCELLED` or `PROTECTED → RELEASED`.
+
+The database remains the source of truth. Browser timers, scheduler memory, duplicate executions, application restarts, and multiple backend instances cannot independently determine the outcome.
+
+### Planned component changes
+
+| Component | Planned responsibility |
+|---|---|
+| `ProtectedTransactionScheduler` | Periodically starts bounded scans for expired protected transactions; contains no financial/domain logic itself. |
+| Protection-release worker/service | Processes each candidate inside a controlled transaction and performs `PROTECTED → RELEASED`. |
+| Scheduler configuration/properties | Controls enablement, polling interval and batch size without hard-coding operational values. |
+| `TransactionDao` | Adds ordered, bounded expired-candidate discovery and concurrency-safe candidate acquisition. |
+| `TransactionStateService` | Continues enforcing the canonical `PROTECTED → RELEASED` deadline invariant. |
+| `TransactionServiceImpl.cancelTransaction(...)` | Strengthens the exact-expiry cancellation boundary using authoritative database/server time. |
+| `TransactionDb` | Reuses the existing `@Version`, `PROTECTED_UNTIL`, risk route and reservation invariants; no duplicate timer state. |
+| Scheduler tests | Verify triggering, delegation, configuration, bounded processing and failure isolation. |
+| Service/race tests | Verify deadline boundaries, repeat execution, restart recovery and exactly-one-winner behaviour. |
+| Oracle integration tests | Verify actual Oracle locking, timestamp and multi-worker race behaviour. |
+| Phase 2.8 summary document | Records the architecture, race guarantees, tests, limitations and Phase 2.9 handoff. |
+
+No database migration is presently expected. V4 and V10 already provide the required `PROTECTED_UNTIL`, `VERSION_NO`, risk-route, reservation and deadline constraints. A migration will only be introduced if implementation proves that the current schema cannot enforce an approved requirement.
+
+## Phase 2.8 contents index
+
+| Subphase | Scope | One-line purpose |
+|---|---|---|
+| **2.8A** | Scheduler contract and configuration | Establish the enabled flag, polling configuration, bounded batch contract, authoritative-time rule and scheduler/worker separation. |
+| **2.8B** | Expired-candidate persistence boundary | Add deterministic queries that select only due `PROTECTED` MEDIUM/HIGH transactions in bounded, stable order. |
+| **2.8C** | Transactional release worker | Lock/revalidate each candidate and perform only `PROTECTED → RELEASED`, while preserving its fund reservation for Phase 2.9 settlement. |
+| **2.8D** | Scheduler orchestration | Implement `ProtectedTransactionScheduler` as a thin scheduled trigger that delegates controlled batches to the worker. |
+| **2.8E** | Exact cancellation-expiry boundary | Ensure cancellation succeeds only strictly before the authoritative deadline and never wins at or after expiry. |
+| **2.8F** | Multi-instance and duplicate execution safety | Guarantee that concurrent scheduler instances or duplicate scans cannot release the same transaction twice. |
+| **2.8G** | Restart recovery and failure isolation | Recover overdue rows after restart, continue processing later batches, and prevent one bad candidate from rolling back unrelated releases. |
+| **2.8H** | Boundary and concurrency verification | Cover early release rejection, exact expiry, cancel-versus-release races, bounded batches, retries and reservation preservation. |
+| **2.8I** | Oracle verification and phase handoff | Validate real database concurrency/restart behaviour and produce the comprehensive Phase 2.8 summary guide. |
+
+## Critical invariants throughout Phase 2.8
+
+- Only transactions still in `PROTECTED` may be automatically released.
+- Only MEDIUM and HIGH timed routes are scheduler candidates.
+- VERY_HIGH transactions never release merely because time passed.
+- LOW transactions are already `RELEASED` and never enter this scheduler.
+- Cancellation is valid only when authoritative time is strictly earlier than `PROTECTED_UNTIL`.
+- At the exact deadline, cancellation loses eligibility.
+- Every candidate is re-read and revalidated after concurrency control is acquired.
+- Scheduler release preserves `RESERVED_AMOUNT`, `RESERVED_AT`, and the active reservation.
+- Phase 2.8 will not debit an account, create ledger entries or mark a transaction `SETTLED`; those belong to Phase 2.9.
+- Browser countdowns remain display-only.
+- Expiry information remains in Oracle, so application restart cannot reset or extend a protection window.
+- Duplicate scheduler execution must become a harmless no-op after another worker has won.
+- Existing transaction-before-account lock ordering will not be reversed.
+- Scheduler activity represents an internal `SYSTEM` actor, never a fabricated customer or administrator.
+- Audit/notification/WebSocket expansion will not be prematurely pulled forward from its designated later phase.
+
+Two operational values are not prescribed by the authoritative documents: the **scheduler polling interval** and **maximum batch size**. I will not silently invent them. Before implementing 2.8A, I will present a concrete recommendation and its latency/load trade-off for your approval.
+
+---
+
+
+Phase 2.8A–D implementation is complete. These phases remain unlocked until your manual tests pass.
+Implemented:
+- Approved PT1S polling and maximum batch size 50.
+- Oracle SYSTIMESTAMP candidate discovery.
+- Oldest-deadline-first bounded querying.
+- Per-transaction REQUIRES_NEW processing.
+- Pessimistic row locking plus existing @Version protection.
+- Fresh state/deadline revalidation after locking.
+- Exact-deadline release eligibility.
+- Repeat-safe no-op handling.
+- Reservation preservation during PROTECTED → RELEASED.
+- Scheduler disabled automatically during Maven tests to protect Oracle fixtures.
+- No database migration, settlement, ledger posting or cancellation logic changes.
+Offline test-compile passed successfully: 108 main sources and 65 test sources compiled.
+
+----------
+
+Phase 2.8E–I implementation is complete. Phase 2.8 remains pending your manual verification before lock-in.
+Implemented:
+- Protected cancellation now uses fresh Oracle time after acquiring the transaction lock.
+- Application-clock skew cannot extend or shorten the Undo window.
+- At the exact deadline, cancellation is rejected.
+- Competing scheduler instances serialize through the transaction lock and versioned update.
+- Failed candidates roll back independently and no longer prevent later batch entries from running.
+- Restart recovery and bounded multi-cycle backlog draining are Oracle-tested.
+- Scheduler release preserves both transaction and account reservations.
+- No settlement, ledger, audit, notification or WebSocket behavior was pulled forward.
+- No migration, dependency, installation or system change was required.
+- Final offline test-compile: BUILD SUCCESS.
+
+The comprehensive teammate guide is available at [SafePay Phase 2.8 Guide](C:/Users/Aditya Rao/Downloads/Training/Project/SafePay/Documentation for SafePay/SafePay_Backend_Phase_2_8_Protection_Scheduler_and_Cancellation_Races.md).
+
+-----------
+

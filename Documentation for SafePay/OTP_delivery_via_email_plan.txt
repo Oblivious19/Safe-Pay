@@ -1,0 +1,217 @@
+Your Phase 2.9/2.10 decisions are now saved as final project context:
+
+- Settlement polling: **every 1 second**
+- Settlement batch size: **maximum 25**
+- Automatic retries: **3 total**, after **5 seconds**, **30 seconds**, and **1 minute**
+- Retry exhaustion: **`MANUAL_REVIEW`**
+- OTP protection: **salted SHA-256 for V1**, with no raw OTP storage or logging
+
+One security limitation is explicitly recorded: because a six-digit OTP has only one million combinations, salted SHA-256 is acceptable for this prototype but must not be presented as production-grade protection.
+
+## 2026-09-18 implementation status
+
+The user has now approved the narrowly scoped development/showcase Gmail exception and the single-recipient routing contract. The backend contains Spring Mail, the Gmail delivery gateway, sanitized failure handling and a server-controlled routing mode.
+
+The approved showcase configuration is:
+
+```text
+SAFEPAY_OTP_EMAIL_ROUTING_MODE=FIXED_OVERRIDE
+SAFEPAY_OTP_EMAIL_RECIPIENT_OVERRIDE=aditya.rrr30@gmail.com
+```
+
+`FIXED_OVERRIDE` fails safely when the override is missing or malformed. `STORED_USER` is retained only as an explicit future mode for genuine customer delivery. The authenticated customer's stored email is still required and remains the login/presentation identity; neither the browser nor an API request can select the SMTP destination. API responses mask the effective delivery destination.
+
+Implementation verification completed without sending email:
+
+- all production and test sources compile;
+- 49 focused configuration, gateway, service, controller and exception tests pass;
+- mocked mail tests prove fixed override, explicit stored-user routing, safe configuration failure and sanitized provider failure.
+
+Oracle integration, the complete suite and live Gmail receipt remain manual gates because the required database/JWT variables and Google App Password exist only in the user's local Eclipse configuration. The original proposal below is retained as historical design rationale; where it says implementation is still planned, this status section and the current backend are authoritative.
+
+## OTP delivery recommendation: Email
+
+I recommend **development-only email delivery using Gmail SMTP**, not SMS.
+
+Why Email fits SafePay better:
+
+- Spring Boot has official `JavaMailSender` auto-configuration through one standard mail starter—no vendor SDK or frontend package is required. [Spring Boot email documentation](https://docs.spring.io/spring-boot/reference/io/email.html)
+- A dedicated free Gmail account can send development OTP emails using SMTP and an App Password.
+- The frontend only calls SafePay REST APIs; it never communicates with Gmail or handles SMTP credentials.
+- SMS services are not reliably free. For example, Twilio’s free trial expires after 30 days, restricts recipients, geographic usage and custom message content, making it unsuitable as SafePay’s ongoing free OTP channel. [Twilio trial restrictions](https://www.twilio.com/docs/usage/trials)
+- SafePay already stores email addresses, although it also permits mobile-only registration.
+
+### Important specification conflict
+
+The current reconciled Decision Register explicitly says:
+
+- “Real SMS/email” is excluded.
+- No real email or SMS is sent.
+
+See [SafePay_V1_Decision_Register_Phase_1_9_Reconciled.md](<C:/Users/Aditya Rao/Downloads/Training/Project/SafePay/SafePay_V1_Decision_Register_Phase_1_9_Reconciled.md:1068>) and [the notification rule](<C:/Users/Aditya Rao/Downloads/Training/Project/SafePay/SafePay_V1_Decision_Register_Phase_1_9_Reconciled.md:1125>).
+
+Therefore, implementing Gmail delivery requires a narrowly scoped approved amendment:
+
+> Permit real Gmail SMTP delivery only for development/demo OTP challenges. Keep all other notifications in-app or simulated. Do not describe this as a production email integration.
+
+## Planned end-to-end workflow
+
+Example: Aditya initiates a transaction requiring step-up verification.
+
+1. The frontend requests an OTP challenge from SafePay.
+2. The backend derives the destination from the authenticated user’s stored email. The frontend cannot supply an arbitrary recipient.
+3. The backend generates the OTP using Java `SecureRandom`.
+4. It creates a fresh random salt and stores only the salt and SHA-256 digest.
+5. Gmail SMTP sends a short OTP email.
+6. The API returns only:
+
+```text
+challengeId
+masked destination: a***@gmail.com
+expiresAt
+resendAvailableAt
+```
+
+7. The frontend displays the OTP field and server-authoritative countdown.
+8. The user retrieves the OTP from their email and submits it.
+9. The backend recomputes the salted SHA-256 digest and performs a constant-time comparison.
+10. Successful verification consumes the challenge exactly once. Expired, cancelled, exhausted, or already-consumed challenges remain unusable.
+
+The frontend needs no email library and never sees the Gmail password.
+
+## Activation plan
+
+### 1. Create the development mailbox
+
+Create a dedicated account such as:
+
+```text
+safepay.prototype@gmail.com
+```
+
+It should not be anyone’s personal mailbox.
+
+Enable Google 2-Step Verification and create an App Password. Google requires 2-Step Verification before App Passwords can be generated, and the option may be unavailable for some organization-managed or Advanced Protection accounts. [Google App Password documentation](https://support.google.com/accounts/answer/185833?hl=en)
+
+### 2. Approve the single backend dependency
+
+The backend currently does not contain the Spring mail starter. During the approved implementation phase, we would add only:
+
+```xml
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-mail</artifactId>
+</dependency>
+```
+
+No Twilio SDK, frontend package, browser extension, or unrelated dependency is needed.
+
+### 3. Store credentials outside source control
+
+The Gmail address and App Password would be supplied through environment variables:
+
+```text
+SAFEPAY_OTP_EMAIL_USERNAME
+SAFEPAY_OTP_EMAIL_APP_PASSWORD
+SAFEPAY_OTP_EMAIL_FROM
+```
+
+They must never appear in:
+
+- `application.properties`
+- Java source code
+- tests
+- Git history
+- API responses
+- application logs
+
+### 4. Configure SMTP
+
+The development profile would contain references to the environment variables:
+
+```properties
+spring.mail.host=smtp.gmail.com
+spring.mail.port=587
+spring.mail.username=${SAFEPAY_OTP_EMAIL_USERNAME}
+spring.mail.password=${SAFEPAY_OTP_EMAIL_APP_PASSWORD}
+spring.mail.properties.mail.smtp.auth=true
+spring.mail.properties.mail.smtp.starttls.enable=true
+
+spring.mail.properties.mail.smtp.connectiontimeout=5000
+spring.mail.properties.mail.smtp.timeout=5000
+spring.mail.properties.mail.smtp.writetimeout=5000
+```
+
+Explicit timeouts prevent a failed mail server from blocking a request indefinitely, as recommended by Spring Boot.
+
+### 5. Introduce an isolated delivery interface
+
+The OTP workflow would depend on an interface such as:
+
+```text
+OtpDeliveryGateway
+```
+
+with a development implementation:
+
+```text
+EmailOtpDeliveryGateway
+```
+
+This prevents Gmail-specific code from entering OTP generation, verification, transaction-state, or settlement logic.
+
+### 6. Handle email-only eligibility safely
+
+Because SafePay permits users to register with only a mobile number, email OTP cannot silently assume every user has an email.
+
+For this V1 demo, I recommend:
+
+- Accounts used for OTP demonstrations must have a stored email.
+- The backend never accepts the destination email from the request.
+- If the authenticated user has no email, OTP issuance fails safely according to the existing API error contract.
+- Do not silently switch to SMS.
+- Display only a masked email address to the frontend.
+
+### 7. Handle delivery failures
+
+If Gmail rejects or times out:
+
+- Do not expose SMTP details to the client.
+- Do not claim that the OTP was sent.
+- Prevent the failed challenge from remaining usable.
+- Return the project’s safe generic delivery-failure response.
+- Record sanitized failure metadata without the OTP or App Password.
+
+### 8. Frontend integration
+
+The Oracle JET frontend will need only:
+
+- “Send verification code” action
+- masked destination display
+- six-digit input
+- server-derived expiration countdown
+- resend cooldown
+- verification submission
+- generic delivery and verification error messages
+
+No Gmail JavaScript, SMTP library, or third-party browser integration is needed.
+
+### 9. Verification gates
+
+Before considering delivery complete, we will verify:
+
+- focused hashing and OTP lifecycle unit tests;
+- mail gateway tests using a mocked `JavaMailSender`;
+- controller issue/verify tests;
+- no raw OTP in database, logs, responses, or exception messages;
+- real development-mailbox delivery using your manually configured App Password;
+- expiration, incorrect-code, resend, attempt exhaustion, replay and mail-failure paths;
+- then the complete Maven suite.
+
+## Final recommendation
+
+Approve this exact channel:
+
+> **Development-only Gmail SMTP OTP delivery**, using a dedicated free Gmail account, Spring Boot Mail, environment-held App Password credentials, server-derived recipient addresses and salted SHA-256 OTP storage. No SMS fallback and no paid provider.
+
+It meets the prototype requirement with the smallest dependency and smoothest frontend flow. The only required policy decision before implementation is approving it as a narrow exception to the Decision Register’s current “no real email/SMS” rule.

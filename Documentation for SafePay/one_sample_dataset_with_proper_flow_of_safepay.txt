@@ -1,0 +1,118 @@
+## Example customer: Priya Nair
+
+### Login and identity
+
+| Field | Proposed value |
+|---|---|
+| Full name | `Priya Nair` |
+| Email | `priya.nair@gmail.com` |
+| Mobile | `+919000000101` |
+| Demonstration password | `SafePay@PNair101` |
+| Stored password | Valid BCrypt hash only; plaintext never stored |
+| Status | `ACTIVE` |
+| Role | `CUSTOMER` |
+| Failed logins | `0` |
+| Security version | `0` |
+
+The email is normalized lowercase, the mobile follows E.164 format, and the password satisfies the 12–72-character API requirement.
+
+### Source bank account
+
+| Field | Proposed value |
+|---|---|
+| Bank | `HDFC Bank` |
+| Account number | `10000000012345` |
+| Length | 14 digits, synthetic HDFC-style example |
+| IFSC | `HDFC0DEMO01` |
+| Type | `SAVINGS` |
+| Currency | `INR` |
+| Current balance | `350000.00` |
+| Reserved amount | `150000.00` |
+| Available balance | `200000.00`—Oracle virtual column |
+| Status | `ACTIVE` |
+
+`HDFC0DEMO01` follows SafePay’s required IFSC structure but is intentionally non-routable demonstration data.
+
+The database accepts account numbers up to 34 characters and does not force one fixed length. Therefore, the final dataset can safely contain different account-number lengths for HDFC, SBI, ICICI, Axis Bank, Bank of Baroda, Punjab National Bank, Canara Bank, Kotak Mahindra Bank, IndusInd Bank, Union Bank and others—after format research for the complete script.
+
+### Beneficiary
+
+| Field | Proposed value |
+|---|---|
+| Beneficiary name | `Arjun Menon` |
+| Nickname | `Brother` |
+| Payment method | `BANK_ACCOUNT` |
+| Bank | `State Bank of India` |
+| Account number | `10000001234` |
+| IFSC | `SBIN0DEMO02` |
+| Relationship | `FAMILY` |
+| Purpose note | `Emergency family transfer` |
+| Status | `ACTIVE` |
+
+Because this is a bank-account beneficiary:
+
+- Bank name, account number and IFSC are populated.
+- `upi_id` remains `NULL`.
+- The beneficiary belongs to Priya’s SafePay user record.
+- Its account number differs in length from Priya’s HDFC account.
+
+## SafePay showcase transaction
+
+Priya initiates:
+
+```text
+Amount: ₹1,50,000.00
+Purpose: Emergency medical support
+Customer reference: PRIYA-MED-SEP01
+```
+
+This falls into SafePay’s canonical V1 `VERY_HIGH` band:
+
+```text
+₹1,00,000.01 and above
+```
+
+The resulting linked records would represent:
+
+| Table | Important scenario data |
+|---|---|
+| `PAYMENT_TRANSACTION` | `PENDING_RISK_REVIEW`, amount `150000.00`, reserved amount `150000.00`, tier `VERY_HIGH` |
+| `TRANSACTION_RISK_FACTOR` | Factor `PAYMENT_AMOUNT`, raw value `150000.00`, resulting tier `VERY_HIGH` |
+| `PAYMENT_OTP_CHALLENGE` | `VERIFIED`, maximum attempts `3`, salted SHA-256 encoded value only |
+| `RISK_REVIEW` | Review round `1`, status `PENDING`, no decision or assigned officer yet |
+| `AUDIT_LOG` | Evidence for creation, authorization, risk assessment, OTP verification and review creation |
+| `APP_NOTIFICATION` | Warning that the payment is awaiting risk review |
+| `LEDGER_POSTING` | No row yet |
+| `LEDGER_ENTRY` | No debit or credit yet |
+| `TRANSACTION_EXCEPTION` | No row unless processing fails |
+
+The OTP hash would use this shape:
+
+```text
+SHA-256$<base64-random-salt>$<base64-digest>
+```
+
+The raw OTP would never appear in the SQL dataset, database or logs.
+
+## Why this demonstrates SafePay
+
+A normal transfer simulator might immediately subtract ₹1,50,000 and treat the payment as completed. SafePay instead:
+
+1. Reserves the money without posting final ledger entries.
+2. Classifies the amount as `VERY_HIGH`.
+3. Requires OTP verification.
+4. Creates an independent risk-officer review.
+5. Keeps the transaction before settlement.
+6. Preserves the customer’s cancellation opportunity.
+7. Produces audit and notification evidence.
+8. Posts balanced ledger entries only after approval and release.
+
+The account remains internally coherent:
+
+```text
+Current balance  = ₹3,50,000
+Reserved amount  = ₹1,50,000
+Available balance = ₹2,00,000
+```
+
+This is the model I propose for the larger dataset: realistic synthetic identities and varied Indian bank formats, with each customer assigned a deliberate SafePay scenario rather than merely filling tables with arbitrary rows.

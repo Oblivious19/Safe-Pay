@@ -1,0 +1,10 @@
+Pending account capabilities that are NOT to be implemented:
+
+- Do not implement : PATCH /admin/accounts/{accountId}/disable — controlled disabling.
+- No branch based filtering for accounts on admin side.
+- NOT TO be implemented now - 'Account disabling' capability.
+- No disabling, means by default no reactivation account service required.
+- No CUSTOMER Password-change/reset workflow
+- No SYSTEM_ADMIN - Force-password-reset workflow
+- Not needed -RISK_OFFICER New account-directory endpoints
+- 

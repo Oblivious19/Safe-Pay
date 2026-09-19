@@ -1,0 +1,1 @@
+1. How we approving exactly via admin panel for the transactions above 1L? what we can say to sell our app, over the usual already existing NEFT, RTGS, IMPS, facilities, what fast safety are we giving to banks or customers for the genuinity or the approval of this band payment?

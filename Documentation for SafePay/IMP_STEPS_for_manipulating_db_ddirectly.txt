@@ -1,0 +1,161 @@
+Yes, you can alter some seeded values in SQL Developer for local testing—but not every value, and direct edits are not the recommended method for workflow testing.
+
+First, one clarification: V12 does not create the tables. V1–V11 create and constrain them; V12 inserts the showcase dataset.
+
+## 1. Can seeded values be changed manually?
+
+There are three categories.
+
+### Safest: change behavior through APIs
+
+Use the application APIs whenever possible for:
+
+- User status and security administration
+- Beneficiary changes
+- New transactions
+- Cancellation and release
+- OTP workflows
+- Risk Officer decisions
+- Notification read status
+- Settlement processing
+
+This preserves validation, authorization, timestamps, optimistic locking, reservations, audit evidence and notifications.
+
+### Possible but risky: direct SQL changes to mutable data
+
+In a disposable test schema, you can technically update certain mutable columns using `SAFEPAY_OWNER`. Examples include some user, account, beneficiary or transaction fields.
+
+However, a change can satisfy one table constraint while breaking the overall model. For example:
+
+```text
+Changing ACCOUNT.current_balance
+    without matching ledger entries
+    -> ledger reconciliation breaks
+
+Changing ACCOUNT.reserved_amount
+    without matching transaction reservations
+    -> reservation reconciliation breaks
+
+Changing PAYMENT_TRANSACTION.state
+    without its timestamps, reservation and risk tuple
+    -> state constraints or services fail
+
+Changing a user email
+    -> login identity, uniqueness and OTP destination behavior change
+```
+
+`SAFEPAY_APP` should not be turned into a general-purpose fixture account. Its restricted grants are part of the security architecture.
+
+### Prohibited or database-blocked changes
+
+Oracle triggers and constraints intentionally prevent updates/deletes for financial or evidentiary records such as:
+
+- `LEDGER_ENTRY`
+- Posted `LEDGER_POSTING` records
+- `AUDIT_LOG`
+- Immutable `TRANSACTION_RISK_FACTOR` records
+- Terminal OTP challenges
+- Terminal Risk Review decisions
+- Protected notification content and terminal delivery transitions
+- Canonical roles and approved risk-policy data
+
+Trying to edit these directly should produce an Oracle error. Do not disable the protection triggers for testing.
+
+## 2. Can SQL Developer `ROLLBACK` undo a test change?
+
+Only before the transaction is committed, and only from the same database session.
+
+For a temporary SQL-only experiment:
+
+```sql
+SAVEPOINT before_test_change;
+
+-- Perform carefully scoped UPDATE statements here.
+
+-- Inspect the result in this same session.
+
+ROLLBACK TO before_test_change;
+-- or:
+ROLLBACK;
+```
+
+Important limitations:
+
+- SQL Developer Auto Commit must be disabled.
+- The backend normally cannot see the uncommitted change from its separate connection.
+- The row may remain locked while the transaction is open.
+- Once you run `COMMIT`, disconnect after committing, or execute an operation that causes an implicit commit, a normal `ROLLBACK` cannot recover it.
+- This method therefore is unsuitable for most end-to-end API testing, because the application must usually see committed data.
+
+For committed API-visible experiments, use a disposable schema and expect to restore or rebuild it afterward.
+
+## 3. Can V12 itself be reversed with one Flyway command?
+
+No. A successful Flyway `migrate` has no automatic V12-only rollback.
+
+These operations do not undo V12:
+
+- `flyway repair`
+- Deleting version 12 from `flyway_schema_history`
+- Setting `spring.flyway.target=11` after V12 was applied
+- Running SQL `ROLLBACK` after the migration has completed
+
+Deleting the history row is especially unsafe: the V12 data remains, and the next migration attempt fails against the existing marker rows and uniqueness constraints.
+
+Flyway `clean` is also not a V12 rollback. It removes the schema objects broadly, not only V12 data, and SafePay deliberately has:
+
+```properties
+spring.flyway.clean-disabled=true
+```
+
+That setting should remain enabled.
+
+## 4. Recommended recovery process
+
+Before applying V12:
+
+1. Stop the backend and schedulers.
+2. Confirm V1–V11 are successful.
+3. Take an Oracle schema export/snapshot, or create a separate disposable SafePay schema.
+4. Record that snapshot as the clean pre-V12 baseline.
+5. Apply V12 through Flyway.
+6. Perform testing primarily through the APIs.
+7. Keep direct SQL modifications limited to separately reviewed fixture changes.
+
+If you later need to discard everything introduced by V12, use one of these approaches:
+
+### Recommended: restore the pre-V12 snapshot
+
+Restore the exact V1–V11 schema snapshot. This gives the cleanest rollback without fighting immutable records.
+
+### Recommended for disposable environments: rebuild the schema
+
+With the backend stopped:
+
+1. Confirm the exact disposable schema target.
+2. Recreate the owner/runtime schema arrangement using the approved database setup.
+3. Run Flyway only through V11 for the pre-seed state.
+4. Run through V12 again when a fresh showcase dataset is needed.
+
+A Flyway target of 11 can prevent V12 from being applied to a fresh schema, but it cannot reverse an existing V12 installation.
+
+### Not recommended: create a V13 cleanup migration
+
+A forward-only V13 cleanup could theoretically remove identified V12 rows. In practice, it would be complicated because:
+
+- V12 contains immutable ledger and audit evidence.
+- Foreign-key deletion order must be exact.
+- Later API-generated records may reference seeded users, accounts and transactions.
+- Trigger protections must not be bypassed casually.
+- Flyway history would still show V12 and V13 rather than returning to a true pre-V12 database.
+
+If preserving the existing schema becomes essential, such a cleanup migration would require separate approval and a full dependency analysis.
+
+## Concrete recommendation
+
+For SafePay, maintain two local schemas or snapshots:
+
+- **Clean baseline:** V1–V11, without showcase data.
+- **Showcase/testing:** V1–V12, where API tests and controlled mutations are allowed.
+
+Then you can rebuild or restore the showcase schema without risking your clean database baseline. I’ll include the exact snapshot/preflight, Flyway execution and recovery steps in the upcoming Backend Launch + Server Guide.

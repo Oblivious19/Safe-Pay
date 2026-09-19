@@ -1,0 +1,23 @@
+# Local secrets and private configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+secrets/
+credentials/
+
+# Local Spring configuration that may contain credentials or JWT secrets
+**/application-local.properties
+**/application-prod.properties
+
+# Generated output
+**/target/
+**/node_modules/
+**/.oraclejet/
+**/dist/
+
+# Keep screenshots out of this branch
+Screenshots/

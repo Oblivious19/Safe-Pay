@@ -1,0 +1,55 @@
+Yes, your approach is possible and can be implemented cleanly.
+
+The important distinction is:
+
+- `APP_USER.EMAIL` remains the customer’s identity/login email, such as `priya.nair@gmail.com`.
+- The OTP mail gateway uses a development-only recipient override: `aditya.rrr30@gmail.com`.
+
+Example flow:
+
+```text
+Customer stored email:      priya.nair@gmail.com
+Customer login identifier:  priya.nair@gmail.com
+Displayed/masked address:   p*********@gmail.com
+Actual OTP recipient:       aditya.rrr30@gmail.com
+```
+
+I recommend an environment variable such as:
+
+```text
+SAFEPAY_OTP_EMAIL_RECIPIENT_OVERRIDE=aditya.rrr30@gmail.com
+```
+
+and an explicit switch:
+
+```text
+SAFEPAY_OTP_EMAIL_RECIPIENT_OVERRIDE_ENABLED=true
+```
+
+When enabled, every OTP is delivered to your address. When disabled, SafePay returns to normal behavior and sends it to the authenticated customer’s stored email.
+
+This override should exist **only inside the OTP email-delivery gateway**, not globally throughout the entire backend. Customer email must remain unchanged for:
+
+- Login and authentication
+- Unique-email validation
+- Transaction ownership
+- Masked API responses
+- Audit and risk-review evidence
+- User administration
+
+Currently, SafePay passes the stored customer email directly into the email gateway, so a small, controlled change would be needed later. The seed data alone cannot redirect delivery.
+
+For management presentation, Priya would still log in with:
+
+```text
+priya.nair@gmail.com
+SafePay@PNair101
+```
+
+but her OTP—and every other seeded customer’s OTP—would arrive at:
+
+```text
+aditya.rrr30@gmail.com
+```
+
+This is a suitable prototype-only solution. The application should clearly mark the override as non-production configuration and fail startup if the override is enabled without a valid recipient. No code or files have been changed.

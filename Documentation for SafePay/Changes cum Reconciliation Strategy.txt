@@ -1,0 +1,79 @@
+##Database object-by-object comparison
+
+1. USERS → APP_USER :
+ - Decision: Replace the team table with existing APP_USER. Retain only its straightforward naming ideas where already approved.
+
+2. Optional ROLES → APP_ROLE and USER_ROLE:
+ - Recommended classification: MERGE the two-persona simplicity with the current four-authority data model.
+
+3. ACCOUNT → ACCOUNT :
+- Decision: Keep the canonical balance/reservation model(already present). Reject the minimum-₹5,000 retained-balance rule.
+
+4. BENEFICIARIES → BENEFICIARY:
+- Decision: Keep canonical user ownership. Require transaction-time checks that both the selected source account and beneficiary belong to the authenticated customer.
+
+5. TRANSACTION_DB → PAYMENT_TRANSACTION:
+- Decision: Many elements missing in teams. Keep The existing [PAYMENT_TRANSACTION] table as it is the correct base.
+
+6. APPROVALS → RISK_REVIEW:
+- Recommendation: Rename the canonical concept and physical object to RISK_REVIEW through a forward migration before backend mapping begins. Retain review rounds, decision actor/reason, timestamps, versioning, foreign keys and one-open-review protection.
+
+7. AUDIT_LOG → AUDIT_LOG
+- Decision: Replace the team shape with the canonical audit structure. Preserve the simple writeAudit(...) service concept, but rebuild its data contract.
+
+-------------------------------------------------------------------------------
+
+##1.9E — Canonical decision matrix
+
+| Component | Team contribution | Canonical decision | Classification |
+|---|---|---|---|
+| Layered `com.ofss` structure | Matches the approved learning structure | Keep `beans`, `controller`, `repository`, `services`, `excp`, `*Dao`; add required packages | **KEEP** |
+| Constructor injection | Used consistently | Retain | **KEEP** |
+| `BigDecimal` / `NUMBER(18,2)` | Correct | Retain plus scale validation | **KEEP** |
+| Plain Java `RiskAssessment` record | Clear and testable | Expand to full approved result | **ADAPT** |
+| Amount engine | Isolated and deterministic | Replace thresholds and source values from active policy | **ADAPT** |
+| Team transaction table | Small and understandable | Map `TransactionDb.java` to canonical `PAYMENT_TRANSACTION` | **REPLACE** |
+| Team lifecycle | Short path | Use complete canonical state machine | **REPLACE** |
+| Conditional transaction update | Good one-winner concept | Retain with enum parameters, persistence clearing and full idempotency | **MERGE** |
+| Five-second DB re-query scheduler | Restart-safe concept | Retain with UTC/database time, batching and per-item isolation | **ADAPT** |
+| Team user/account tables | Too weak and incompatible with security/session requirements | Keep existing canonical tables | **REJECT** |
+| Team beneficiary model | Basic useful fields | Keep canonical user-owned destination model | **ADAPT** |
+| Team approvals placeholder | No backend implementation | Replace with canonical `RISK_REVIEW` workflow | **REPLACE** |
+| Team audit service helper | Simple useful pattern | Rebuild against immutable canonical audit schema | **ADAPT** |
+| Team CRUD controllers | Useful for learning only | Replace unsafe public operations with contract endpoints | **REPLACE** |
+| Team BCrypt use | Hashes passwords | Use a configured encoder inside full Spring Security | **ADAPT** |
+| Hard-coded DB configuration | Unsafe | Retain canonical environment variables and two DB identities | **REJECT** |
+| Team seed data | Synthetic and readable | Redesign from zero with balanced opening ledger | **REPLACE** |
+| Existing policy/idempotency/OTP/ledger/session objects | Missing from team | Preserve | **KEEP** |
+| Four role authorities | Team suggests two broad roles | Keep four authorities; use two login personas | **MERGE** |
+| Policy version | Team has none | Approved text `VARCHAR2` / Java `String` | **ADAPT** |
+| Review statuses | Team has three | Approved five-state vocabulary | **ADAPT** |
+| Physical `MAKER_CHECKER_APPROVAL` name | Team uses generic `APPROVALS` | Rename to `RISK_REVIEW` before backend mapping | **ADAPT** |
+| Migration mechanism | Manual empty-schema script | Preserve Flyway and introduce forward changes | **REJECT** team method / **KEEP** Flyway |
+| Sequence caching | Team uses `NOCACHE`; baseline is mixed | No functional change now; tune consistently during performance hardening | **DEFER** |
+
+-------------------------------------------------------------------------------
+
+##1.9F — Reconciliation strategy
+
+
+I recommend additive Flyway evolution, not a prototype rebuild.
+
+Reasons:
+- V1–V8 already represent almost every approved enterprise-safe concept.
+- The team schema would remove reservation, ledger, OTP, idempotency, sessions, policies, notifications and reconciliation.
+- Team merits are mainly Java teaching patterns rather than superior database objects.
+- The required structural changes are concentrated and can be expressed forward-only.
+- Preserving migration history teaches the correct enterprise method.
+- A destructive rebuild provides little benefit and introduces unnecessary risk.
+
+The eventual sequence should be:
+1. Approve the Phase 1.9 decision matrix.
+2. Prepare exact manual amendments for the Decision Register and implementation plan.
+3. Design a forward reconciliation migration for names, text policy version, review statuses and approved integrity improvements.
+4. Design canonical reference and seed data separately.
+5. Validate the complete empty-schema migration path.
+6. Revalidate runtime grants, constraints, triggers and views.
+7. Begin backend mapping in small teaching phases, adapting selected team code rather than copying it wholesale.
+
+

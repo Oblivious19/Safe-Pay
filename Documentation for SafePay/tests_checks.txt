@@ -1,0 +1,18 @@
+Controlled constraint tests for the later verification stage: 
+These write-based negative tests should be performed only against the controlled development/test database, using test fixtures and rollback:
+
+| Test | Invalid operation | Expected protection |
+|---|---|---|
+| 1 | Transaction uses another customer’s account | `FK_PAYMENT_TX_ACCOUNT_OWNER` |
+| 2 | Transaction uses another customer’s beneficiary | `FK_PAYMENT_TX_BEN_OWNER` |
+| 3 | OTP customer differs from transaction customer | `FK_PAYMENT_OTP_TX_CUSTOMER` |
+| 4 | Review customer differs from transaction customer | `FK_RISK_REVIEW_TX_CUSTOMER` |
+| 5 | Only part of the risk snapshot is populated | `CK_PAYMENT_TX_RISK_SNAPSHOT` |
+| 6 | Policy, version and band do not form one tuple | `FK_PAYMENT_TX_RISK_SNAPSHOT` |
+| 7 | A `LOW` transaction is put into `PROTECTED` | V1 risk-action or route constraint |
+| 8 | Reservation-bearing state lacks reservation evidence | `CK_PAYMENT_TX_RESERVE_STATE` |
+| 9 | Incomplete, overlapping or gapped policy is activated | `-20110` or `-20111` |
+| 10 | Band belonging to active policy is modified | `-20125` or `-20126` |
+| 11 | Protection policy used by active/retired policy is modified | `-20127` |
+| 12 | Completed Risk Review decision is modified | `-20045` |
+| 13 | Old review vocabulary is inserted | `CK_RISK_REVIEW_STATUS` |

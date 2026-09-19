@@ -1,0 +1,30 @@
+1. | Proposed endpoint/capability | CUSTOMER | SYSTEM_ADMIN | RISK_OFFICER | AUDITOR |
+|---|---|---|---|---|
+| `GET /admin/accounts` — paginated customer-account directory | No | Yes | No | No |
+| Filter that directory by customer ID | No | Yes | No | No |
+| Filter by minimum balance | No | Yes | No | No |
+| Filter by `SAVINGS` or `CURRENT` | No | Yes | No | No |
+| `GET /admin/accounts/{accountId}` — account detail | No | Yes | No | No |
+| `GET /admin/accounts/{accountId}/balance` — financial snapshot | No | Yes | No | No |
+
+| Direct account-balance editing | No | No | No | No |
+| Account deletion | No | No | No | No |
+
+2. Minimum balance: I recommend explicitly naming the filter minCurrentBalance and using an inclusive comparison, currentBalance >= value. Available balance is a different quantity; we should not leave that ambiguous. Use currentBalance only for this, never the other two types for filtering.
+
+3. 
+
+| Role | Missing capability | Status/interpretation |
+|---|---|---|
+| `CUSTOMER` | Dedicated own-profile GET endpoint | Profile viewing is described in the register; no profile controller exists |
+| `CUSTOMER` | Richer transaction-history filters - date filter for transactions, and suggest one or two more customer friendly filters in the plan for others | Original PRD describes filtering; current route exposes pagination only |
+
+| `SYSTEM_ADMIN` | Paginated user/customer search and user detail | Practical missing support for user management and customer selection |
+| `SYSTEM_ADMIN` | Operational dashboard statistics and detailed failure/health views | PRD intent exists; dedicated dashboard endpoints are absent |
+
+| `AUDITOR` | Read-only review queue/detail | Register-to-code access discrepancy described above |
+| `AUDITOR` | Dedicated approved transaction/risk evidence views | Audit events exist, but complete audit-oriented resource views are not exposed |
+| `AUDITOR` | Ledger postings/entries and reconciliation views | Database/repository foundations exist; dedicated REST delivery is absent |
+| `AUDITOR` | Exception and policy-version inspection | Underlying records exist; dedicated read-only REST delivery is absent |
+
+| All consumers | OpenAPI contract/documentation | Explicitly deferred until backend contract completion before frontend integration |

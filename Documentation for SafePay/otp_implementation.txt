@@ -1,0 +1,23 @@
+OTP-R1 through OTP-R5 implementation is complete. OTP-R6 is ready but requires your Google App Password and manual receipt confirmation, which I cannot safely perform for you.
+No migration, database object, transaction-state logic, JWT logic, or unrelated module was altered.
+What was implemented
+- Added explicit routing modes:
+  - FIXED_OVERRIDE for the showcase.
+  - STORED_USER for a future real-customer environment.
+- FIXED_OVERRIDE cannot silently fall back to a customer’s stored address.
+- Missing or malformed override configuration fails safely.
+- Both email delivery and API maskedDestination use the effective routed address.
+- The frontend still cannot submit an email destination.
+- Automated Maven tests are now forced to keep real email disabled, even if the surrounding Eclipse environment enables Gmail.
+- Your Gmail address and App Password were not hardcoded anywhere.
+Principal files:
+- [application.properties (line 66)](/C:/Users/Aditya Rao/Downloads/Training/Project/SafePay/backend/src/main/resources/application.properties:66)
+- [OtpEmailRoutingMode.java (line 3)](/C:/Users/Aditya Rao/Downloads/Training/Project/SafePay/backend/src/main/java/com/ofss/services/OtpEmailRoutingMode.java:3)
+- [OtpEmailProperties.java (line 6)](/C:/Users/Aditya Rao/Downloads/Training/Project/SafePay/backend/src/main/java/com/ofss/services/OtpEmailProperties.java:6)
+- [EmailOtpDeliveryGateway.java (line 40)](/C:/Users/Aditya Rao/Downloads/Training/Project/SafePay/backend/src/main/java/com/ofss/services/EmailOtpDeliveryGateway.java:40)
+- [OtpServiceImpl.java (line 42)](/C:/Users/Aditya Rao/Downloads/Training/Project/SafePay/backend/src/main/java/com/ofss/services/OtpServiceImpl.java:42)
+- [pom.xml (line 147)](/C:/Users/Aditya Rao/Downloads/Training/Project/SafePay/backend/pom.xml:147)
+Related guides were updated:
+- [OTP delivery plan (line 11)](/C:/Users/Aditya Rao/Downloads/Training/Project/SafePay/Documentation for SafePay/OTP_delivery_via_email_plan.txt:11)
+- [Backend launch guide (line 794)](/C:/Users/Aditya Rao/Downloads/Training/Project/SafePay/Documentation for SafePay/SafePay_Backend_Launch_and_Server_Guide.md:794)
+- [Data seed guide (line 456)](/C:/Users/Aditya Rao/Downloads/Training/Project/SafePay/Documentation for SafePay/SafePay_V1_Data_Seed_Complete_Guide.md:456)

@@ -1,0 +1,244 @@
+Phase 2.11 is now locked at:
+
+```text
+Focused Phase 2.11E–G: 59 tests passed
+Complete backend suite: 641 tests passed
+Failures: 0, Errors: 0, Skipped: 0
+```
+
+I also reconciled the attached materials. The operative contract is the newer direct-write contract. `updated_context.md` remains useful historical context through Phase 2.3, but its older manual-paste workflow and test count no longer describe the current project.
+
+No files were changed during this planning review.
+
+## What already exists for Spring Security
+
+The deferred security phase is not starting from zero. SafePay already has:
+
+- `User`, `Role`, `UserRole`, `AuthSession` and their repositories.
+- Registration restricted to the `CUSTOMER` role.
+- BCrypt password hashing at strength 12.
+- `SafePayPrincipal` and `SafePayUserDetailsService`.
+- Generic credential checking without username enumeration.
+- Controllers that derive customer identity from `SafePayPrincipal`.
+- Initial live role verification for Risk Officer decisions.
+- Oracle fields for failed-login tracking, lock expiry, security version and rotating refresh sessions.
+
+The remaining critical work includes JWT issuance/validation, login/refresh/logout, token rotation and replay detection, login throttling, full HTTP security configuration, stable `401/403`, route/method RBAC, CORS/cookies/security headers, WebSocket authentication and removal or completion of genuine deferred-security seams.
+
+# Phase 2.12 — Audit, notifications and live updates
+
+No new database table or migration is expected. Existing `AUDIT_LOG` and `APP_NOTIFICATION` already contain the required ownership, deduplication, retry, read-status, versioning and immutability structures.
+
+| Subphase | Responsibility |
+|---|---|
+| **2.12A — Canonical models and persistence contracts** | Complete notification lifecycle behavior and restricted audit/notification queries against V7/V10 constraints. |
+| **2.12B — Role-safe audit projections** | Create customer-safe timelines, Risk Officer review context and Auditor global-search DTOs without exposing raw `details_json` or internal notes incorrectly. |
+| **2.12C — Lifecycle evidence matrix** | Define and generate the ten approved notification types and missing append-only audit events at the correct transaction, OTP, review and settlement boundaries. |
+| **2.12D — Atomic event production** | Ensure business transition, audit evidence and notification/outbox creation commit together with deterministic deduplication. |
+| **2.12E — Audit REST APIs** | Implement global Auditor search and role-appropriate owned transaction timelines with bounded pagination and safe filters. |
+| **2.12F — Notification REST APIs** | Implement owned notification listing and concurrency-safe, naturally idempotent mark-as-read behavior. |
+| **2.12G — Durable notification dispatcher** | Poll pending notifications, publish advisory events, persist delivery/retry outcomes and preserve REST recovery after disconnects. |
+| **2.12H — WebSocket/STOMP contract** | Add `/ws`, user-specific notification/transaction/review destinations and sanitized event envelopes; never permit financial mutations through WebSocket. |
+| **2.12I — Oracle, isolation and reconnect verification** | Test ownership, masking, immutability, deduplication, retries, cross-user isolation and REST reconciliation; then create the Phase 2.12 guide. |
+
+### Recommended Phase 2.12 policies
+
+- Use only user-specific destinations:
+
+```text
+/user/queue/notifications
+/user/queue/transactions
+/user/queue/risk-reviews
+```
+
+This is safer than shared customer topics and still supports Risk Officer queue refreshes.
+
+- Use `notificationReference` as the client deduplication identity.
+- WebSocket messages contain IDs, event type, safe state and timestamp—not balances, account numbers, internal notes or audit details.
+- Persist the notification first. WebSocket delivery remains advisory.
+- REST and Oracle remain authoritative after reconnect.
+- Mark-read requires ownership and a row lock, but no `Idempotency-Key`; repeating it simply returns the already-read result.
+- Global `/audit-logs` access should require `AUDITOR`. The combined administrator can use it because that persona separately holds `AUDITOR`.
+- Customers receive only their safe lifecycle timeline. Risk Officers receive review-relevant context. Raw audit JSON is never returned directly.
+
+## Phase 2.12 decisions requiring approval
+
+1. Add the official `spring-boot-starter-websocket` dependency. This is necessary for STOMP/WebSocket support.
+
+2. Notification dispatcher recommendation:
+
+```text
+Polling interval: 1 second
+Maximum batch: 25
+Maximum attempts: 5 total
+Retry delays: 5 seconds, 30 seconds, 1 minute, 5 minutes
+After attempt 5: FAILED
+```
+
+A successful dispatch means the event was accepted by the in-process messaging layer—not proof that a browser displayed it. Stored REST notifications prevent event loss.
+
+3. Recommended global audit filters:
+
+```text
+transactionId
+actionCode
+outcome
+actorType
+correlationId
+from/to timestamp
+page/size
+```
+
+Results would be newest-first with no arbitrary client-controlled database sorting.
+
+# Deferred Phase 2.2 completion — Spring Security
+
+I recommend treating this as the formal completion of the deferred Phase 2.2 contract rather than inventing a new backend phase number.
+
+| Subphase | Responsibility |
+|---|---|
+| **SEC-A — Dependencies and security policy** | Add official Spring Security web/resource-server/test support and strongly validated environment-only token/cookie/CORS settings. |
+| **SEC-B — Login throttling and user security state** | Add database-time failed-login tracking, temporary locking, successful-login reset and generic credential failures. |
+| **SEC-C — Access-token service** | Issue and validate short-lived JWTs carrying user ID, exact authorities, security version, issuer, audience, issue and expiry times. |
+| **SEC-D — Refresh-session rotation** | Generate opaque refresh tokens, store hashes only, rotate atomically, detect replay, revoke token families and enforce expiry/status/security version. |
+| **SEC-E — Authentication APIs** | Complete login, refresh and logout while retaining safe registration; use the approved HttpOnly refresh cookie. |
+| **SEC-F — HTTP security and RBAC** | Install the security filter chain, public/protected route matrix, exact authorities, stateless bearer authentication and RFC 7807 `401/403` handlers. |
+| **SEC-G — Browser protections** | Configure explicit local CORS origins, cookie Origin protection, security headers and safe CSRF treatment for cookie-using refresh/logout operations. |
+| **SEC-H — Existing-module security closure** | Review every controller/service seam, centralize principal extraction where appropriate and remove only obsolete deferred comments after their behavior is genuinely implemented. |
+| **SEC-I — WebSocket security** | Authenticate STOMP `CONNECT` using the in-memory access token, restrict subscriptions to approved user destinations and prevent cross-user subscriptions. |
+| **SEC-J — Administrative security controls** | Implement the approved lock/disable, role-assignment and session-revocation capabilities if their endpoint contract is approved. |
+| **SEC-K — Security and Oracle verification** | Test forged/expired JWTs, refresh replay, role revocation, security-version mismatch, horizontal access, lockout, CORS/cookies, WebSocket isolation and the complete suite; create the security guide. |
+
+### Recommended security policies
+
+| Policy | Recommendation |
+|---|---|
+| JWT implementation | Official Spring Security OAuth2 Resource Server/Jose support; no custom JWT parser |
+| Signing | `HS256` with a randomly generated Base64 secret of at least 256 bits, supplied only through environment configuration |
+| Access-token validity | 15 minutes |
+| Refresh-session validity | 7 days |
+| Refresh token | Opaque `SecureRandom` value; only SHA-256 hash stored |
+| Rotation | Every refresh replaces the old session |
+| Replay response | Revoke the entire token family and reject the request |
+| Failed-login threshold | 5 consecutive failures |
+| Temporary lock | 15 minutes |
+| Refresh cookie | `HttpOnly`, `SameSite=Strict`, path `/api/v1/auth`; `Secure=true` outside explicitly approved local HTTP |
+| Access-token storage | Frontend memory only |
+| CORS | Explicit configured development origins; never wildcard with credentials |
+| WebSocket authentication | Bearer access token in the STOMP `CONNECT` header, never URL/query parameters |
+| Security-version check | Compare JWT claim with current `APP_USER.SECURITY_VERSION`; reject locked, disabled or version-mismatched users |
+
+## Security decisions requiring approval
+
+1. Dependency change:
+
+```text
+spring-boot-starter-security
+spring-boot-starter-oauth2-resource-server
+spring-security-test
+spring-security-messaging
+```
+
+The existing direct `spring-security-core` and `spring-security-crypto` declarations would become redundant once the starter is used.
+
+2. Confirm the recommended 15-minute access token, 7-day refresh session, five failed attempts and 15-minute temporary lock.
+
+3. Confirm environment-only `HS256` for this single-backend V1 prototype. RSA signing is stronger for separated issuer/resource-server deployments but adds key-pair handling that SafePay V1 does not currently require.
+
+4. Administrative security endpoints are not defined in the approved REST table even though the Decision Register grants System Administrator capabilities. I recommend explicitly adding:
+
+```text
+PATCH /api/v1/admin/users/{userId}/status
+PUT /api/v1/admin/users/{userId}/roles/{roleCode}
+DELETE /api/v1/admin/users/{userId}/roles/{roleCode}
+POST /api/v1/admin/users/{userId}/sessions/revoke
+```
+
+These would require `SYSTEM_ADMIN`, increment security version when appropriate, revoke affected sessions and create audit events. I will not invent these routes without your approval.
+
+If you approve the recommendations above, Phase 2.12 should be implemented and manually verified first. The deferred security phase will then close HTTP and WebSocket enforcement across the completed backend.
+
+-------------------------
+
+Phase 2.12A–E implementation is complete and ready for your manual verification. It is not locked until these tests pass.
+Implemented:
+- Canonical immutable audit and notification construction.
+- Atomic lifecycle evidence for transaction, timer release, OTP, Risk Review decisions, settlement failure and retry exhaustion.
+- Deterministic SHA-256-derived event/deduplication references.
+- Customer-safe, Risk-Officer-safe and Auditor-safe projections.
+- Explicit read-only audit repository queries—no delete-capable generic repository inheritance.
+- GET /api/v1/audit-logs.
+- GET /api/v1/transactions/{transactionId}/audit.
+- Live database-role validation and ownership/review-relationship enforcement.
+- Exact audit filters, bounded pagination and newest-first ordering.
+- 39 new tests.
+- Offline test-compile: BUILD SUCCESS, compiling 198 production and 108 test source files.
+Key implementations: [TransactionLifecycleEvidenceServiceImpl.java (line 25)](C:/Users/Aditya Rao/Downloads/Training/Project/SafePay/backend/src/main/java/com/ofss/services/TransactionLifecycleEvidenceServiceImpl.java:25), [AuditQueryServiceImpl.java (line 35)](C:/Users/Aditya Rao/Downloads/Training/Project/SafePay/backend/src/main/java/com/ofss/services/AuditQueryServiceImpl.java:35), [AuditLogDao.java (line 16)](C:/Users/Aditya Rao/Downloads/Training/Project/SafePay/backend/src/main/java/com/ofss/repository/AuditLogDao.java:16), and [AuditController.java (line 26)](C:/Users/Aditya Rao/Downloads/Training/Project/SafePay/backend/src/main/java/com/ofss/controller/AuditController.java:26).
+No migration, database object, dependency, pom.xml, application configuration, Decision Register, plan or context document was changed.
+--------------------------
+
+Phase 2.12F–I implementation is complete and ready for your manual verification. The confirmed baseline remains 680 tests.
+Implemented:
+- Owned notification listing and idempotent mark-as-read.
+- Cross-user notification isolation with indistinguishable 404 behavior.
+- Database-time delivery scheduling.
+- One-second polling and maximum batch size of 25.
+- Five delivery attempts with 5s → 30s → 1m → 5m retries.
+- Terminal FAILED status after exhaustion.
+- Per-notification locking and independent transactions.
+- /ws STOMP endpoint and private user destinations.
+- Minimal sanitized real-time envelopes.
+- Active Risk Officer queue-refresh routing.
+- Oracle lifecycle and isolation coverage.
+- Official WebSocket starter dependency.
+- Comprehensive guide: [SafePay_Backend_Phase_2_12_Audit_Notifications_and_Realtime_Updates.md](C:/Users/Aditya Rao/Downloads/Training/Project/SafePay/Documentation for SafePay/SafePay_Backend_Phase_2_12_Audit_Notifications_and_Realtime_Updates.md)
+No migration or database object was added or altered. Final offline compilation succeeded for 214 production and 119 test source files.
+---------------
+
+SEC A–F implementation is complete and ready for your manual verification. It remains part of deferred Phase 2.2 and is not being treated as a new backend phase.
+Implemented:
+- Official Spring Security, OAuth2 Resource Server/Jose, messaging, and security-test dependencies.
+- Validated 15-minute HS256 access tokens using an environment-only 256-bit secret.
+- Live user-status, authority-set, and SECURITY_VERSION checks for every JWT.
+- Five-failure login throttling with a 15-minute temporary lock.
+- Oracle database-time enforcement and pessimistic locking.
+- Seven-day opaque refresh tokens with SHA-256-only persistence.
+- Atomic one-time refresh rotation.
+- Replay detection that revokes the entire token family and increments security version.
+- Server-side logout revocation.
+- HttpOnly, SameSite=Strict, narrowly scoped refresh cookies.
+- Login, refresh, replay, lockout, and logout audit evidence without credential/token content.
+- Exact CUSTOMER, RISK_OFFICER, and AUDITOR route and method RBAC.
+- Stateless bearer authentication.
+- Safe RFC 7807 401 and 403 responses.
+- 76 new tests covering SEC A–F.
+- No Flyway migration or database object was changed.
+One verification limitation: offline test compilation stopped before Java compilation because the newly approved official Spring dependencies are not yet in your local Maven cache. I did not download/install them because that remains outside my permission boundary. Your first normal Maven/Eclipse test run must resolve them.
+
+Keep Append environment to native environment selected.
+Recommendations:
+- Add it to your dbflyway (completeTest) configuration.
+- When creating focused-test configurations, duplicate that configuration so all database and JWT variables are copied.
+- Do not paste the secret into application.properties, source code, screenshots, or chat.
+- You do not need to create a permanent Windows system variable if you keep it in Eclipse.
+- SAFEPAY_REFRESH_COOKIE_SECURE=false is unnecessary for Maven tests. Add it only later when testing cookies through a local non-HTTPS browser frontend.
+- The first Maven run must not use Maven offline mode because Eclipse needs to download the newly approved official Spring Security dependencies once. Subsequent runs may use the local cache.
+---------------------
+
+
+Deferred Phase 2.2 implementation is complete through SEC-K. It is not locked until your manual tests pass.
+Implemented:
+- Explicit credentialed CORS, Origin validation, CSRF protection and security headers.
+- Central authenticated-principal extraction across controllers.
+- Forbidden authenticated-access auditing.
+- JWT-authenticated STOMP CONNECT.
+- Exact user-destination authorization and cross-user/shared-topic rejection.
+- Complete prohibition of client WebSocket financial commands.
+- Approved SYSTEM_ADMIN status, role and session-revocation endpoints.
+- Security-version invalidation, refresh-session revocation, Oracle-time locking and immutable audit evidence.
+- No database migration, schema, grant or V1–V11 change.
+Offline Maven test-compile passed for 252 production and 145 test source files. JUnit and Oracle tests were not executed by me.
+The comprehensive guide is here:
+[Deferred Phase 2.2 Spring Security Guide](C:/Users/Aditya Rao/Downloads/Training/Project/SafePay/Documentation for SafePay/SafePay_Backend_Deferred_Phase_2_2_Spring_Security.md)
+
+-------------

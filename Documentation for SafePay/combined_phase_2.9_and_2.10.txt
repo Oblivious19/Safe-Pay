@@ -1,0 +1,226 @@
+The screenshot confirms **405 tests passing**, so Phase 2.8 is securely locked.
+
+No implementation has started for Phase 2.9 or 2.10.
+
+## Phase 2.9 — Ledger Settlement and Exception Recording
+
+This phase converts an eligible `RELEASED` SafePay transaction into an internally simulated, double-entry `SETTLED` payment.
+
+### Canonical settlement result
+
+```text
+Customer source account      DEBIT   payment amount
+SafePay outbound clearing    CREDIT  payment amount
+                              ----------------------
+Total debits = total credits
+```
+
+The clearing credit represents simulated outbound submission. It does not claim the external beneficiary received money.
+
+### Principal components
+
+- `LedgerPosting` header representing one complete settlement group.
+- `LedgerEntry` immutable debit/credit lines.
+- `LedgerEntryType`, posting type and posting-status enums.
+- `TransactionExceptionLog` and its processing-stage/status enums.
+- Ledger and exception repositories with no ledger update/delete operations.
+- `LedgerService` and atomic settlement worker.
+- Released-transaction settlement processor.
+- Deterministic posting identity and duplicate-settlement prevention.
+- Separate failure-recording transaction.
+- Clearing-account configuration and validation.
+- Minimal internal settlement audit/notification recording, with full APIs and WebSockets remaining in Phase 2.12.
+
+### Phase 2.9 contents
+
+| Subphase | Responsibility | One-line result |
+|---|---|---|
+| **2.9A** | Settlement policy and configuration | Finalize clearing-account resolution, processor settings, posting identity and retry classification. |
+| **2.9B** | Canonical ledger and exception model | Map `LEDGER_POSTING`, immutable `LEDGER_ENTRY` and `TRANSACTION_EXCEPTION` exactly to V6. |
+| **2.9C** | Persistence boundaries | Add posting, ledger and exception repositories with locked reads, append-only entries and no destructive ledger API. |
+| **2.9D** | Posting identity and balanced pair construction | Create one deterministic settlement header with line 1 DEBIT and line 2 CREDIT using the same posting identity. |
+| **2.9E** | Atomic settlement service | Lock payment/accounts, consume reservation, move balances, post both lines and perform `RELEASED → SETTLED` atomically. |
+| **2.9F** | Released-payment processor | Discover and process eligible `RELEASED` transactions safely across retries, restarts and competing instances. |
+| **2.9G** | Failure classification and exception recording | Roll back partial settlement and record retryable or definitive failure through a separate safe transaction. |
+| **2.9H** | Audit, notification and reconciliation seam | Record required settlement events while preserving full audit/notification delivery work for Phase 2.12. |
+| **2.9I** | Atomicity, concurrency and Oracle verification | Prove balanced posting, duplicate prevention, rollback safety, balance reconstruction and produce the Phase 2.9 guide. |
+
+### Non-negotiable Phase 2.9 guarantees
+
+- Settlement accepts only `RELEASED`.
+- Source and clearing accounts are locked in consistent lower-ID-first order.
+- Source current and reserved balances decrease together.
+- Clearing current balance increases by exactly the same amount.
+- A successful posting contains exactly two different accounts and balanced amounts.
+- `LEDGER_ENTRY` remains immutable.
+- One transaction can have only one settlement posting group.
+- Cancellation and failed payments receive no completed settlement ledger pair.
+- Temporary failure retains `RELEASED` and its reservation for retry.
+- Definitive failure releases the reservation and produces `FAILED`.
+- No partial account update, ledger line or `SETTLED` state may survive rollback.
+
+## Phase 2.10 — OTP Verification
+
+This phase implements the VERY_HIGH-risk customer-verification step:
+
+```text
+VERIFICATION_REQUIRED
+        |
+        +-- successful OTP --> PENDING_RISK_REVIEW
+        |
+        +-- exhausted policy --> CANCELLED
+```
+
+The transaction remains reserved throughout successful OTP verification and later Risk Officer review.
+
+### Approved V1 OTP policy
+
+| Policy | V1 value |
+|---|---:|
+| Format | 6 numeric digits |
+| Validity | 5 minutes |
+| Failed attempts | Maximum 3 |
+| Resend cooldown | 30 seconds |
+| Issue limit | Initial issue plus two resends |
+| Storage | Secure hash only |
+| Successful reuse | Prohibited |
+| Previous OTP after resend | Immediately invalid |
+| Exhausted policy | Cancel transaction and release reservation |
+
+### Principal components
+
+- `OtpChallenge` mapped to `PAYMENT_OTP_CHALLENGE`.
+- `OtpChallengeStatus`: `PENDING`, `VERIFIED`, `EXPIRED`, `LOCKED`, `CANCELLED`.
+- `OtpChallengeDao` with locked ownership-qualified queries.
+- `OtpService` for issue, resend and verification.
+- Cryptographically secure six-digit generation.
+- Secure hashing and verification.
+- Development-only delivery-provider abstraction.
+- Issue, verification and safe response DTOs.
+- `VerificationController`.
+- Existing `OTP_ISSUE`, `OTP_VERIFY` and `OTP_RESEND` idempotency scopes.
+- Reservation release and terminal state handling when the OTP policy is exhausted.
+
+### Phase 2.10 contents
+
+| Subphase | Responsibility | One-line result |
+|---|---|---|
+| **2.10A** | OTP policy and security configuration | Centralize validity, attempts, cooldown, issue limit, hashing and delivery configuration. |
+| **2.10B** | OTP challenge domain model | Implement the exact pending, verified, expired, locked and cancelled lifecycle mapped to V5/V10. |
+| **2.10C** | Persistence and ownership controls | Add locked challenge queries, one-pending enforcement, latest-challenge lookup and verification-cycle counting. |
+| **2.10D** | Secure generation, hashing and delivery | Generate six digits with a secure random source, persist only the hash and isolate local demonstration delivery. |
+| **2.10E** | Issue and resend workflow | Require an owned VERY_HIGH `VERIFICATION_REQUIRED` payment, enforce cooldown/issue limits and invalidate the previous OTP. |
+| **2.10F** | Verification and exhaustion workflow | Persist failed attempts safely, prevent reuse, transition success to review and cancel/release funds when exhausted. |
+| **2.10G** | REST and idempotency boundary | Implement the three approved endpoints with principal-derived ownership, safe DTOs and distinct idempotency scopes. |
+| **2.10H** | Concurrency, Oracle verification and guide | Test correct/incorrect/expired/reused OTPs, resend races, brute force, cancellation races and produce the Phase 2.10 guide. |
+
+## Decisions required before implementation
+
+Four details are not fully fixed by the authoritative documents. I will not silently invent them:
+
+1. **Clearing-account resolution**
+
+   Recommendation: use an externally configured `outbound-clearing-account-id`, then validate that it identifies an active INR `OUTBOUND_CLEARING` account. Never select an arbitrary “first” clearing account.
+
+2. **Settlement processing and retry timing**
+
+   A recovery processor is needed because LOW authorization, timed release and future Risk Officer approval all independently produce `RELEASED`. We need approved polling/batch and retry-backoff values before implementing it.
+
+3. **Audit/notification phase boundary**
+
+   Recommendation: Phase 2.9 writes the minimum append-only settlement audit and notification records required by the atomic contract. Phase 2.12 then adds querying, read-status operations, delivery and WebSocket behavior.
+
+4. **OTP-sensitive idempotency and development delivery**
+
+   Plain SHA-256 of a six-digit OTP would be brute-forceable if stored as an idempotency fingerprint. Recommendation: use a keyed HMAC fingerprint with an externally supplied secret, while storing the OTP itself with a secure password-style hash. The development delivery provider must also be explicitly chosen and isolated from production configuration.
+
+These decisions should be approved before 2.9A/2.10A implementation. Existing V1–V11 tables, indexes, triggers, constraints and grants otherwise appear sufficient; no migration is currently justified.
+
+-----------------------------
+##PHASE 2.9:
+
+Phase 2.9A–D implementation is complete and has passed the final source-level, schema-mapping, lifecycle, and test-inventory review. No Phase 2.9E+ functionality was introduced.
+Implemented scope
+- 2.9A — Settlement policy contracts
+  - Exact 1-second polling.
+  - Maximum batch size of 25.
+  - Exactly three retry delays: 5 seconds, 30 seconds, 1 minute.
+  - Externally configured outbound-clearing account.
+  - Processor remains disabled until the scheduler is introduced in Phase 2.9F.
+  - See [SettlementProcessorProperties.java (line 10)](/C:/Users/Aditya Rao/Downloads/Training/Project/SafePay/backend/src/main/java/com/ofss/scheduler/SettlementProcessorProperties.java:10) and [application.properties (line 45)](/C:/Users/Aditya Rao/Downloads/Training/Project/SafePay/backend/src/main/resources/application.properties:45).
+- 2.9B — Canonical ledger and exception model
+  - V6-aligned LEDGER_POSTING, immutable LEDGER_ENTRY, and TRANSACTION_EXCEPTION entities.
+  - Deterministic lifecycle validation and exact Oracle constraint-compatible enum values.
+  - Three exhausted retries are required before MANUAL_REVIEW.
+  - See [LedgerPosting.java (line 49)](/C:/Users/Aditya Rao/Downloads/Training/Project/SafePay/backend/src/main/java/com/ofss/beans/LedgerPosting.java:49), [LedgerEntry.java (line 57)](/C:/Users/Aditya Rao/Downloads/Training/Project/SafePay/backend/src/main/java/com/ofss/beans/LedgerEntry.java:57), and [TransactionExceptionLog.java (line 36)](/C:/Users/Aditya Rao/Downloads/Training/Project/SafePay/backend/src/main/java/com/ofss/beans/TransactionExceptionLog.java:36).
+- 2.9C — Restricted persistence contracts
+  - Minimal repositories without ledger deletion or arbitrary mutation APIs.
+  - Pessimistic locking for mutable posting and exception lifecycle operations.
+  - Oracle integration coverage for balanced posting finalization, transaction uniqueness, and manual-review escalation.
+  - See [LedgerPostingDao.java (line 14)](/C:/Users/Aditya Rao/Downloads/Training/Project/SafePay/backend/src/main/java/com/ofss/repository/LedgerPostingDao.java:14), [LedgerEntryDao.java (line 9)](/C:/Users/Aditya Rao/Downloads/Training/Project/SafePay/backend/src/main/java/com/ofss/repository/LedgerEntryDao.java:9), and [TransactionExceptionDao.java (line 15)](/C:/Users/Aditya Rao/Downloads/Training/Project/SafePay/backend/src/main/java/com/ofss/repository/TransactionExceptionDao.java:15).
+- 2.9D — Balanced posting construction
+  - One authoritative transaction snapshot produces the posting, debit, and credit.
+  - Amount, currency, transaction identity, source system, and idempotency identity cannot be independently resupplied.
+  - Debit targets the transaction source account; credit targets the configured active INR OUTBOUND_CLEARING account.
+  - See [SettlementPostingFactory.java (line 15)](/C:/Users/Aditya Rao/Downloads/Training/Project/SafePay/backend/src/main/java/com/ofss/services/SettlementPostingFactory.java:15) and [SettlementPostingPair.java (line 10)](/C:/Users/Aditya Rao/Downloads/Training/Project/SafePay/backend/src/main/java/com/ofss/services/SettlementPostingPair.java:10).
+V1–V11 migrations were not modified. The Phase 2.8 protection scheduler remains at its separate batch size of 50.
+The offline production compilation succeeded. The offline test-compile generated all seven new test-class artifacts, but Maven could not finish cleanly because Windows denied closing the cached jackson-databind-2.21.4.jar. No Java compiler diagnostic was reported. I did not delete, unlock, or redownload that dependency, and I did not execute any tests.
+
+-----
+
+Phase 2.9E–I is implemented and ready for your manual verification. The approved offline test-compile passed successfully for all 146 production sources and 81 test sources. No JUnit tests were executed by me.
+The previously verified baseline is 454 tests. This implementation adds 41 tests, so the expected complete-suite total is 495.
+Completed implementation
+- 2.9E — Atomic settlement
+  - Locks the payment first and accepts only RELEASED.
+  - Locks source and clearing accounts in lower-ID-first order.
+  - Validates ownership, account type, active status, INR currency and the complete reservation.
+  - Moves both balances, inserts the balanced ledger, ends the reservation and transitions to SETTLED atomically.
+  - Duplicate execution verifies the existing posted ledger and produces no repeated effect.
+  - See [SettlementServiceImpl.java (line 27)](/C:/Users/Aditya Rao/Downloads/Training/Project/SafePay/backend/src/main/java/com/ofss/services/SettlementServiceImpl.java:27).
+- 2.9F — Released-payment processor
+  - Database-authoritative due-candidate selection.
+  - One-second scheduler trigger.
+  - Maximum 25 candidates per batch.
+  - Restart-safe and competing-instance-safe through database persistence and payment locking.
+  - See [ReleasedTransactionSettlementProcessorImpl.java (line 14)](/C:/Users/Aditya Rao/Downloads/Training/Project/SafePay/backend/src/main/java/com/ofss/services/ReleasedTransactionSettlementProcessorImpl.java:14), [ReleasedTransactionSettlementScheduler.java (line 14)](/C:/Users/Aditya Rao/Downloads/Training/Project/SafePay/backend/src/main/java/com/ofss/scheduler/ReleasedTransactionSettlementScheduler.java:14) and [TransactionDao.java (line 122)](/C:/Users/Aditya Rao/Downloads/Training/Project/SafePay/backend/src/main/java/com/ofss/repository/TransactionDao.java:122).
+- 2.9G — Failure recording and retries
+  - Failed settlement changes roll back before exception recording begins.
+  - Failure recording runs in a separate transaction.
+  - Exact retry delays: 5 seconds, 30 seconds and 1 minute.
+  - Failure of retry 3 moves the exception to MANUAL_REVIEW.
+  - No fourth automatic retry exists.
+  - Temporary failure retains RELEASED and the reservation.
+  - A definitive customer-account failure reaches FAILED only when its reservation can be safely released.
+  - See [SettlementFailureRecorderImpl.java (line 27)](/C:/Users/Aditya Rao/Downloads/Training/Project/SafePay/backend/src/main/java/com/ofss/services/SettlementFailureRecorderImpl.java:27).
+- 2.9H — Minimum atomic evidence
+  - Exact V7 mappings for immutable AUDIT_LOG and durable APP_NOTIFICATION.
+  - Successful settlement atomically appends a system audit event and one deduplicated pending PAYMENT_SETTLED notification.
+  - Notification delivery, read APIs and WebSockets remain deferred to Phase 2.12.
+  - See [AuditLog.java (line 37)](/C:/Users/Aditya Rao/Downloads/Training/Project/SafePay/backend/src/main/java/com/ofss/beans/AuditLog.java:37), [AppNotification.java (line 39)](/C:/Users/Aditya Rao/Downloads/Training/Project/SafePay/backend/src/main/java/com/ofss/beans/AppNotification.java:39) and [SettlementEvidenceServiceImpl.java (line 18)](/C:/Users/Aditya Rao/Downloads/Training/Project/SafePay/backend/src/main/java/com/ofss/services/SettlementEvidenceServiceImpl.java:18).
+- 2.9I — Verification and documentation
+  - Added unit, scheduler, retry, repository-contract, schema-model and Oracle integration coverage.
+  - Added the comprehensive teammate guide:
+    [SafePay Backend Phase 2.9 guide (line 1)](/C:/Users/Aditya Rao/Downloads/Training/Project/SafePay/Documentation for SafePay/SafePay_Backend_Phase_2_9_Ledger_Settlement_and_Exception_Recording.md:1).
+No V1–V11 migration was modified, no dependency was added, and no Phase 2.10 implementation was introduced. The settlement scheduler remains disabled by default until a verified environment-specific clearing account is supplied.
+
+----------
+##PHASE 2.10:
+
+
+Implemented:
+- Centralized the approved 6-digit, 5-minute, 3-attempt, 30-second cooldown, 3-issue OTP policy.
+- Added only the approved Spring Boot Mail dependency.
+- Added disabled-by-default Gmail configuration with STARTTLS, 5-second timeouts and environment-only credentials.
+- Mapped the exact V5/V10 OTP challenge schema and lifecycle.
+- Added transaction/customer-qualified pessimistic-lock queries and verification-cycle counting.
+- Added SecureRandom generation, fresh 16-byte salts, SHA-256 storage and constant-time comparison.
+- Protected OTP string rendering and verified that request fingerprints never contain the raw OTP.
+- Added 41 new tests.
+- Did not modify V1–V11 migrations.
+- Did not implement SMTP delivery or Phase 2.10E onward.
+
+Key files include [OtpChallenge.java](C:/Users/Aditya Rao/Downloads/Training/Project/SafePay/backend/src/main/java/com/ofss/beans/OtpChallenge.java), [OtpChallengeDao.java](C:/Users/Aditya Rao/Downloads/Training/Project/SafePay/backend/src/main/java/com/ofss/repository/OtpChallengeDao.java), [Sha256OtpHashingService.java](C:/Users/Aditya Rao/Downloads/Training/Project/SafePay/backend/src/main/java/com/ofss/services/Sha256OtpHashingService.java), [application.properties](C:/Users/Aditya Rao/Downloads/Training/Project/SafePay/backend/src/main/resources/application.properties), and [pom.xml](C:/Users/Aditya Rao/Downloads/Training/Project/SafePay/backend/pom.xml).
+
+The production and test sources compiled successfully offline—158 production and 89 test files—with the new mail dependency temporarily excluded. It was then restored. A final offline build cannot resolve spring-boot-starter-mail:3.5.16 because it is not currently cached. I did not download it. Your first normal Maven test run will resolve this approved dependency.
+

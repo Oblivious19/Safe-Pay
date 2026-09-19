@@ -1,0 +1,228 @@
+Phase 2.4B is locked at **123 passing tests**. I understand the proposed change: you want me to move from manual paste-ready guidance to direct, controlled backend implementation while preserving every approved SafePay requirement and your manual test authority.
+
+Yes, I can take responsibility for building the backend under the controls below. I cannot honestly guarantee an entirely error-free backend without executing its runtime and Oracle tests, but this workflow provides high assurance: I implement and statically compile; you execute the authoritative focused and full test gates.
+
+## What I understood
+
+### 1. Decision authority
+
+For every implementation decision, I will use:
+
+1. Your latest explicit decision.
+2. `AGENTS.md`, except for the specific direct-write exception you approve.
+3. Reconciled Decision Register—the V1 authority.
+4. Reconciled Implementation Plan.
+5. Unaffected requirements from the older Decision Register and plan.
+6. Applied Flyway migrations and current source.
+7. Context files for history and navigation.
+8. PRD only for requirements not superseded, rejected, or deferred by the Decision Register.
+
+“Implement everything” means every applicable approved **V1 requirement**. It does not mean restoring PRD ideas that the Decision Register explicitly moved to V2, such as device/location risk, velocity, beneficiary-age risk, weighted scoring, disputes, or full corporate Maker-Checker.
+
+### 2. Database-first analysis
+
+Before each subphase, I will produce an internal mapping check covering:
+
+- Oracle table, sequence, view, and trigger names.
+- Column names, types, lengths, precision, nullability, and defaults.
+- Primary, unique, foreign-key, check, and composite constraints.
+- Indexes relevant to repository queries.
+- Runtime privileges assigned to `SAFEPAY_APP`.
+- Ownership, versioning, idempotency, state, and timestamp rules.
+- Existing Java entities, repositories, services, DTOs, and tests that interact with the change.
+
+Every Java field, enum, validation rule, query, and transaction boundary will be checked against that matrix before writing.
+
+### 3. Direct implementation method
+
+For each approved subphase, I will:
+
+1. Read the exact relevant authority, migration, and current source files.
+2. Identify the files that need creation or modification.
+3. Check for conflicts with locked code and user changes.
+4. Write only the required production and test files.
+5. Re-read the resulting files.
+6. Review mappings, imports, signatures, exception flow, transactions, ownership, and concurrency.
+7. Run only approved non-test compilation checks.
+8. Fix compilation problems within the active subphase.
+9. Report every changed file and any unresolved or skipped verification.
+10. Give you exact focused and full Maven test instructions in your preferred copyable format.
+11. Wait for your result before locking the subphase.
+
+I will not leave a known critical defect merely to move faster. If a material design conflict cannot be resolved from the authorities, I will stop and ask you.
+
+### 4. Quality and warnings
+
+Warnings will not automatically block progress. However, I will not ignore a warning if it suggests:
+
+- Unsafe financial behavior.
+- Incorrect Oracle mapping.
+- Data truncation or precision loss.
+- Broken ownership or authorization.
+- Deprecated security behavior.
+- Transaction, locking, or rollback risk.
+- Sensitive-data exposure.
+
+Those are treated as defects, not harmless warnings.
+
+## Test and approval gates
+
+After every subphase:
+
+- I write production code and comprehensive tests.
+- I may compile production and test sources without executing tests.
+- You run the focused Maven test.
+- You run the complete Maven suite.
+- I provide the exact expected test totals.
+- A failed test blocks advancement until resolved.
+- Your successful test report locks the subphase and acts as permission to begin the next subphase within the already approved major phase.
+- Moving from one major phase to another—such as 2.4 to 2.5—always requires your explicit approval.
+
+At the end of each major phase, I will create exactly one explanatory Markdown document containing:
+
+- Phase purpose and completed scope.
+- File-by-file responsibility.
+- Important data and execution flows.
+- Database mappings and safety controls.
+- Short examples only where useful.
+- Test coverage and final verified count.
+- Security-dependent or otherwise deferred work.
+
+No per-subphase Markdown files will be created.
+
+Recommended location:
+
+```text
+C:\Users\Aditya Rao\Downloads\Training\Project\SafePay\Documentation for SafePay\SafePay_Backend_Phase_2_4_Beneficiary_Module.md
+```
+
+The same naming pattern will be used for later phases. Existing PRDs, Decision Registers, implementation plans, and context documents remain read-only.
+
+## Backend chronology
+
+The remaining work will follow this order:
+
+1. Complete Phase 2.4 Beneficiary domain work.
+2. Phase 2.5 versioned risk policy and deterministic risk engine.
+3. Phase 2.6 transaction creation and state engine.
+4. Phase 2.7 idempotency and request safety.
+5. Phase 2.8 protection scheduler and cancellation races.
+6. Phase 2.9 ledger settlement and exception recording.
+7. Phase 2.10 payment OTP verification.
+8. Phase 2.11 Risk Officer review.
+9. Phase 2.12 audit, notifications, and real-time event production.
+10. Resume the explicitly deferred Spring Security suite.
+11. Connect all deferred controllers to `SafePayPrincipal`, JWT, RBAC, and stable 401/403 handling.
+12. Complete backend compilation, Oracle/JPA, API, concurrency, recovery, and security verification.
+
+Security-dependent controllers will remain on a visible re-entry list. I will not expose temporary endpoints that accept customer identity from request data, and I will not falsely mark those pieces complete.
+
+## Exact permission requested
+
+I recommend approving the following standing boundary.
+
+### Direct writes allowed
+
+Only while working inside an approved SafePay major phase:
+
+```text
+C:\Users\Aditya Rao\Downloads\Training\Project\SafePay\backend\src\main\java\com\ofss\
+C:\Users\Aditya Rao\Downloads\Training\Project\SafePay\backend\src\test\java\com\ofss\
+```
+
+And one major-phase summary file per phase inside:
+
+```text
+C:\Users\Aditya Rao\Downloads\Training\Project\SafePay\Documentation for SafePay\
+```
+
+I will use controlled patch-based edits, not PowerShell redirection or shell-writing commands.
+
+I may create new files and update files required by the active subphase. If a change would materially alter a previously locked contract or behavior, I will stop for approval first.
+
+### Read-only access allowed
+
+For task-relevant files only:
+
+```text
+C:\Users\Aditya Rao\Downloads\Training\Project\SafePay\
+```
+
+This includes source, tests, migrations, configuration, plans, registers, context files, images, and relevant supporting documents.
+
+### Non-test commands requested
+
+From this exact directory:
+
+```text
+C:\Users\Aditya Rao\Downloads\Training\Project\SafePay\backend
+```
+
+Permit:
+
+```text
+mvn -o -DskipTests compile
+```
+
+Purpose: compile production code using only locally cached dependencies.
+
+Permit:
+
+```text
+mvn -o -DskipTests test-compile
+```
+
+Purpose: compile production and test code without running JUnit or starting the Spring test context.
+
+The `-o` flag forces Maven offline, preventing dependency downloads. These commands may update only Maven-generated files beneath `backend\target`.
+
+Also permit read-only consistency checks:
+
+```text
+git status --short
+```
+
+```text
+git diff --check
+```
+
+```text
+git diff
+```
+
+These will be used only if the project is under Git. They do not commit, reset, push, or change files.
+
+## Actions that remain prohibited
+
+This authorization would **not** permit me to:
+
+- Run `mvn test` or any focused JUnit test.
+- Start Spring Boot or execute application workflows.
+- Run Flyway migrations or SQL.
+- Connect to or mutate Oracle data.
+- Run `mvn clean`.
+- Download dependencies or access external source code.
+- Install software, packages, extensions, plugins, or tools.
+- Modify `pom.xml` without separate dependency approval.
+- Modify `application.properties` without separately identifying and approving the change.
+- Edit V1–V11 or the repeatable grants.
+- Create V12+ without a specific schema-change decision and approval.
+- Modify PRDs, Decision Registers, implementation plans, `AGENTS.md`, or context documents.
+- Delete, rename, or move files without separate approval.
+- Commit, reset, branch, push, or otherwise mutate Git state.
+- Access anything outside the SafePay project except the already-authorized Codex memory note.
+- Proceed across a major-phase boundary without approval.
+
+## Delivery-time reality
+
+Direct implementation and offline compilation will save substantial time, but completing Phases 2.4–2.12, deferred security, Oracle integration, concurrency verification, and API testing is a large body of work. I will optimize for speed through precise changes and reduced explanatory overhead, but I will not claim completion merely to meet EOD if mandatory safety or correctness gates remain open.
+
+If time becomes the limiting factor, I will provide an exact, executable checkpoint—not a weakened or falsely complete backend.
+
+If this boundary matches your intent, reply:
+
+```text
+Approved: Direct SafePay backend implementation under the proposed write scope, offline compile/test-compile permission, manual test gates, and one summary document per major phase.
+```
+
+After that approval, I will inspect the current Phase 2.4B baseline and directly implement **Phase 2.4C**.
