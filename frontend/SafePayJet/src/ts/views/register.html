@@ -1,0 +1,45 @@
+<section class="login-page onboarding-page" aria-labelledby="onboarding-title">
+<div class="login-brand customer-brand">SafePay<span class="brand-dot">.</span></div>
+<div class="login-card">
+<p class="login-overline">SIMULATED ENVIRONMENT</p>
+<h1 id="onboarding-title" tabindex="-1">Create your SafePay account</h1>
+<p class="login-intro">A few simple steps to get started. Use fictional details for this college demo.</p>
+<ol class="onboarding-progress" aria-label="Registration progress" data-bind="visible: step() !== 'success'">
+<li data-bind="attr: {'aria-current': progress() === 1 ? 'step' : null}">1 Mobile</li>
+<li data-bind="attr: {'aria-current': progress() === 2 ? 'step' : null}">2 Details</li>
+<li data-bind="attr: {'aria-current': progress() === 3 ? 'step' : null}">3 Password</li>
+</ol>
+<form novalidate data-bind="submit: next, attr: {'aria-busy': busy}">
+<!-- ko if: step() === 'mobile' -->
+<h2>Mobile number</h2><p>Use your mobile number or email with your password to sign in. Contact verification is not enabled yet.</p>
+<div class="login-field"><label for="reg-phone">Mobile number (+91)</label><input id="reg-phone" type="tel" inputmode="numeric" maxlength="10" autocomplete="tel-national" required data-bind="textInput: phone, disable: busy"></div>
+<!-- /ko -->
+<!-- ko if: step() === 'details' -->
+<h2>Personal details</h2><p>Enter the name and email to save with your account.</p>
+<div class="login-field"><label for="reg-name">Full name</label><input id="reg-name" type="text" maxlength="120" autocomplete="name" required data-bind="textInput: name, disable: busy"></div>
+<div class="login-field"><label for="reg-email">Email (alternative login)</label><input id="reg-email" type="email" maxlength="254" autocomplete="email" required data-bind="textInput: email, disable: busy"></div>
+<!-- /ko -->
+
+<!-- ko if: step() === 'password' -->
+<h2>Secure your account</h2>
+<p>Log in with your mobile number and password, or use email and password.</p>
+<div class="login-field"><label for="reg-password">Create password</label><input id="reg-password" type="password" autocomplete="new-password" required data-bind="textInput: password, disable: busy, attr: {type: showPassword() ? 'text' : 'password'}"></div>
+<div class="login-field"><label for="reg-confirmPassword">Confirm password</label><input id="reg-confirmPassword" type="password" autocomplete="new-password" required data-bind="textInput: confirmPassword, disable: busy, attr: {type: showPassword() ? 'text' : 'password'}"></div>
+<button class="onboarding-secondary" type="button" data-bind="click: function(){showPassword(!showPassword())}, text: showPassword() ? 'Hide passwords' : 'Show passwords', disable: busy, attr: {'aria-pressed': showPassword()}"></button>
+<p>Use 12–72 characters for your password. Keep your password private.</p>
+<!-- /ko -->
+<div id="onboarding-error" tabindex="-1" class="login-message" role="alert" data-bind="visible: error, text: error"></div>
+<p role="status" data-bind="visible: notice, text: notice"></p>
+<oj-button class="login-submit" chroming="callToAction" type="submit" data-bind="visible: step() !== 'success', disable: busy"><span class="spin" aria-hidden="true" data-bind="visible: busy"></span><span data-bind="text: busy() ? 'Creating account…' : step() === 'password' ? 'Create account' : 'Continue'"></span></oj-button>
+<button class="onboarding-secondary" type="button" data-bind="visible: step() !== 'mobile' && step() !== 'success', click: back, disable: busy">Back</button>
+</form>
+<!-- ko if: step() === 'success' -->
+<h2>SafePay account created</h2>
+<p>Your customer identity is ready. Banking accounts are provisioned separately; a new profile may have no account.</p><p>Customer ID: <strong data-bind="text:userId"></strong></p><button type="button" class="recipient-secondary" data-bind="click:copy">Copy Customer ID</button><p role="status" data-bind="text:notice"></p>
+<a class="login-submit" href="/login">Go to Login</a>
+<!-- /ko -->
+<p class="login-registration" data-bind="visible: step() !== 'success'">Already have an account? <a href="/login">Login</a></p>
+</div>
+<p class="login-simulation">Simulated Environment</p>
+<p class="login-footnote">SafePay is a simulated risk-adaptive pre-settlement transaction-control layer.</p>
+</section>

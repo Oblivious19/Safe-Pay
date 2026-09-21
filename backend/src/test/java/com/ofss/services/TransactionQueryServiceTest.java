@@ -166,6 +166,7 @@ class TransactionQueryServiceTest {
     @Test
     void retrievesOwnedTransactionDetailWithoutExposingPolicyIds() {
         TransactionDb transaction = customerSafeTransaction();
+        when(transactionDao.currentDatabaseTime()).thenReturn(ASSESSED_AT);
         when(transactionDao.findOwnedById(
                 TRANSACTION_ID,
                 CUSTOMER_ID))
@@ -176,6 +177,10 @@ class TransactionQueryServiceTest {
                 TRANSACTION_ID);
 
         assertThat(response.transactionId()).isEqualTo("1001");
+        assertThat(response.serverTime()).isEqualTo(ASSESSED_AT);
+        assertThat(response.canCancel()).isTrue();
+        assertThat(response.protectionRemainingMillis()).isNull();
+        verify(transactionDao).currentDatabaseTime();
         assertThat(response.maskedSourceAccountNumber())
                 .isEqualTo("************3456");
         assertThat(TransactionResponse.class.getRecordComponents())
@@ -200,6 +205,25 @@ class TransactionQueryServiceTest {
                 .isInstanceOf(ResourceNotFoundExcp.class)
                 .extracting("errorCode")
                 .isEqualTo("TRANSACTION_NOT_FOUND");
+        verify(transactionDao, org.mockito.Mockito.never()).currentDatabaseTime();
+    }
+
+    @Test
+    void countdownUsesDatabaseTimeRatherThanApplicationClockWithoutMutatingPayment() {
+        TransactionDb transaction = customerSafeTransaction();
+        when(transaction.getState()).thenReturn(TransactionState.PROTECTED);
+        when(transaction.getProtectedUntil()).thenReturn(ASSESSED_AT.plusSeconds(10));
+        when(transactionDao.findOwnedById(TRANSACTION_ID, CUSTOMER_ID))
+                .thenReturn(Optional.of(transaction));
+        when(transactionDao.currentDatabaseTime()).thenReturn(ASSESSED_AT.plusSeconds(7));
+
+        TransactionResponse response = service.getTransaction(CUSTOMER_ID, TRANSACTION_ID);
+
+        assertThat(response.protectionRemainingMillis()).isEqualTo(3000L);
+        assertThat(response.canCancel()).isTrue();
+        assertThat(response.serverTime()).isEqualTo(ASSESSED_AT.plusSeconds(7));
+        verify(transactionDao).currentDatabaseTime();
+        verifyNoInteractions(accountDao, stateService, evidenceService, entityManager);
     }
 
     @Test

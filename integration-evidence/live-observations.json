@@ -1,0 +1,132 @@
+{
+  "2468": {
+    "role": "CUSTOMER",
+    "accounts": [
+      {
+        "accountId": "1626",
+        "status": "ACTIVE",
+        "accountType": "SAVINGS",
+        "currency": "INR",
+        "currentBalance": "350000.00",
+        "reservedAmount": "180000.00",
+        "availableBalance": "170000.00"
+      }
+    ],
+    "beneficiaries": [
+      {
+        "beneficiaryId": "1158",
+        "status": "ACTIVE",
+        "paymentMethod": "BANK_ACCOUNT",
+        "maskedDestinationIdentifier": "*******8901"
+      }
+    ],
+    "sampleTransactionId": "1553"
+  },
+  "2470": {
+    "role": "CUSTOMER",
+    "accounts": [
+      {
+        "accountId": "1628",
+        "status": "ACTIVE",
+        "accountType": "SAVINGS",
+        "currency": "INR",
+        "currentBalance": "200000.00",
+        "reservedAmount": "0.00",
+        "availableBalance": "200000.00"
+      }
+    ],
+    "beneficiaries": [
+      {
+        "beneficiaryId": "1160",
+        "status": "ACTIVE",
+        "paymentMethod": "BANK_ACCOUNT",
+        "maskedDestinationIdentifier": "***********6789"
+      }
+    ],
+    "sampleTransactionId": "1053"
+  },
+  "2498": {
+    "role": "RISK_OFFICER"
+  },
+  "2499": {
+    "role": "SYSTEM_ADMIN"
+  },
+  "2500": {
+    "role": "AUDITOR"
+  },
+  "policy": {
+    "policy": {
+      "riskPolicyId": "1",
+      "policyVersion": "AMOUNT_ONLY_V1",
+      "policyName": "SafePay V1 Amount-Only Policy",
+      "status": "ACTIVE",
+      "algorithmType": "AMOUNT_ONLY",
+      "currencyCode": "INR",
+      "effectiveFrom": "2026-09-13T01:54:28.006568+05:30",
+      "effectiveTo": null,
+      "createdAt": "2026-09-13T01:54:28.006568+05:30"
+    },
+    "bands": [
+      {
+        "riskPolicyBandId": "1",
+        "bandCode": "AMOUNT_LOW_V1",
+        "displayOrder": "1",
+        "minimumAmount": "1",
+        "maximumAmount": "5000",
+        "riskTier": "LOW",
+        "protectionCode": "IMMEDIATE_RELEASE_V1",
+        "releaseMode": "IMMEDIATE",
+        "protectionSeconds": "0",
+        "customerCanCancel": false,
+        "autoRelease": true,
+        "otpRequired": false,
+        "riskReviewRequired": false
+      },
+      {
+        "riskPolicyBandId": "2",
+        "bandCode": "AMOUNT_MEDIUM_V1",
+        "displayOrder": "2",
+        "minimumAmount": "5000.01",
+        "maximumAmount": "25000",
+        "riskTier": "MEDIUM",
+        "protectionCode": "MEDIUM_TIMER_10S_V1",
+        "releaseMode": "AFTER_TIMER",
+        "protectionSeconds": "10",
+        "customerCanCancel": true,
+        "autoRelease": true,
+        "otpRequired": false,
+        "riskReviewRequired": false
+      },
+      {
+        "riskPolicyBandId": "3",
+        "bandCode": "AMOUNT_HIGH_V1",
+        "displayOrder": "3",
+        "minimumAmount": "25000.01",
+        "maximumAmount": "100000",
+        "riskTier": "HIGH",
+        "protectionCode": "HIGH_TIMER_60S_V1",
+        "releaseMode": "AFTER_TIMER",
+        "protectionSeconds": "60",
+        "customerCanCancel": true,
+        "autoRelease": true,
+        "otpRequired": false,
+        "riskReviewRequired": false
+      },
+      {
+        "riskPolicyBandId": "4",
+        "bandCode": "AMOUNT_VERY_HIGH_V1",
+        "displayOrder": "4",
+        "minimumAmount": "100000.01",
+        "maximumAmount": null,
+        "riskTier": "VERY_HIGH",
+        "protectionCode": "VERY_HIGH_REVIEW_V1",
+        "releaseMode": "AFTER_REVIEW",
+        "protectionSeconds": null,
+        "customerCanCancel": true,
+        "autoRelease": false,
+        "otpRequired": true,
+        "riskReviewRequired": true
+      }
+    ]
+  }
+}

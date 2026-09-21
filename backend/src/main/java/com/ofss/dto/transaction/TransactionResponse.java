@@ -2,8 +2,10 @@ package com.ofss.dto.transaction;
 
 import java.math.BigDecimal;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.ofss.beans.PaymentCategory;
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 
@@ -43,7 +45,47 @@ public record TransactionResponse(
         OffsetDateTime cancelledAt,
         OffsetDateTime failedAt,
         OffsetDateTime updatedAt,
-        @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) PaymentCategory category) {
+        @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) PaymentCategory category,
+        @JsonInclude(JsonInclude.Include.NON_NULL) OffsetDateTime serverTime,
+        @JsonInclude(JsonInclude.Include.NON_NULL) Long protectionRemainingMillis,
+        @JsonInclude(JsonInclude.Include.NON_NULL) Boolean canCancel) {
+
+    // Mutation and cached-response callers retain their original constructor/wire shape.
+    public TransactionResponse(
+        String transactionId, String transactionReference, String sourceAccountId,
+        String maskedSourceAccountNumber, String beneficiaryId, String beneficiaryName,
+        String maskedDestinationIdentifier, BigDecimal amount, CurrencyCode currencyCode,
+        String purpose, String customerReference, TransactionState state, String terminalReasonCode,
+        BigDecimal reservedAmount, RiskTier riskTier, String policyVersion, Long protectionSeconds,
+        String riskExplanation, OffsetDateTime createdAt, OffsetDateTime authorizedAt,
+        OffsetDateTime riskAssessedAt, OffsetDateTime protectedUntil,
+        OffsetDateTime verificationCompletedAt, OffsetDateTime releasedAt, OffsetDateTime settledAt,
+        OffsetDateTime cancelledAt, OffsetDateTime failedAt, OffsetDateTime updatedAt,
+        PaymentCategory category) {
+        this(transactionId, transactionReference, sourceAccountId, maskedSourceAccountNumber,
+                beneficiaryId, beneficiaryName, maskedDestinationIdentifier, amount, currencyCode,
+                purpose, customerReference, state, terminalReasonCode, reservedAmount, riskTier,
+                policyVersion, protectionSeconds, riskExplanation, createdAt, authorizedAt,
+                riskAssessedAt, protectedUntil, verificationCompletedAt, releasedAt, settledAt,
+                cancelledAt, failedAt, updatedAt, category, null, null, null);
+    }
+
+    /** Read-time hints only; a subsequent cancellation still rechecks state and database time. */
+    public TransactionResponse withObservation(OffsetDateTime observedAt) {
+        Objects.requireNonNull(observedAt, "serverTime is required");
+        Objects.requireNonNull(state, "transaction state is required");
+        boolean protectedState = state == TransactionState.PROTECTED;
+        Long remaining = protectedState && protectedUntil != null
+                ? Math.max(0L, Duration.between(observedAt, protectedUntil).toMillis()) : null;
+        boolean cancellable = state.allowsCustomerCancellation()
+                && (!protectedState || (protectedUntil != null && observedAt.isBefore(protectedUntil)));
+        return new TransactionResponse(transactionId, transactionReference, sourceAccountId,
+                maskedSourceAccountNumber, beneficiaryId, beneficiaryName, maskedDestinationIdentifier,
+                amount, currencyCode, purpose, customerReference, state, terminalReasonCode,
+                reservedAmount, riskTier, policyVersion, protectionSeconds, riskExplanation, createdAt,
+                authorizedAt, riskAssessedAt, protectedUntil, verificationCompletedAt, releasedAt,
+                settledAt, cancelledAt, failedAt, updatedAt, category, observedAt, remaining, cancellable);
+    }
 
     // Retain Java/cached-response compatibility; historical category may be null.
     public TransactionResponse(

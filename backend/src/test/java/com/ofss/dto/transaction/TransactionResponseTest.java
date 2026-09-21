@@ -27,6 +27,57 @@ class TransactionResponseTest {
             OffsetDateTime.parse("2026-09-15T11:16:00Z");
 
     @Test
+    void protectedCountdownClampsAtExpiryAndFailsClosedWithoutDeadline() {
+        TransactionDb payment = transaction(BeneficiaryPaymentMethod.BANK_ACCOUNT);
+        when(payment.getState()).thenReturn(TransactionState.PROTECTED);
+        when(payment.getProtectedUntil()).thenReturn(ASSESSED_AT.plusSeconds(10));
+        var response = TransactionResponse.from(payment);
+        assertThat(response.withObservation(ASSESSED_AT).protectionRemainingMillis()).isEqualTo(10000L);
+        assertThat(response.withObservation(ASSESSED_AT).canCancel()).isTrue();
+        assertThat(response.withObservation(ASSESSED_AT.plusSeconds(10)).protectionRemainingMillis()).isZero();
+        assertThat(response.withObservation(ASSESSED_AT.plusSeconds(10)).canCancel()).isFalse();
+        assertThat(response.withObservation(ASSESSED_AT.plusSeconds(11)).protectionRemainingMillis()).isZero();
+        assertThat(response.withObservation(ASSESSED_AT.plusSeconds(11)).canCancel()).isFalse();
+        when(payment.getProtectedUntil()).thenReturn(null);
+        var incomplete = TransactionResponse.from(payment).withObservation(ASSESSED_AT);
+        assertThat(incomplete.protectionRemainingMillis()).isNull();
+        assertThat(incomplete.canCancel()).isFalse();
+    }
+
+    @Test
+    void untimedStatesReuseCanonicalCancellationRulesWithoutInventingCountdown() {
+        TransactionDb payment = transaction(BeneficiaryPaymentMethod.BANK_ACCOUNT);
+        for (TransactionState state : TransactionState.values()) {
+            if (state == TransactionState.PROTECTED) continue;
+            when(payment.getState()).thenReturn(state);
+            var response = TransactionResponse.from(payment).withObservation(ASSESSED_AT);
+            assertThat(response.protectionRemainingMillis()).isNull();
+            assertThat(response.canCancel()).isEqualTo(state.allowsCustomerCancellation());
+        }
+    }
+
+    @Test
+    void getHintsSerializeWhileMutationAndOldCachedResponsesRetainOriginalShape() throws Exception {
+        var mapper = org.springframework.http.converter.json.Jackson2ObjectMapperBuilder.json().build();
+        var mutation = TransactionResponse.from(transaction(BeneficiaryPaymentMethod.BANK_ACCOUNT));
+        var cachedJson = mapper.valueToTree(mutation);
+        for (String field : new String[]{"serverTime", "protectionRemainingMillis", "canCancel"}) {
+            assertThat(cachedJson.has(field)).isFalse();
+        }
+        var replay = mapper.treeToValue(cachedJson, TransactionResponse.class);
+        // JSON round-trips may normalize decimal scale (0.00 to 0) without changing value.
+        assertThat(replay).usingRecursiveComparison()
+                .withComparatorForType(BigDecimal::compareTo, BigDecimal.class)
+                .isEqualTo(mutation);
+        com.fasterxml.jackson.databind.JsonNode replayJson = mapper.valueToTree(replay);
+        assertThat(replayJson).isEqualTo(cachedJson);
+        var detail = mapper.valueToTree(mutation.withObservation(ASSESSED_AT));
+        assertThat(detail.hasNonNull("serverTime")).isTrue();
+        assertThat(detail.get("canCancel").asBoolean()).isTrue();
+        assertThat(detail.has("protectionRemainingMillis")).isFalse();
+    }
+
+    @Test
     void categoryJsonIsConditionalAndOldCachedJsonStillDeserializes() throws Exception {
         var mapper = org.springframework.http.converter.json.Jackson2ObjectMapperBuilder.json().build();
         TransactionDb payment = transaction(BeneficiaryPaymentMethod.BANK_ACCOUNT);

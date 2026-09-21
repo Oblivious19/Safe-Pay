@@ -1,0 +1,145 @@
+<div class="public-home">
+  <header class="home-header">
+    <a class="home-brand" href="/home" aria-label="SafePay home"><span aria-hidden="true">S</span> SafePay.</a>
+    <nav aria-label="Public navigation"><a href="#how-it-works">How it works</a><a class="home-login" href="/login">Login</a></nav>
+  </header>
+  <section class="home-hero" aria-labelledby="home-title" data-bind="css: { 'is-entered': entered }">
+    <div class="home-intro" data-bind="style: { transform: introShift, opacity: introFade }">
+      <p class="home-eyebrow home-rise">LIVE PROTECTION WINDOW</p>
+      <h1 id="home-title" class="home-rise">Your money.<br>Your moment<br><em>to think.</em></h1>
+      <p class="home-description home-rise">SafePay can hold a payment for a few seconds before it settles. Watch the window run. Cancel it if you change your mind.</p>
+      <div class="home-actions home-rise"><a class="home-primary" href="/register">Create your account</a><a href="/login">Already with us? Login</a></div>
+      <p class="home-disclosure home-rise">Simulated Environment · No real money is moved.</p>
+      <p class="home-unavailable" role="status" data-bind="visible: unavailable">We couldn’t check your session. Please try signing in again shortly.</p>
+    </div>
+    <aside class="home-stage home-rise-stage" aria-label="Live demo of a cancellable protection window" data-bind="style: { transform: stageShift }">
+      <p class="home-stage-live"><span class="home-pulse" aria-hidden="true"></span> Live demo</p>
+      <p class="home-stage-payee">₹24,500 to Anika Sharma</p>
+      <h2 class="home-stage-title" data-bind="text: mode() === 'cancelled' ? 'Payment cancelled' : mode() === 'settling' ? 'Window ended' : 'Protected — you can still cancel'"></h2>
+      <div class="flux-gauge home-flux" aria-live="polite">
+        <svg viewBox="0 0 200 120">
+          <defs>
+            <linearGradient id="homeFlux" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#0e554f"/>
+              <stop offset="55%" stop-color="#19a38a"/>
+              <stop offset="100%" stop-color="#cfe8e1"/>
+            </linearGradient>
+          </defs>
+          <path class="flux-track-arc" d="M18 105 A 82 82 0 0 1 182 105"/>
+          <path class="flux-value-arc home-flux-value" d="M18 105 A 82 82 0 0 1 182 105" pathLength="257.6" stroke-dasharray="257.6" data-bind="attr: {'stroke-dashoffset': arcOffset}"/>
+        </svg>
+        <p class="protect-clock" data-bind="text: clock"></p>
+        <span class="flux-min">start</span><span class="flux-max">settle</span>
+      </div>
+      <oj-progress-circle class="send-off-screen" size="sm" data-bind="attr: {value: progress}"></oj-progress-circle>
+      <p class="flux-phase" data-bind="foreach: letters"><span class="flux-char" data-bind="text: char, style: { 'animation-delay': delay }"></span></p>
+      <div class="flux-bar" data-bind="style: {'--flux': fluxPercent}"><i></i></div>
+      <p class="home-stage-copy" data-bind="text: copy"></p>
+      <oj-button class="home-stage-cancel" chroming="callToAction" data-bind="click: cancelDemo, disable: mode() !== 'live'">Cancel this payment</oj-button>
+      <small>Interactive demo · no account required · no real money</small>
+    </aside>
+  </section>
+  <section class="home-how" id="how-it-works" aria-labelledby="home-how-title">
+    <p class="home-eyebrow">HOW A PAYMENT MOVES</p>
+    <div class="home-how-head">
+      <h2 id="home-how-title">From confirm to settled — or cancelled.</h2>
+      <oj-button class="home-play" chroming="outlined" data-bind="click: playFlow, disable: playing">
+        <span data-bind="text: playing() ? 'Playing the flow…' : 'Play the flow'"></span>
+      </oj-button>
+    </div>
+    <div class="home-road">
+      <ol class="home-stations" aria-label="SafePay payment roadmap">
+        <!-- ko foreach: steps -->
+        <li data-bind="attr: { id: 'road-' + id, 'data-step': id }, css: { 'is-active': $parent.activeStep() === id, 'is-complete': $parent.isComplete(id) }">
+          <button type="button" data-bind="click: function(){ $parent.selectStep(id) }, attr: { 'aria-current': $parent.activeStep() === id ? 'step' : null }">
+            <span class="home-station-index" data-bind="text: $index() + 1"></span>
+            <span class="home-station-copy"><span data-bind="text: kicker"></span><strong data-bind="text: title"></strong></span>
+            <span class="home-scene" aria-hidden="true">
+              <!-- ko if: id === 'confirm' -->
+              <svg viewBox="0 0 72 48" fill="none"><rect x="4" y="8" width="26" height="32" rx="5" stroke="currentColor" stroke-width="1.8"/><circle cx="17" cy="20" r="5" stroke="currentColor" stroke-width="1.6"/><path d="M9 33c2.2-4 13.8-4 16 0" stroke="currentColor" stroke-width="1.6"/><path d="M34 24h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M44 19l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><rect x="50" y="16" width="18" height="16" rx="3" stroke="currentColor" stroke-width="1.8"/><path d="M54 24h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+              <!-- /ko -->
+              <!-- ko if: id === 'check' -->
+              <svg viewBox="0 0 72 48" fill="none"><rect x="8" y="8" width="28" height="32" rx="4" stroke="currentColor" stroke-width="1.8"/><path d="M14 16h16M14 22h12M14 28h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="50" cy="22" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M56 29l8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+              <!-- /ko -->
+              <!-- ko if: id === 'decide' -->
+              <svg viewBox="0 0 72 48" fill="none"><path d="M12 24h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M28 24c8 0 10-12 24-12h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M28 24h32" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M28 24c8 0 10 12 24 12h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="24" r="3.5" fill="currentColor"/><circle cx="64" cy="12" r="2.5" fill="currentColor"/><circle cx="64" cy="24" r="2.5" fill="currentColor"/><circle cx="64" cy="36" r="2.5" fill="currentColor"/></svg>
+              <!-- /ko -->
+              <!-- ko if: id === 'protect' -->
+              <svg viewBox="0 0 72 48" fill="none"><circle cx="36" cy="24" r="14" stroke="currentColor" stroke-width="1.8"/><path d="M36 14v10l7 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 24h8M54 24h8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+              <!-- /ko -->
+              <!-- ko if: id === 'done' -->
+              <svg viewBox="0 0 72 48" fill="none"><circle cx="24" cy="24" r="12" stroke="currentColor" stroke-width="1.8"/><path d="M18 24l4 4 8-9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="52" cy="24" r="12" stroke="currentColor" stroke-width="1.8"/><path d="M47 19l10 10M57 19L47 29" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+              <!-- /ko -->
+            </span>
+          </button>
+        </li>
+        <!-- /ko -->
+      </ol>
+      <div class="home-story" aria-live="polite">
+        <div class="home-story-rail" aria-hidden="true"><i data-bind="style: { height: roadFill }"></i></div>
+        <div class="home-story-scene" aria-hidden="true">
+          <svg data-bind="visible: activeStep() === 'confirm'" viewBox="0 0 220 88" fill="none">
+            <rect x="18" y="16" width="52" height="56" rx="10" stroke="currentColor" stroke-width="2"/>
+            <circle cx="44" cy="38" r="9" stroke="currentColor" stroke-width="1.8"/>
+            <path d="M30 60c4-8 24-8 28 0" stroke="currentColor" stroke-width="1.8"/>
+            <path d="M82 44h40" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <path d="M112 36l10 8-10 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <rect x="136" y="24" width="66" height="40" rx="8" stroke="currentColor" stroke-width="2"/>
+            <path d="M150 44h38" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+            <circle cx="169" cy="44" r="8" stroke="currentColor" stroke-width="1.8"/>
+          </svg>
+          <svg data-bind="visible: activeStep() === 'check'" viewBox="0 0 220 88" fill="none">
+            <rect x="28" y="14" width="70" height="60" rx="8" stroke="currentColor" stroke-width="2"/>
+            <path d="M42 30h42M42 42h32M42 54h24" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="148" cy="40" r="18" stroke="currentColor" stroke-width="2.2"/>
+            <path d="M161 54l18 16" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+          </svg>
+          <svg data-bind="visible: activeStep() === 'decide'" viewBox="0 0 220 88" fill="none">
+            <path d="M20 44h48" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+            <path d="M68 44c18 0 24-22 58-22h54" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+            <path d="M68 44h112" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+            <path d="M68 44c18 0 24 22 58 22h54" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+            <circle cx="20" cy="44" r="5" fill="currentColor"/>
+            <circle cx="188" cy="22" r="4" fill="currentColor"/>
+            <circle cx="188" cy="44" r="4" fill="currentColor"/>
+            <circle cx="188" cy="66" r="4" fill="currentColor"/>
+          </svg>
+          <svg data-bind="visible: activeStep() === 'protect'" viewBox="0 0 220 88" fill="none">
+            <circle cx="110" cy="44" r="28" stroke="currentColor" stroke-width="2.2"/>
+            <path d="M110 24v20l14 8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M28 44h24M168 44h24" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <rect x="86" y="72" width="48" height="6" rx="3" fill="currentColor" opacity=".25"/>
+            <rect x="86" y="72" width="22" height="6" rx="3" fill="currentColor"/>
+          </svg>
+          <svg data-bind="visible: activeStep() === 'done'" viewBox="0 0 220 88" fill="none">
+            <circle cx="72" cy="44" r="24" stroke="currentColor" stroke-width="2.2"/>
+            <path d="M60 44l8 8 16-18" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="148" cy="44" r="24" stroke="currentColor" stroke-width="2.2"/>
+            <path d="M138 34l20 20M158 34l-20 20" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <p class="home-story-kicker" data-bind="text: storyKicker"></p>
+        <h3 data-bind="text: storyTitle"></h3>
+        <p class="home-story-body" data-bind="text: storyBody"></p>
+        <div class="home-paths" role="radiogroup" aria-label="How this payment could end">
+          <button type="button" role="radio" data-bind="click: function(){ selectPath('instant') }, css: { 'is-on': path() === 'instant' }, attr: { 'aria-checked': path() === 'instant' }">
+            <strong>Settles now</strong>
+            <span>Routine payments skip the pause</span>
+          </button>
+          <button type="button" role="radio" data-bind="click: function(){ selectPath('pause') }, css: { 'is-on': path() === 'pause' }, attr: { 'aria-checked': path() === 'pause' }">
+            <strong>Short pause</strong>
+            <span>A cancellable protection window</span>
+          </button>
+          <button type="button" role="radio" data-bind="click: function(){ selectPath('hold') }, css: { 'is-on': path() === 'hold' }, attr: { 'aria-checked': path() === 'hold' }">
+            <strong>Extra review</strong>
+            <span>Held. No automatic release</span>
+          </button>
+        </div>
+        <p class="home-story-hint" data-bind="visible: path() === 'pause'">Tap a station, or play the flow. The live demo above is this pause in motion.</p>
+        <p class="home-story-hint" data-bind="visible: path() === 'instant'">No window opens. Confirm, check, then settled.</p>
+        <p class="home-story-hint" data-bind="visible: path() === 'hold'">The payment waits. It does not settle on a timer.</p>
+      </div>
+    </div>
+    <p class="home-positioning">SafePay is a simulated risk-adaptive pre-settlement transaction-control layer.</p>
+  </section>
+</div>

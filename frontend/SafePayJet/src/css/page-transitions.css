@@ -1,0 +1,138 @@
+/*
+ * Route entrance motion
+ *
+ * New Oracle JET route modules receive these animations when they enter the
+ * DOM. They complement the real loading overlay without adding a delay or
+ * changing any interaction state.
+ */
+
+:root {
+  --safepay-page-ease: cubic-bezier(.16, 1, .3, 1);
+}
+
+:where(
+  .public-home,
+  .login-page,
+  .customer-dashboard,
+  .recipients-page,
+  .send-flow,
+  .tx-page,
+  .profile-page,
+  .admin-page,
+  .safepay-placeholder
+) {
+  transform-origin: 50% 16%;
+  animation: safepay-page-arrive 340ms var(--safepay-page-ease) both;
+}
+
+/* Stagger the largest dashboard surfaces without replacing their own local
+   interaction animations. */
+:where(
+  .customer-dashboard .dashboard-intro,
+  .recipients-page .recipients-heading,
+  .send-flow .send-flow-header,
+  .tx-page .tx-heading,
+  .profile-page > :first-child,
+  .admin-page .admin-heading,
+  .admin-page .admin-topbar
+) {
+  animation: safepay-content-arrive 280ms 35ms var(--safepay-page-ease) both;
+}
+
+:where(
+  .customer-dashboard .dashboard-top-grid,
+  .customer-dashboard .dashboard-actions,
+  .recipients-page .recipient-grid,
+  .recipients-page .recipient-form-card,
+  .send-flow .send-summary,
+  .send-flow .send-recipient-list,
+  .send-flow .send-review-details,
+  .tx-page .tx-list,
+  .tx-page .dashboard-empty,
+  .profile-page .profile-card,
+  .profile-page .profile-account,
+  .admin-page .admin-metrics,
+  .admin-page .admin-panel,
+  .admin-page .admin-charts
+) {
+  animation: safepay-content-arrive 300ms 65ms var(--safepay-page-ease) both;
+}
+
+:where(
+  .customer-dashboard .dashboard-recent,
+  .recipients-page .recipient-list,
+  .send-flow form,
+  .tx-page .tx-drawer,
+  .profile-page .profile-links,
+  .admin-page .admin-table-scroll
+) {
+  animation: safepay-content-arrive 320ms 95ms var(--safepay-page-ease) both;
+}
+
+@keyframes safepay-page-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(.995);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes safepay-content-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :where(
+    .public-home,
+    .login-page,
+    .customer-dashboard,
+    .recipients-page,
+    .send-flow,
+    .tx-page,
+    .profile-page,
+    .admin-page,
+    .safepay-placeholder,
+    .customer-dashboard .dashboard-intro,
+    .customer-dashboard .dashboard-top-grid,
+    .customer-dashboard .dashboard-actions,
+    .customer-dashboard .dashboard-recent,
+    .recipients-page .recipients-heading,
+    .recipients-page .recipient-grid,
+    .recipients-page .recipient-form-card,
+    .recipients-page .recipient-list,
+    .send-flow .send-flow-header,
+    .send-flow .send-summary,
+    .send-flow .send-recipient-list,
+    .send-flow .send-review-details,
+    .send-flow form,
+    .tx-page .tx-heading,
+    .tx-page .tx-list,
+    .tx-page .dashboard-empty,
+    .tx-page .tx-drawer,
+    .profile-page > :first-child,
+    .profile-page .profile-card,
+    .profile-page .profile-account,
+    .profile-page .profile-links,
+    .admin-page .admin-heading,
+    .admin-page .admin-topbar,
+    .admin-page .admin-metrics,
+    .admin-page .admin-panel,
+    .admin-page .admin-charts,
+    .admin-page .admin-table-scroll
+  ) {
+    animation: none !important;
+    filter: none !important;
+  }
+}

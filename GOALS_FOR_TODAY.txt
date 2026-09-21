@@ -6,3 +6,12 @@
 4- Integrate the already partially complete and working frontend part of the project - which was integrated with the team's version of backend of SafePay. This is possible only after my version and team's version codes of backend are compared and contrasted in depth with explanations, pros/cons, trade offs, simplicity vs complexity and time to understand both the versions. And come to a conclusion to how to merge the backend first before moving to the integration + forward development(of remaining pages/features) in the frontend.
 
 5- After everything (the entire backend+ frontend is ready, working, launched tested) divide the whole project amongst - Aditya, Ruchi, Shreya, Gaurav- so as to prepare for the presentation of project. Each person should be able to understand and should be able to answer - which part he worked on, what classes, functions used to do what, why the choices were taken and most importantly should able to present (after understanding) an entire flow - from any specific APIs( in his work divided part) , how it goes from frontend to middleware to backend to what functions and classes exactly i.e. should be able to map and explain the entire flow of any feature in his/her part.
+
+-----------------------------
+
+Add accounts simulation or method to add account(via user or admin in the database) for new registered customers needed. Otherwise wont be able to insert accounts for that customer. Find a way later on.
+
+----------------------
+
+Implementation of Swagger UI for complete API testing end to end
+Check if mapper and logger are used in your backends

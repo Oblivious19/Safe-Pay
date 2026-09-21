@@ -21,3 +21,8 @@ credentials/
 
 # Keep screenshots out of this branch
 Screenshots/
+
+#Keep User Credentials out of this branch 
+**/userCredentials.txt
+
+.tools

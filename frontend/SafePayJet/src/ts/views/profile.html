@@ -1,0 +1,33 @@
+<section class="profile-page" aria-labelledby="profile-title" data-bind="attr: {'aria-busy': loading}">
+  <p class="dash-overline">YOUR ACCOUNT</p>
+  <h1 id="profile-title">Profile</h1>
+<div class="integration-account"><label for="profile-account">Account</label><select id="profile-account" data-bind="options: accounts, optionsText: accountOption, optionsValue: 'accountId', value: selectedAccountId, optionsCaption: 'Select account', valueAllowUnset: true, event: {change: selectAccount}, disable: loading"></select></div>
+
+  <p class="send-subtitle">Signed-in details for this simulated session. SafePay does not move real money.</p>
+  <div class="dash-skeleton" data-bind="visible: loading" role="status" aria-label="Loading profile"><span class="sk sk-small"></span><span class="sk sk-money"></span><span class="sk sk-line"></span><span class="sk sk-line"></span></div>
+  <p class="recipient-error" role="alert" data-bind="visible: error, text: error"></p>
+  <button type="button" class="dashboard-secondary" data-bind="visible: error, click: load">Try again</button>
+  <!-- ko if: !loading() && !error() -->
+  <article class="profile-card">
+    <div class="profile-avatar-ring" aria-hidden="true"><span data-bind="text: initials"></span></div>
+    <h2 data-bind="text: name"></h2><p>Customer ID: <strong data-bind="text: identity() ? identity().userId : ''"></strong></p>
+    <p data-bind="text: email"></p>
+    <p class="profile-phone" data-bind="visible: phone, text: phone"></p>
+    <span class="simulation-label" data-bind="visible: simulated">Simulated Environment</span>
+  </article>
+  <!-- ko if: account -->
+  <article class="profile-account">
+    <p class="dash-overline">LINKED ACCOUNT</p>
+    <strong data-bind="text: accountLabel(account().accountType)"></strong>
+    <p data-bind="text: mask(account().maskedAccountNumber)"></p><p data-bind="text:account().bankName + ' · ' + account().ifscCode"></p>
+    <p>Account balance <b data-bind="text: money(balance() ? balance().currentBalance : null)"></b></p>
+    <p>Reserved <b data-bind="text:money(balance() ? balance().reservedAmount : null)"></b> · Available <b data-bind="text:money(balance() ? balance().availableBalance : null)"></b></p><small data-bind="text: account().status === 'ACTIVE' ? 'Active · INR' : account().status"></small>
+  </article>
+  <!-- /ko -->
+  <div class="profile-links">
+    <a href="/send-money">Send money</a>
+    <a href="/transactions">Transactions</a>
+    <a href="/beneficiaries">Beneficiaries</a>
+  </div>
+  <!-- /ko -->
+</section>

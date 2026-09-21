@@ -1,0 +1,40 @@
+{
+  "name": "safepay-frontend",
+  "version": "0.0.0",
+  "private": true,
+  "description": "SafePay integrated customer and staff frontend",
+  "engines": {
+    "node": ">=22 <25"
+  },
+  "dependencies": {
+    "@fontsource/manrope": "5.3.0",
+    "@oracle/oraclejet": "21.0.0",
+    "@oracle/oraclejet-core-pack": "21.0.0",
+    "@stomp/stompjs": "7.3.0",
+    "lossless-json": "4.3.1"
+  },
+  "devDependencies": {
+    "@oracle/ojet-cli": "21.0.1",
+    "@oracle/oraclejet-tooling": "21.0.1",
+    "fs-extra": "8.1.0",
+    "glob": "10.4.5",
+    "jsdom": "26.1.0",
+    "typescript": "5.8.3",
+    "underscore": "1.13.7",
+    "yargs-parser": "13.1.2"
+  },
+  "overrides": {
+    "@types/minimatch": "5.1.2"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "ojet build",
+    "serve": "ojet serve --server-port=8000 --server-only --livereload=false --watch-files=false",
+    "test:recovery": "tsc src/ts/services/pendingPayment.ts --target ES2022 --module commonjs --lib ES2022,DOM --strict --skipLibCheck --noEmitOnError --outDir .test-build && node --test tests/pendingPayment.test.cjs",
+    "test:setup": "node --test tests/setup.test.cjs",
+    "test:contracts": "tsc src/ts/services/wireCodec.ts src/ts/services/apiClient.ts src/ts/services/accountService.ts src/ts/services/beneficiaryService.ts src/ts/utils/paymentState.ts --target ES2022 --module commonjs --moduleResolution node --lib ES2022,DOM --strict --skipLibCheck --noEmitOnError --outDir .test-build/contracts && node --test tests/contracts.test.cjs",
+    "test": "npm run test:recovery && npm run test:setup && npm run test:contracts && npm run test:ui && npm run test:evidence",
+    "test:ui": "node --test tests/integrated-ui.test.cjs",
+    "test:evidence": "node --test tests/snapshot-comparison.test.cjs"
+  }
+}

@@ -470,8 +470,9 @@ public class TransactionServiceImpl
         requirePositiveId(customerUserId, "customerUserId");
         requirePositiveId(transactionId, "transactionId");
 
-        return TransactionResponse.from(
-                getOwned(customerUserId, transactionId));
+        TransactionDb transaction = getOwned(customerUserId, transactionId);
+        return TransactionResponse.from(transaction)
+                .withObservation(currentDatabaseTime());
     }
 
     @Override

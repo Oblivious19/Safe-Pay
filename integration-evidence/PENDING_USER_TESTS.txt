@@ -1,0 +1,31 @@
+SAFEPAY-NEW — PENDING USER ACCEPTANCE
+21 September 2026
+
+These checks were deliberately left pending. They have NOT passed live testing.
+Both protection and settlement schedulers remain disabled. No OTP was sent.
+
+[ ] Real email OTP: delivery, issue/resend cooldown, expiry/limits, one controlled wrong code, correct verification, reload/recovery.
+[ ] OTP -> PENDING_RISK_REVIEW: verify the new review ID/round, customer state and officer queue update.
+[ ] New disposable review: approve, reject, request verification and append note; check reason/note distinction, stale decisions, reservation effects and subsequent rounds. Leave existing seeded review 98 untouched.
+[ ] Protection expiry: use an approved new protected payment and approved scheduler settings; verify server-owned deadline behavior.
+[ ] Settlement: test payment 1558 / SP-F4765F0E10C54E2AAFD4E812D1263256 / SP-UI-20260921-LOW is currently RELEASED with 1.00 INR reserved on account 1626. Verify eventual SETTLED, exact funds and balanced ledger posting.
+[ ] Before enabling either scheduler, assess the existing backlog. Original protected/review reservations already totalled 180000.00 on account 1626. A scheduler run can advance records unrelated to this integration.
+[ ] Successful registration using an approved disposable identity. Confirm returned customer ID and that registration does not provision a bank account.
+[ ] Admin status/role/session revocation using an agreed target and restore plan, including permission/last-admin safeguards. Do not lock out required users.
+[ ] Controlled multi-tab and actual session-expiry run: verify refresh coordination, identity change/logout propagation and return to login. The underlying race/expiry controls passed offline tests; real browser login/refresh/logout passed.
+[ ] Controlled network drop/reconnect: verify original-key recovery after reload, no duplicate create/debit, and STOMP/REST refresh recovery. Original-key replay passed live API checks; injected uncertain-response recovery passed offline tests.
+[ ] After OTP/review or scheduler actions, confirm live notification/event refresh for those new events and capture a new before/after evidence pair.
+
+COMPLETED RUN NOTES
+- 54 offline tests and the final affected UI rerun passed; build passed.
+- 93/93 logged API outcomes passed; all four role browser workspaces checked.
+- No current account balance changed.
+- Account 1626 has +1.00 reserved for payment 1558; available is now 169999.00.
+- Account 1628 funds returned exactly to baseline.
+- Beneficiary 1751 SafePay Integration Demo ends DISABLED.
+- All test-created sessions revoked; browser left signed out.
+- Backend files, database objects, grants and schedulers unchanged.
+
+Read TEST_RESULTS.md, LIVE_API_TESTS.md, LIVE_BROWSER_TESTS.md,
+DATA_CHANGE_SUMMARY.md and DATA_CHANGES.md in this same folder.
+Do not rerun mutation scripts or reuse the immutable snapshots without a fresh test baseline.

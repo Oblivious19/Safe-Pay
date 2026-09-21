@@ -316,6 +316,19 @@ Use these for exact detail rather than expanding this context file:
 - Current production and test source under `backend/src/main/java` and `backend/src/test/java`
 - Sidebar tasks `SafePay - DB Design`, `Safepay - DB to Backend shift`, and `Safepay - Backend Design Part 2` as historical progress sources, never as higher authority than current files and verified state.
 
-## 11. Exact resume point
+## 11. Historical guide resume point (superseded by section 12)
 
 Read this checkpoint and `dbsetup_cum_backend_master_guide_contract.md`, with the latest user instructions overriding its historical 866-test and V1–V11 references. Current inventory: 277 production / 159 test Java files; full suite 1148 confirmed green. Backend and change-request Phases 0–8 are locked. The user approved incremental guide creation with brief test-class summaries and paired chapter/API-guide delivery. Increment 1 now contains the master foundation, all-production-source coverage index and complete Phase 2.1 chapter in `Documentation for SafePay/SafePay_Master_Backend_Understanding_Guide.md`, plus `Documentation for SafePay/API Test Guides/SafePay_Phase_2_1_API_Test_Guide.md`. Both are ready for user review; their manual API cases have not been executed by Codex. STOP before Phase 2.2 until the user approves the next increment. No backend code/configuration/migration/test changes or builds were made for this documentation increment. OpenAPI remains pending before frontend integration. Vector search is discarded, the new administrative health feature remains excluded, and broader goals await a later roadmap.
+
+## 12. Current continuation decisions — 20 September 2026
+
+These explicit user decisions supersede the historical guide resume point above:
+
+- Keep A (`SafePay`) as the common unchanged backend. The team repository `C:/Users/Aditya Rao/Downloads/Training/Project/SafePay-ruchi-frontend` remains read-only; no team users, accounts, payments or other data are to be imported into A.
+- Keep A's existing prepared-account onboarding model. No automatic registration account creation or funding is approved.
+- Master/backend/API guide development is paused while a working frontend prototype is prioritized. Detailed frontend file-by-file inspection is for a subsequent user-requested session; do not start it during the current planning task.
+- Customer profile editing is deferred until after frontend completion/integration. Future scope is non-password profile editing; contact verification and authentication/session consequences must be explicitly resolved before implementation. Password-change/reset remains deferred.
+- Daily reporting from B is selected for future adaptation, but implementation is deferred. At the post-frontend-completion/integration review, remind the user to revisit it. Adapt against A's schema and exact roles, rather than copying B's SQL. Reporting authority, creation-day versus settlement-day meaning, timezone and declined/rejected counting remain decisions to finalize then.
+- Countdown convenience is planning-only: propose minimal customer transaction-detail GET enrichment using database time; preserve existing write/idempotency responses, financial logic and schema. No countdown implementation is approved by this request.
+- No application code, configuration, migration or tests were changed or executed for these decisions. This context checkpoint is the only authorized project-file update in the planning turn.
+- Preserve existing exclusions: no direct administrative balance editing or account deletion; account disabling remains deferred; Oracle vector search stays discarded, not pending. Documentation/OpenAPI work remains outstanding; no contract-completion claim is made by pausing it.

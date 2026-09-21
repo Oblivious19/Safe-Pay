@@ -261,7 +261,7 @@ class TransactionControllerTest {
         when(transactionService.getTransaction(
                 CUSTOMER_ID,
                 TRANSACTION_ID))
-                .thenReturn(transactionResponse(TransactionState.CREATED));
+                .thenReturn(transactionResponse(TransactionState.PROTECTED).withObservation(NOW));
 
         mockMvc.perform(asCustomer(get(
                         "/api/v1/transactions/1001")))
@@ -269,7 +269,10 @@ class TransactionControllerTest {
                 .andExpect(jsonPath("$.transactionReference")
                         .value("SP-CONTROLLER-TEST"))
                 .andExpect(jsonPath("$.maskedSourceAccountNumber")
-                        .value("************3456"));
+                        .value("************3456"))
+                .andExpect(jsonPath("$.serverTime").exists())
+                .andExpect(jsonPath("$.protectionRemainingMillis").value(60000))
+                .andExpect(jsonPath("$.canCancel").value(true));
     }
 
     @Test

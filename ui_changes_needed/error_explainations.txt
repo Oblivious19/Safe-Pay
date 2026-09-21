@@ -1,0 +1,1 @@
+1.complete_error_posting - The whole error with ref no. and all should not be popped; When such error happens where a user registration failed - it should reroute back to login page with saying registration failed due with short reason message stored for it.

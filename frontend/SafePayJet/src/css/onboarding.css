@@ -1,0 +1,156 @@
+/* Registration-specific additions. The shared entry styling lives in login.css. */
+
+.onboarding-page {
+  width: min(100%, 610px);
+}
+
+.onboarding-page .login-brand {
+  margin-bottom: 25px;
+}
+
+.onboarding-page .login-card {
+  padding: clamp(28px, 5.5vw, 44px);
+}
+
+.onboarding-page .login-overline {
+  margin-bottom: 13px;
+}
+
+.onboarding-page .login-card h1 {
+  max-width: 13ch;
+  margin-bottom: 13px;
+}
+
+.onboarding-page p {
+  overflow-wrap: anywhere;
+}
+
+.onboarding-page form > h2,
+.onboarding-page .login-card > h2 {
+  margin: 0 0 8px;
+  color: var(--login-ink, #17352b);
+  font-family: Manrope, "Avenir Next", "Segoe UI Variable", "Segoe UI", sans-serif;
+  font-size: 24px;
+  font-weight: 760;
+  letter-spacing: -.05em;
+  line-height: 1.1;
+}
+
+.onboarding-page form > h2 + p,
+.onboarding-page .login-card > h2 + p {
+  margin: 0 0 21px;
+  color: var(--login-muted, #60746a);
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.onboarding-progress {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 25px 0 29px;
+  padding: 0;
+  list-style: none;
+}
+
+.onboarding-progress li {
+  position: relative;
+  min-width: 0;
+  padding: 9px 8px;
+  border: 1px solid #dfe8dd;
+  border-radius: 11px;
+  background: #f4f7f0;
+  color: #718076;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.25;
+  text-align: center;
+}
+
+.onboarding-progress [aria-current=step] {
+  border-color: var(--login-forest, #203d34);
+  background: var(--login-forest, #203d34);
+  color: var(--login-cream, #f6f2e9);
+  box-shadow: 0 7px 15px rgb(32 61 52 / 15%);
+}
+
+.onboarding-progress [aria-current=step]::after {
+  position: absolute;
+  right: 8px;
+  top: 7px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--login-lime, #b7d85a);
+  content: "";
+}
+
+.onboarding-page .login-field {
+  margin-bottom: 18px;
+}
+
+.onboarding-page .onboarding-secondary {
+  margin: 13px 0 0;
+}
+
+.onboarding-page .login-submit + .onboarding-secondary {
+  margin-top: 11px;
+}
+
+.onboarding-page .login-submit[href] {
+  display: flex;
+  box-sizing: border-box;
+  text-decoration: none;
+}
+
+.onboarding-page [role=status] {
+  margin: 0 0 15px;
+  padding: 11px 13px;
+  border: 1px solid #cde7c9;
+  border-radius: 12px;
+  background: #f2faee;
+  color: #357348;
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.5;
+}
+
+.onboarding-kyc {
+  margin-bottom: 20px;
+  padding: 14px;
+  border: 1px solid #d9e7d5;
+  border-radius: 14px;
+  background: #f4f8ef;
+  color: var(--login-muted, #60746a);
+}
+
+.onboarding-page input {
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.onboarding-page input[type=checkbox] {
+  width: 19px;
+  height: 19px;
+  margin: 12px 8px 12px 0;
+  accent-color: var(--login-forest, #203d34);
+  vertical-align: middle;
+}
+
+.onboarding-page .login-registration {
+  margin-top: 24px;
+}
+
+@media (max-width: 480px) {
+  .onboarding-page .login-card { padding: 27px 22px; }
+
+  .onboarding-progress {
+    gap: 6px;
+    margin: 22px 0 25px;
+  }
+
+  .onboarding-progress li {
+    padding: 8px 4px;
+    font-size: 10px;
+  }
+}

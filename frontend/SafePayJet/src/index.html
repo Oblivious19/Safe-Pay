@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en-IN">
+<head>
+  <meta charset="UTF-8">
+  <base href="/">
+  <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#244c40">
+  <title>SafePay — Your everyday payments</title>
+  <!-- injector:theme -->
+  <!-- endinjector -->
+  <!-- injector:font -->
+  <!-- endinjector:font -->
+  <script>
+    /* Give the landing and post-login dashboard handoff a visual from the
+       very first paint. appController clears this bootstrap-only flag on
+       every completed or failed router sync. */
+    (function () {
+      var path = window.location.pathname;
+      var show = path === "/" || path === "/home";
+      if (!show && path === "/dashboard") {
+        try { show = window.sessionStorage && window.sessionStorage.getItem("safepay-dashboard-entry-loader") === "1"; } catch (error) { show = false; }
+      }
+      if (show) document.documentElement.setAttribute("data-safepay-entry-loader", "true");
+    }());
+  </script>
+  <link rel="stylesheet" href="js/libs/manrope/400.css">
+  <link rel="stylesheet" href="js/libs/manrope/600.css">
+  <link rel="stylesheet" href="js/libs/manrope/700.css">
+  <link rel="stylesheet" href="css/app.css">
+  <link rel="stylesheet" href="css/customer-dashboard.css">
+  <link rel="stylesheet" href="css/login.css">
+  <link rel="stylesheet" href="css/onboarding.css">
+  <link rel="stylesheet" href="css/beneficiaries.css">
+  <link rel="stylesheet" href="css/send-money.css">
+  <link rel="stylesheet" href="css/protection.css">
+  <link rel="stylesheet" href="css/profile.css">
+  <link rel="stylesheet" href="css/responsive.css">
+  <link rel="stylesheet" href="css/admin-dashboard.css">
+  <link rel="stylesheet" href="css/home.css">
+  <link rel="stylesheet" href="css/integration.css">
+  <link rel="stylesheet" href="css/sportive-theme.css">
+  <link rel="stylesheet" href="css/loading-overlay.css">
+  <link rel="stylesheet" href="css/page-transitions.css">
+  <link rel="stylesheet" href="css/contract-integration.css">
+</head>
+<body class="oj-web-applayout-body customer-shell">
+  <div id="globalBody">
+    <div class="route-bar" role="progressbar" aria-label="Loading page" data-bind="css: {'is-on': routeBusy}, attr: {'aria-hidden': !routeBusy()}"><i></i></div>
+    <div class="safepay-route-loader" role="status" aria-label="Loading your SafePay page" data-bind="css: {'is-visible': entryLoaderBusy}, attr: {'aria-hidden': !entryLoaderBusy()}">
+      <div class="safepay-loader-content">
+        <div class="safepay-loader-scene" aria-hidden="true">
+          <span class="safepay-loader-orbit"></span>
+          <img class="safepay-loader-shield" src="css/images/safepay-hero-shield.png" alt="">
+        </div>
+        <p class="safepay-loader-brand" aria-hidden="true">SafePay</p>
+        <p class="safepay-loader-message" aria-hidden="true">Preparing your secure space<span class="safepay-loader-dots"><i></i><i></i><i></i></span></p>
+      </div>
+    </div>
+    <a class="skip-link" href="#main-content">Skip to content</a>
+    <div id="announce" class="send-off-screen" data-bind="attr: {'aria-live': manner}" aria-atomic="true"><p data-bind="text: message"></p></div>
+    <header class="customer-header" style="display:none" data-bind="visible: session() && selection.path() !== 'home' && selection.path() !== 'login' && selection.path() !== 'register'">
+      <div class="customer-header-inner">
+        <a class="customer-brand" href="/home" aria-label="SafePay home"><span class="customer-logo" aria-hidden="true">S<span>✓</span></span>SafePay<span class="brand-dot" aria-hidden="true">.</span></a>
+        <div class="customer-header-tools">
+          <button class="dashboard-secondary" data-bind="click: logout, disable: loggingOut"><span class="spin" aria-hidden="true" data-bind="visible: loggingOut"></span><span data-bind="text: loggingOut() ? 'Signing out…' : 'Logout'">Logout</span></button>
+          <details class="header-disclosure" data-bind="visible:session() && session().authorities.includes('CUSTOMER')"><summary aria-label="Notifications"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M5 17h14l-2-3V9a5 5 0 0 0-10 0v5l-2 3ZM10 20h4"/></svg></summary><div class="header-popover"><strong>Payment updates</strong><p>Read your stored payment notifications.</p><a href="/notifications">View notifications →</a></div></details>
+          <details class="header-disclosure" data-bind="visible:session() && session().authorities.includes('CUSTOMER')"><summary aria-label="Profile and menu"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 21v-2a7 7 0 0 1 14 0v2"/></svg><span class="profile-label" data-bind="text: profile() ? profile().fullName : 'My account'">My account</span><span aria-hidden="true">⌄</span></summary><div class="header-popover"><strong data-bind="text: profile() ? profile().fullName : 'Your SafePay'"></strong><p data-bind="text: profile() ? profile().email : profileLoading() ? 'Loading your profile…' : 'Profile unavailable. Please refresh to try again.'"></p><a href="/profile">Profile →</a><a href="/dashboard">Dashboard →</a><a href="/transactions">Transactions →</a></div></details>
+        </div>
+      </div>
+      <nav class="customer-nav" aria-label="Primary navigation"><div data-bind="foreach: navItems"><a data-bind="attr: {href: '/' + path, 'aria-current': $parent.selection.path() === path ? 'page' : null}"><span aria-hidden="true" data-bind="attr: {class: iconClass}"></span><span data-bind="text: label"></span></a></div></nav>
+    </header>
+    <p role="alert" class="login-message" data-bind="visible: logoutError, text: logoutError"></p>
+    <p class="login-message" role="alert" data-bind="visible:sessionError,text:sessionError"></p><button class="dashboard-secondary" data-bind="visible:sessionError,click:initialize">Retry connection</button>
+    <main id="main-content" tabindex="-1"><!-- ko if: ready --><oj-module config="[[moduleAdapter.koObservableConfig]]"></oj-module><!-- /ko --></main>
+    <dialog id="app-confirm" class="sp-confirm" aria-labelledby="confirm-title" data-bind="event:{cancel:cancelConfirmation}"><!-- ko with: confirmation --><h2 id="confirm-title" data-bind="text:title"></h2><p data-bind="text:message"></p><div class="sp-actions"><button class="recipient-secondary" data-bind="click:function(){$root.answer(false);}">Go back</button><button class="recipient-primary" data-bind="click:function(){$root.answer(true);},text:action"></button></div><!-- /ko --></dialog>
+    <footer class="customer-footer"><strong>SafePay<span aria-hidden="true"> ◇</span></strong><p>SafePay is a simulated risk-adaptive pre-settlement transaction-control layer.</p><span>Simulated payments. No real money is moved.</span></footer>
+  </div>
+  <!-- injector:scripts -->
+  <!-- endinjector -->
+</body>
+</html>

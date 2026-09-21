@@ -1,0 +1,72 @@
+<div class="customer-dashboard" data-bind="attr: {'aria-busy': loading}">
+  <div class="dashboard-intro"><div><p class="dash-overline">YOUR EVERYDAY PAYMENTS</p><h1>A little more peace of mind.</h1>
+<div class="integration-account"><label for="dashboard-account">Account</label><select id="dashboard-account" data-bind="options: accounts, optionsText: accountOption, optionsValue: 'accountId', value: selectedAccountId, optionsCaption: 'Select account', valueAllowUnset: true, event: {change: selectAccount}, disable: loading"></select></div>
+<p>Your money, with time to think.</p></div>
+    <button class="dashboard-refresh" aria-label="Refresh dashboard" data-bind="click: load, disable: loading"><span class="spin" aria-hidden="true" data-bind="visible: loading"></span><span aria-hidden="true" data-bind="visible: !loading()">↻ </span><span data-bind="text: loading() ? 'Refreshing…' : 'Refresh'"></span></button>
+  </div>
+  <!-- ko if: loading -->
+  <div class="dash-skeleton" role="status" aria-label="Loading your account and payments"><span class="sk sk-small"></span><span class="sk sk-money"></span><span class="sk sk-line"></span><span class="sk sk-button"></span></div>
+  <div class="dash-skeleton skeleton-list" aria-hidden="true"><span class="sk sk-line"></span><span class="sk sk-line"></span><span class="sk sk-line"></span></div>
+  <!-- /ko -->
+  <!-- ko if: !loading() -->
+    <!-- ko if: sessionExpired -->
+    <section class="dashboard-state" role="status"><span class="state-symbol" aria-hidden="true">↗</span><h2>Let’s get you signed in.</h2><p>Redirecting you to login. Your session has ended, or you haven’t signed in yet.</p><a class="dashboard-secondary" href="/login?reason=session-expired">Go to login</a></section>
+    <!-- /ko -->
+    <!-- ko if: !sessionExpired() -->
+      <p class="recipient-error" role="alert" data-bind="visible: cancelError, text: cancelError"></p>
+      <!-- ko if: pending().length -->
+      <section class="pending-area" aria-labelledby="pending-title"><h2 id="pending-title">Payments to keep an eye on</h2>
+        <div data-bind="foreach: pending"><article class="pending-payment" data-bind="css: $parent.riskClass($data)">
+          <oj-avatar size="xs" data-bind="attr: {initials: $parent.initials(beneficiaryName)}"></oj-avatar>
+          <div><strong data-bind="text: $parent.statusLabel(state)"></strong>
+            <p><span data-bind="text: beneficiaryName"></span> · <b data-bind="text: $parent.formatMoney(amount)"></b></p>
+            <small data-bind="text: $parent.countdownText($data)"></small></div>
+          <div class="pending-actions">
+            <oj-button chroming="outlined" data-bind="visible: $parent.canCancelRow($data), click: function() { $parent.requestCancel($data); }, disable: $parent.busy"><span class="spin" aria-hidden="true" data-bind="visible: $parent.busy"></span><span data-bind="text: $parent.busy() ? 'Cancelling…' : 'Cancel'"></span></oj-button>
+            <a class="dashboard-text-link" data-bind="attr:{href:'/transactions?transactionId='+transactionId}">View payment <span aria-hidden="true">↗</span></a>
+          </div>
+        </article></div>
+      </section>
+      <!-- /ko -->
+      <div class="dashboard-top-grid">
+        <!-- ko if: account -->
+        <section class="balance-panel" aria-label="Account summary">
+          <span class="dash-orb" aria-hidden="true"></span><span class="dash-orb dash-orb-slow" aria-hidden="true"></span>
+          <div class="balance-heading"><span>Available balance</span><span class="simulation-label">Simulated Environment</span></div>
+          <strong class="balance-amount" data-bind="text: formatMoney(balance() ? balance().availableBalance : null)"></strong>
+          <div class="balance-account"><span data-bind="text: accountLabel(account().accountType)"></span><span class="account-mask" data-bind="text: maskAccount(account().maskedAccountNumber)"></span></div>
+          <div class="balance-foot"><span class="account-state" data-bind="text: account().status === 'ACTIVE' ? '● Active' : 'Account inactive'"></span><span>INR · Indian Rupee</span></div>
+          <p class="balance-note">Current: <span data-bind="text: formatMoney(balance() ? balance().currentBalance : null)"></span> · Reserved: <span data-bind="text: formatMoney(balance() ? balance().reservedAmount : null)"></span></p>
+          <!-- ko if: account().status !== 'ACTIVE' --><p class="account-notice">Payments are unavailable for this account. Please contact your SafePay team.</p><!-- /ko -->
+        </section>
+        <!-- /ko -->
+        <!-- ko if: accountError -->
+        <section class="dashboard-state account-missing" role="status"><span class="state-symbol" aria-hidden="true">⌁</span><h2>Account unavailable</h2><p data-bind="text: accountError"></p><button class="dashboard-secondary" data-bind="click: load">Try again</button></section>
+        <!-- /ko -->
+        <section class="dashboard-actions" aria-label="Payment actions"><p class="dash-overline">MAKE YOUR NEXT MOVE</p><h2>Pay with confidence.</h2><p>Simple transfers. A little extra reassurance.</p>
+          <!-- ko if: canSend --><a class="dashboard-primary" href="/send-money"><span aria-hidden="true">↗</span> Send Money</a><!-- /ko -->
+          <!-- ko if: !canSend() --><button class="dashboard-primary" disabled>Send Money</button><!-- /ko -->
+          <div class="dashboard-quick"><a href="/beneficiaries"><span class="oj-ux-ico-contact-group" aria-hidden="true"></span>Beneficiaries</a><a href="/transactions"><span class="oj-ux-ico-list" aria-hidden="true"></span>Transactions</a></div>
+        </section>
+      </div>
+      <section class="dashboard-recent" aria-labelledby="recent-title">
+        <div class="recent-heading"><div><p class="dash-overline">YOUR ACTIVITY</p><h2 id="recent-title">Recent outgoing payments</h2></div><a href="/transactions" class="dashboard-text-link">View all <span aria-hidden="true">↗</span></a></div>
+        <!-- ko if: transactionError --><div class="dashboard-state" role="status"><h3>Payments couldn’t be loaded</h3><p data-bind="text: transactionError"></p><button class="dashboard-secondary" data-bind="click: load">Try again</button></div><!-- /ko -->
+        <!-- ko if: !transactionError() && !recent().length --><div class="dashboard-empty"><span class="state-symbol" aria-hidden="true">↗</span><h3>Your first payment starts here.</h3><p>Once you make a payment, you’ll see it here.<br>No transactions yet.</p></div><!-- /ko -->
+        <!-- ko if: recent().length --><ul class="dashboard-transactions" data-bind="foreach: recent"><li data-bind="click:$parent.open,event:{keydown:$parent.openKey}" tabindex="0" role="button">
+          <oj-avatar size="xs" data-bind="attr: {initials: $parent.initials(beneficiaryName)}"></oj-avatar>
+          <div class="payment-person"><strong data-bind="text: beneficiaryName || 'Payment'"></strong><time data-bind="text: $parent.formatDate(createdAt), attr: {datetime: createdAt}"></time></div>
+          <div class="payment-value"><strong data-bind="text: $parent.formatMoney(amount)"></strong><span class="payment-status" data-bind="text: $parent.statusLabel(state), css: $parent.riskClass($data)"></span></div>
+        </li></ul><!-- /ko -->
+      </section>
+    <!-- /ko -->
+  <!-- /ko -->
+  <oj-dialog id="dash-cancel-dialog" class="protect-dialog" dialog-title="Cancel this payment?" cancel-behavior="icon" opened="{{cancelOpen}}">
+    <div slot="body"><p>This payment has not settled yet. Cancelling keeps the amount in your account.</p></div>
+    <div slot="footer">
+      <oj-button chroming="outlined" on-oj-action="[[closeCancel]]">Keep waiting</oj-button>
+      <oj-button chroming="solid" on-oj-action="[[confirmCancel]]">Cancel payment</oj-button>
+    </div>
+  </oj-dialog>
+  <p class="dashboard-assurance"><span aria-hidden="true">◇</span> Thoughtfully designed for a little more control.</p>
+</div>

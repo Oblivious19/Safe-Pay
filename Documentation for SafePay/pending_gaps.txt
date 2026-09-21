@@ -79,3 +79,16 @@ Create a form page in frontend : for customer to input their issues, raise conce
 ---------------
 
 
+For deferred daily reporting, we can reserve a clean component/interface boundary and, if useful, isolated design fixtures. Mock financial figures must not appear as live dashboard data or turn a missing API into apparent success.
+The post-integration review list remains:
+- Profile editing.
+- Daily reporting as a complete backend-and-frontend feature.
+------------------------
+
+1. Internal customer-to-customer transfers are not currently implemented. The backend currently supports simulated outbound payments.
+
+2. Enums for bank names selection - like real banking apps
+
+3. Remove Audit log view(read only) from risk officer dashboard. Allow only for AUDITOR that too a downloadble excel format. not a full fledged dashboard.
+
+------------

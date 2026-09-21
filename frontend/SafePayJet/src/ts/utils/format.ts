@@ -1,0 +1,2 @@
+export function date(value: string | null | undefined): string { if (!value) return '—'; const d = new Date(value); return Number.isFinite(d.getTime()) ? d.toLocaleString('en-IN', {dateStyle:'medium', timeStyle:'medium'}) : 'Invalid timestamp'; }
+export function dateFilter(value: string): string | undefined { if (!value) return undefined; const d = new Date(value); if (!Number.isFinite(d.getTime())) throw new Error('Choose a valid date and time.'); return d.toISOString(); }

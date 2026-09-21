@@ -1,0 +1,16 @@
+export type Id = string;
+export type Role = 'CUSTOMER' | 'SYSTEM_ADMIN' | 'RISK_OFFICER' | 'AUDITOR';
+export interface Page<T> { items: T[]; page: number; size: number; totalElements: string; totalPages: number; first: boolean; last: boolean; }
+export interface Account { accountId: Id; maskedAccountNumber: string; accountType: string; bankName: string; ifscCode: string; currency: string; status: 'ACTIVE' | 'INACTIVE'; }
+export interface Balance { accountId: Id; maskedAccountNumber: string; currency: string; currentBalance: string; reservedAmount: string; availableBalance: string; }
+export interface Profile { userId: Id; fullName: string; email: string | null; mobileNumber: string | null; status: string; }
+export interface Beneficiary { beneficiaryId: Id; beneficiaryName: string; nickname: string | null; paymentMethod: 'BANK_ACCOUNT' | 'UPI'; bankName: string | null; maskedDestinationIdentifier: string; ifscCode: string | null; relationshipLabel: string | null; purposeNote: string | null; status: 'ACTIVE' | 'DISABLED'; createdAt: string; updatedAt: string; }
+export interface BeneficiaryDraft { beneficiaryName: string; paymentMethod: 'BANK_ACCOUNT' | 'UPI'; nickname?: string; bankName?: string; bankAccountNumber?: string; ifscCode?: string; upiId?: string; relationshipLabel?: string; purposeNote?: string; }
+export interface TransactionSummary { transactionId: Id; transactionReference: string; beneficiaryId: Id; beneficiaryName: string; maskedDestinationIdentifier: string; amount: string; currencyCode: string; state: string; riskTier: string | null; protectedUntil: string | null; createdAt: string; updatedAt: string; category?: string | null; }
+export interface Transaction extends TransactionSummary { sourceAccountId: Id; maskedSourceAccountNumber: string; purpose: string | null; customerReference: string | null; terminalReasonCode: string | null; reservedAmount: string; policyVersion: string | null; protectionSeconds: number; riskExplanation: string | null; authorizedAt: string | null; riskAssessedAt: string | null; verificationCompletedAt: string | null; releasedAt: string | null; settledAt: string | null; cancelledAt: string | null; failedAt: string | null; serverTime?: string; protectionRemainingMillis?: number; canCancel?: boolean; }
+export interface Challenge { challengeId: Id; transactionId: Id; status: string; maskedDestination: string; expiresAt: string; resendAvailableAt: string; remainingIssues: number; serverTime: string; }
+export interface Verification { challengeId: Id; transactionId: Id; challengeStatus: string; transactionState: string; verified: boolean; remainingAttempts: number; verifiedAt: string | null; serverTime: string; }
+export interface Notice { notificationId: Id; notificationReference: string; transactionId: Id | null; type: string; severity: string; title: string; message: string; read: boolean; createdAt: string; readAt: string | null; }
+export interface AuditEvent { auditLogId: Id; actionCode: string; previousState?: string; newState?: string; outcome: string; reasonCode?: string; actorType: string; occurredAt: string; }
+export interface RiskExplanation { transactionId: Id; riskTier: string; policyVersion: string; protectionSeconds: number; explanation: string; riskAssessedAt: string; }
+export interface RouteParams { [key: string]: string; }

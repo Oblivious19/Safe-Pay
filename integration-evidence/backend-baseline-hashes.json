@@ -1,0 +1,2010 @@
+[
+  {
+    "path": ".classpath",
+    "sha256": "C422CBEC0DD1C6580F77A783FE288703F8DC006B6EE15027BF113C850E6A67C0"
+  },
+  {
+    "path": ".factorypath",
+    "sha256": "787A51B41F212AF17B67D963F51CF2A7602DA98052BE224F7C8F90B937A965E5"
+  },
+  {
+    "path": ".gitattributes",
+    "sha256": "5775A77AD2F6D12DDE053A3FB0CCA4309189163F0888F4E7E984CD0AB327028B"
+  },
+  {
+    "path": ".gitignore",
+    "sha256": "089382E4D7944AB6CB6900A1269678EBFF93C00D441ADA788CD05A8DA182B22B"
+  },
+  {
+    "path": ".project",
+    "sha256": "434CB3F23A7BD307945CCDF21BBE179E9E43AC58905C152020220C9A5E016D0A"
+  },
+  {
+    "path": "HELP.md",
+    "sha256": "7C5FECEF5BE8FE384858637788A71E0D3596F38384EBB4BE087A96B2144C53E2"
+  },
+  {
+    "path": "mvnw",
+    "sha256": "CAE96CEF89EBEA3531221F4AE17C23CF8EDF67D00EAE8306D4186AE1BBED4D02"
+  },
+  {
+    "path": "mvnw.cmd",
+    "sha256": "ED5577B63EA92ECCEF11777D4013011CFC673D8AA153FA5DDFA3C4C2E19E92B4"
+  },
+  {
+    "path": "pom.xml",
+    "sha256": "3F6DC913B9F24E1D4010B97626F5034160933FAB9671320208A0E51A18C4B652"
+  },
+  {
+    "path": ".metadata\\.lock",
+    "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+  },
+  {
+    "path": ".metadata\\.log",
+    "sha256": "10D29A5DF94E9FDDBDE9FDB179D83CDA38DBB630C899BCA7EAAAB8AE7B7ABBA9"
+  },
+  {
+    "path": ".metadata\\version.ini",
+    "sha256": "132FE0A60AC721FD06409E382ED2F55A348A7B0096774A1BFEBFD5EAC6C01471"
+  },
+  {
+    "path": ".metadata\\.plugins\\org.eclipse.core.resources\\.projects\\.org.eclipse.egit.core.cmp\\.location",
+    "sha256": "8DD1BF5BD0533615AB736ADC02ABB2D3D5050E142683B7C97F144D140EB23080"
+  },
+  {
+    "path": ".metadata\\.plugins\\org.eclipse.core.resources\\.root\\1.tree",
+    "sha256": "502C293BEFE5E09589DD2D4A59B572ED14AB5675C603A2EF98C3E80AFDB59ED0"
+  },
+  {
+    "path": ".metadata\\.plugins\\org.eclipse.core.resources\\.root\\.indexes\\history.version",
+    "sha256": "DBC1B4C900FFE48D575B5DA5C638040125F65DB0FE3E24494B76EA986457D986"
+  },
+  {
+    "path": ".metadata\\.plugins\\org.eclipse.core.resources\\.root\\.indexes\\properties.index",
+    "sha256": "4B16F4277F8A76F28A73BAC3D627A6CEAE1827E1DD67D56148E9C2E7BF04976C"
+  },
+  {
+    "path": ".metadata\\.plugins\\org.eclipse.core.resources\\.root\\.indexes\\properties.version",
+    "sha256": "4BF5122F344554C53BDE2EBB8CD2B7E3D1600AD631C385A5D7CCE23C7785459A"
+  },
+  {
+    "path": ".metadata\\.plugins\\org.eclipse.core.resources\\.safetable\\org.eclipse.core.resources",
+    "sha256": "CBB3FC7F3C34CA3BB096D11C711C63DB00A71748A582A51BF6608AD1F9AC0148"
+  },
+  {
+    "path": ".metadata\\.plugins\\org.eclipse.core.runtime\\.settings\\org.eclipse.core.resources.prefs",
+    "sha256": "0FCDDEFA220F525BB060ED58C32EF43FF98EEA234D5B4AB266AAF44659C4DEE4"
+  },
+  {
+    "path": ".metadata\\.plugins\\org.eclipse.core.runtime\\.settings\\org.eclipse.jdt.ui.prefs",
+    "sha256": "EA069F2556AAC15A6151287F2CFAB8F478FE44CDFDFE065FE9B1F6A5228693BD"
+  },
+  {
+    "path": ".metadata\\.plugins\\org.eclipse.core.runtime\\.settings\\org.eclipse.jsch.core.prefs",
+    "sha256": "B68134A1EBD888E0EA3DCC585991E1CC80B7BEDE89736180102A64FB6D3465E6"
+  },
+  {
+    "path": ".metadata\\.plugins\\org.eclipse.core.runtime\\.settings\\org.eclipse.jst.j2ee.webservice.ui.prefs",
+    "sha256": "87101209FD6FA90DE269DFCAA6145EEBB25A1E9A4111C1390BF899FEE70D01CE"
+  },
+  {
+    "path": ".metadata\\.plugins\\org.eclipse.core.runtime\\.settings\\org.eclipse.m2e.discovery.prefs",
+    "sha256": "A914186E7068FA03E15BE603E45EA392E1E0EA5C311C78A393512B7D5E758BD4"
+  },
+  {
+    "path": ".metadata\\.plugins\\org.eclipse.core.runtime\\.settings\\org.eclipse.ui.ide.prefs",
+    "sha256": "69330291AB68FB6CC3168652E52F3D1D15ECE28C1D253AE37CA8195C6A460EBD"
+  },
+  {
+    "path": ".metadata\\.plugins\\org.eclipse.core.runtime\\.settings\\org.eclipse.ui.navigator.prefs",
+    "sha256": "36E825DACD8787FB677ACA6377FDD5D25DEC93C03C3299563395886DBECDB7CB"
+  },
+  {
+    "path": ".metadata\\.plugins\\org.eclipse.core.runtime\\.settings\\org.eclipse.ui.prefs",
+    "sha256": "0FD902CF873800A1B05058803E4494E4A30FE45157BF9C7E222B310F77A835A8"
+  },
+  {
+    "path": ".metadata\\.plugins\\org.eclipse.core.runtime\\.settings\\org.eclipse.ui.workbench.prefs",
+    "sha256": "CF8C48EA8FA6B93A2F846FA1BC1144C1E20B949BA2E869AF990D5C4D4F50E9AF"
+  },
+  {
+    "path": ".metadata\\.plugins\\org.eclipse.core.runtime\\.settings\\org.eclipse.urischeme.prefs",
+    "sha256": "5B5A02920C6D7CB08232D89B51816A3EBB07F8F35DDAADFA51FFE3BC99FC42EA"
+  },
+  {
+    "path": ".metadata\\.plugins\\org.eclipse.e4.workbench\\workbench.xmi",
+    "sha256": "29584F391AE21ED4D8606DA2D88A8CFC49429E689DE56B24F1CD310091BDC8F3"
+  },
+  {
+    "path": ".metadata\\.plugins\\org.eclipse.egit.core\\.org.eclipse.egit.core.cmp\\.project",
+    "sha256": "792AE1E04E236BCB442B3B077DE060D355409857E50D39590691A26AA3D20976"
+  },
+  {
+    "path": ".metadata\\.plugins\\org.eclipse.egit.core\\.org.eclipse.egit.core.cmp\\.settings\\org.eclipse.core.resources.prefs",
+    "sha256": "1A5B17D8A429F89E30D0D5FC6E12E81D37EA8F6F3F4A206383F4AF8564292AC0"
+  },
+  {
+    "path": ".metadata\\.plugins\\org.eclipse.jdt.core\\assumedExternalFilesCache",
+    "sha256": "DF3F619804A92FDB4057192DC43DD748EA778ADC52BC498CE80524C014B81119"
+  },
+  {
+    "path": ".metadata\\.plugins\\org.eclipse.jdt.core\\externalFilesCache",
+    "sha256": "DF3F619804A92FDB4057192DC43DD748EA778ADC52BC498CE80524C014B81119"
+  },
+  {
+    "path": ".metadata\\.plugins\\org.eclipse.jdt.core\\javaLikeNames.txt",
+    "sha256": "38A0963A6364B09AD867AA9A66C6D009673C21E182015461DA236EC361877F77"
+  },
+  {
+    "path": ".metadata\\.plugins\\org.eclipse.jdt.core\\nonChainingJarsCache",
+    "sha256": "DF3F619804A92FDB4057192DC43DD748EA778ADC52BC498CE80524C014B81119"
+  },
+  {
+    "path": ".metadata\\.plugins\\org.eclipse.jdt.core\\variablesAndContainers.dat",
+    "sha256": "445BB9D697DDF5FCCBFBA25E5F53274572569E190492B7E708A0EDABD71C5B89"
+  },
+  {
+    "path": ".metadata\\.plugins\\org.eclipse.jdt.ui\\OpenTypeHistory.xml",
+    "sha256": "1A9E4888FEF432D6CC57910FEB34719876117142DFDBFD13D6D5801ED5EF1166"
+  },
+  {
+    "path": ".metadata\\.plugins\\org.eclipse.jdt.ui\\QualifiedTypeNameHistory.xml",
+    "sha256": "B41BB9FCAECDA78A6FD8A48FC452941804B3C96727B9833032A7CFBAFDC9085D"
+  },
+  {
+    "path": ".metadata\\.plugins\\org.eclipse.m2e.logback.configuration\\0.log",
+    "sha256": "24E84F6137D67072B7A31EC543D310F96942D92D1BECAC249A189E00B23F29E7"
+  },
+  {
+    "path": ".metadata\\.plugins\\org.eclipse.m2e.logback.configuration\\logback.1.16.3.20211002-1029.xml",
+    "sha256": "68B165C9483AB3AEF53D07ABBB976583BA6B2E5BAB2AF7C889CF30F680B19A17"
+  },
+  {
+    "path": ".metadata\\.plugins\\org.eclipse.oomph.setup\\workspace.setup",
+    "sha256": "501DB74CAF3A3D5F3CBECEEC3277A3961D5887C84C9698BDD749228685332C13"
+  },
+  {
+    "path": ".metadata\\.plugins\\org.eclipse.tips.ide\\dialog_settings.xml",
+    "sha256": "034FC77DF3B84668C1D1BD13CDA9835F292AD2FFB51DF3DAED45257594FDF275"
+  },
+  {
+    "path": ".metadata\\.plugins\\org.eclipse.ui.intro\\introstate",
+    "sha256": "020A0D07D8AD58E2CEB2C6041CAE1C42EECBC22E83BB1FEBC4EDB8C83E7F071B"
+  },
+  {
+    "path": ".metadata\\.plugins\\org.eclipse.ui.workbench\\workingsets.xml",
+    "sha256": "3CEC40360DCA77CCB704BA62CAD1C0CA43ACBDBC194B6A6CF14D815479E4D1A7"
+  },
+  {
+    "path": ".mvn\\wrapper\\maven-wrapper.properties",
+    "sha256": "488E1B3F2E641779D4636ABF9390845F901E64607261BC3C0B0BFE4FE96E6706"
+  },
+  {
+    "path": ".settings\\org.eclipse.core.resources.prefs",
+    "sha256": "FB60379490C72D1B5511D1A36371A9C91EE2E84C68CC7A627D619CBF39CDA7DE"
+  },
+  {
+    "path": ".settings\\org.eclipse.jdt.apt.core.prefs",
+    "sha256": "C6DE43981F643E3A78D8FC272D0E3E09322CF80A97D8057E7E77A09B87BDAB1D"
+  },
+  {
+    "path": ".settings\\org.eclipse.jdt.core.prefs",
+    "sha256": "406167B37E9D31D66EA6DD675D9D980143549ABD211A9A12D96F36EA6C81E4F8"
+  },
+  {
+    "path": ".settings\\org.eclipse.m2e.core.prefs",
+    "sha256": "773C6D111354B495E68035A89EDDBE5881224FEA04A237D27ED5CA138835FFD7"
+  },
+  {
+    "path": ".settings\\org.springframework.ide.eclipse.prefs",
+    "sha256": "6795870ACB8A824C63642C023CEAC7F7CB2081C6988860F0E193C12BD822FF6E"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\SafePayApplication.java",
+    "sha256": "2BF342665E7032FB2D56397D4F4F691D778613534C05D4A9C58EAA110A6AA8B4"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\beans\\Account.java",
+    "sha256": "630F2A1ABF9A20F8E759F060F8F5FA7E83A6D6D5CCE22273F036B85F728440AD"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\beans\\AccountStatus.java",
+    "sha256": "18B5A7A619FBAC8159AC1E9D44D2DCBA1DA09B1A85A344BE7166B67B8F953502"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\beans\\AccountType.java",
+    "sha256": "E0FDB51A6795EA065205E535855B0FF32CB54CFB0C893599D9F19BEC6C72E335"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\beans\\AppNotification.java",
+    "sha256": "5E5F62901E780B0D6802E45332D8D3D4C71484539AA65525B0087EC31B253EA0"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\beans\\AuditActorType.java",
+    "sha256": "78A8C125554F822B22C1DC4315A8AAF78C85D6E4D3078CD6C3163BD1E5F1FFDC"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\beans\\AuditLog.java",
+    "sha256": "797124650B8371DD537B4A9A7DE6237B16D5A76EC499CFF10CF670ED39078CB3"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\beans\\AuditOutcome.java",
+    "sha256": "953A019739A80CC38C92A24BEC2C3B83993996CD5146BC9121C5982C1D226398"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\beans\\AuthSession.java",
+    "sha256": "1E2EECC37B5894F8FCDA8080C4A49B03B6B272835802969CED6B4EAFB920831F"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\beans\\Beneficiary.java",
+    "sha256": "FFC1B2BC26A55EA3E876F883F406E95F6D5DC6DB808A76945B54FC70864356F5"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\beans\\BeneficiaryPaymentMethod.java",
+    "sha256": "8924CC7D334E0DC0CFFFDBC4A3F754E919C48F6ABBDBCBF7FD09E593DC8E6575"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\beans\\BeneficiaryStatus.java",
+    "sha256": "C9025738D7944D6D64C2D3F363CB6CF3CAA52DCA30EE206C157AFBAD3A811F3C"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\beans\\CurrencyCode.java",
+    "sha256": "93392DAB78A0483D211AE9FEE2D9697931D8EC03C2B75E76594327566E88BAF4"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\beans\\IdempotencyOperation.java",
+    "sha256": "2FDF1FE03C6A90D2A698F85972FB7E72D40F0CE519253AD50AC4A4176110E156"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\beans\\IdempotencyRecord.java",
+    "sha256": "14A439A8EFED8B0D7F5BB1F2B8B1863CC95495F06618864E66BCAEB82D20658E"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\beans\\IdempotencyStatus.java",
+    "sha256": "0B00DB60C801A1B60A55197A8DAE77ECB980CE6431781C8DC31CABB87025A2C6"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\beans\\LedgerEntry.java",
+    "sha256": "8BE9787F3A939C9B158BE73552C49B92A0A673B11B1B775839A071406E3E2E02"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\beans\\LedgerEntryStatus.java",
+    "sha256": "18C5DCD4F8B9242E336FD742AA0F885538D7BD373A2FC28DEAC596C734116DE6"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\beans\\LedgerEntryType.java",
+    "sha256": "19EB90A0FDB40D9C95FFE315A324617B917E4E06C7F6CDC7D2EA9470FE7A471F"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\beans\\LedgerPosting.java",
+    "sha256": "02D2DCECDB6270272F3DE20CEC895476E511D31AE5FB8A3690681279FEE8E5A6"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\beans\\LedgerPostingStatus.java",
+    "sha256": "5C3B347B1437F772EAB33534677A3766DB87C7A74FB5C802799BBE7CDA715368"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\beans\\LedgerPostingType.java",
+    "sha256": "443CCC0570C56C71A7909303E60AD2AED7C3222FAB0B70C02CC9E50CAA44AED1"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\beans\\NotificationDeliveryChannel.java",
+    "sha256": "7B8A391E55611E005AB4B6EDC00A530CFCB906F97FBE627B892630A1B1AB5073"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\beans\\NotificationDeliveryStatus.java",
+    "sha256": "629B5DA43163BAFBDBA88BAF4600C97771A5A23084C6F718C26611B619C52E04"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\beans\\NotificationSeverity.java",
+    "sha256": "B3FA4733FF5908A000DCFDAF997256602F835DA384CF87A6438F4DBBC3482995"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\beans\\NotificationType.java",
+    "sha256": "3616DD61169BE16CC2A7D7BCF1557207ADA7781679204B8AE7FB7FFC71E44D0F"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\beans\\OtpChallenge.java",
+    "sha256": "DA33F6E179A126322618A9765C843D0D0F9F78D4409483AF147CA21322990594"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\beans\\OtpChallengePurpose.java",
+    "sha256": "02A0780AF7879FB9B0FAA9E9869350E69D0FDE8729E8082F9A4F984189B0729E"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\beans\\OtpChallengeStatus.java",
+    "sha256": "50003C0660CF2B7F62BE391A55C8847D65EF9F7C9E87F5E3B1ED85EB7938890F"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\beans\\OtpDeliveryChannel.java",
+    "sha256": "F9B8610DF01AADBF335C8FC570E1F741BA998FCEE5C598B30950D59B5A20B575"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\beans\\PaymentCategory.java",
+    "sha256": "3AB8470803312C920811655F21F4763519497161B2EC8C261FCC570C88C939BD"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\beans\\ProtectionPolicy.java",
+    "sha256": "1F63FCBCAED568D977B243623A818FF91328E13F98DCF249B78FB84696AC519D"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\beans\\ProtectionReleaseMode.java",
+    "sha256": "8B4A4E18637BC0F71E7E27FCB2D7B734A61D5238221A833BCF103E26A09DB522"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\beans\\RiskAlgorithmType.java",
+    "sha256": "CBE541A626E8CB2AF6EC10D815AFC00F250B3DCF0CFE14EA805387BC1268E42F"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\beans\\RiskPolicy.java",
+    "sha256": "91F7392D09F84786D909560C1C46CBEA341F8F25AE05CBDA27D8E045DA4F44DD"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\beans\\RiskPolicyBand.java",
+    "sha256": "413C732339AD843922CB22348AC06AD43D9281B59CB27CC29610D4CACF02851A"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\beans\\RiskPolicyStatus.java",
+    "sha256": "AA84B44F1859CCD0F26C507D13D4B2BD2AB0C16860772E5140D895383B02D3CF"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\beans\\RiskReview.java",
+    "sha256": "C6FD5C45CD6C19A786C5213DD5CA3E33302A9CAAE5C4CE794AC3E22193B67E20"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\beans\\RiskReviewStatus.java",
+    "sha256": "11B9B6415A796907CD5FFA0D53EAE285D1A21600214C70174FAED960F6271D64"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\beans\\RiskTier.java",
+    "sha256": "4D53E8499476CADE1FFCD32D8014082990495B3A1ABE19A7DAE5F9B5CF73EF07"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\beans\\Role.java",
+    "sha256": "838CB90721FE3417CC86C2AB17DA0DB089FF78F5791758FAA63988B09C30DF4E"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\beans\\RoleName.java",
+    "sha256": "684D6FF154B5D46EB3B358AABE3B24B389C7F1C819C3C4E1709C978452C73F55"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\beans\\TransactionDb.java",
+    "sha256": "3F3A877AE20409F2597728BC735321C9DC1899B42963D729FB7E07B8C525A825"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\beans\\TransactionExceptionLog.java",
+    "sha256": "948ECE67DFD7A2CAF010B77E349EC2AE669A68E745535CB12933128B119AF704"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\beans\\TransactionExceptionStatus.java",
+    "sha256": "00D929653FE4013E07F95C55D4A7A021EBD22461B585DA439F67342DC100FCEA"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\beans\\TransactionProcessingStage.java",
+    "sha256": "CAF2BC6950F7241193555AADDA3C3E9EAC7A52A0DD29A9218853F7863D39FB83"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\beans\\TransactionRiskFactor.java",
+    "sha256": "1BE2A7F2D72F5759860BEBF8335B1AA1B8F91E7987B20378DF6032CC287191D6"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\beans\\TransactionRiskFactorCode.java",
+    "sha256": "4D6123B7E27D4B35F5B8F5FB14A47320880540FB58C54829F4F21B26B764998A"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\beans\\TransactionState.java",
+    "sha256": "5B23DAD3EB663782FF00E0AC330AEE6FD0841DBF08094853ED8E2A1DAE2D0A03"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\beans\\User.java",
+    "sha256": "A62D7BBCD57878EFBE502D8CACAD8D67E9AA101233DC81F4A0F309CEA6BD7847"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\beans\\UserRole.java",
+    "sha256": "0361490F5D1C566E24D0D5F2B596BD1221D2EF0AE5600816435462915E53C83E"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\beans\\UserRoleId.java",
+    "sha256": "AD675A3C8C4688D3A572360C890E388D5EFE36290611C2F8ED3C35374B0D4D67"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\beans\\UserStatus.java",
+    "sha256": "D87AA9509EE4CD6C40FFF8BA0BFBD0A94B487AC9084C6FFEFA3B8D9617EEE54D"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\common\\ClockConfiguration.java",
+    "sha256": "BF9875C2DDA5514C6006FBA3052E87FE22042FA9CC139D1796BD199AE2BC3662"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\common\\CorrelationIdFilter.java",
+    "sha256": "BAEF6AA21BE5242914512E0D1AF03F0E693D3A600E390035D28278063B341D13"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\common\\IdempotencyHeaders.java",
+    "sha256": "8C6BD0A0A916F3323A2F690B5BB69DB62FC1B2F1D8D98A799D853D9D394DFDE7"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\common\\MoneyUtility.java",
+    "sha256": "8DCE65286E510420D7810BD22C733613AA8D7FE4A82910BD1E2B2C5A28B16710"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\common\\OtpConfiguration.java",
+    "sha256": "2585A3FAC1C24A1E5CCB925F929C7728059CC28BD137C9BDB4E52D4B9616DC64"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\common\\OtpDeliveryConfiguration.java",
+    "sha256": "AC6C56CF3C428EF8A7C8BF10843D1C5447907ECACE39F6F5998A331AF9767FFA"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\common\\PasswordConfiguration.java",
+    "sha256": "8EFD880AEB70F14E3626E2EB5B55C06887A1D6F007724AD83393106B3572806D"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\common\\SecurityBeansConfiguration.java",
+    "sha256": "E61AB68F0A8386D6EEB9396A6911A74BB12CAD4EC7E05103B0B998E4C5D2A28C"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\common\\SensitiveDataMasker.java",
+    "sha256": "9FE3ED2BECF15776247753A309F0B142C4C4B8C6EF53D1F2EC44B50DA7F17FE2"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\common\\WebSocketConfig.java",
+    "sha256": "3F482CC95CE29C9E8A6E6B6AD8F880389119D9BC7509166AB7331101B9D4AA93"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\common\\api\\FieldValidationError.java",
+    "sha256": "5719AC39E086AEA812FB151606966192496587F7767022766C78ED2EE5A729AC"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\common\\api\\PagedResponse.java",
+    "sha256": "26CB2202A683A3CA0066232739A4D382AE4970E24A92D94B59D1886643AA33E2"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\controller\\AccountController.java",
+    "sha256": "FF35F33D182C33209E1BA09BEE969D4D0987EFA7D08C06F5D6F810315D034E98"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\controller\\AdminAccountController.java",
+    "sha256": "1106F2DE394109817E5B4E21D7FC36F1D8497C1AF4490F89B65F18DCC937BA79"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\controller\\AdminOperationsController.java",
+    "sha256": "EC2E2A573A5A4A3D98B93A5364B2394C8E8ED415F7EC4868CE200E22FDAAD9ED"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\controller\\AdminUserSecurityController.java",
+    "sha256": "AC8AFF6E1A0F34ED939E5BA5CDD3848ECC1E75C30F9559D0F78C9C696BC7A220"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\controller\\AuditController.java",
+    "sha256": "140F137D6D6F31B3869BECD00BABC1A22B24385918EDE07E355EDDFDD96B9626"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\controller\\AuditEvidenceController.java",
+    "sha256": "83B41836F4318C3ADEE833451F0CEE8E94815ECBEFB16A57B5A2A8C0C0E074AF"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\controller\\AuthController.java",
+    "sha256": "31F679E279837B7E2A48A86024939773B75D0730AB293A3C5C9649F4BC78DBB1"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\controller\\BeneficiaryController.java",
+    "sha256": "EBAB635FB8355F869510FAD41C0B06C4F5AE9C73EB41983B75BB9760B919F014"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\controller\\CustomerProfileController.java",
+    "sha256": "FBC04F4A7AED0B079D7F33C61D8A187B9367CA89ED85A4FB63AD58CE7F635477"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\controller\\NotificationController.java",
+    "sha256": "B9C252DAB7CC876AD5B44E48DC603F86F4E4539ECE01619809DAAEB5F3C7D95A"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\controller\\RiskReviewController.java",
+    "sha256": "9603BA6A0D28010455C0E7094F47BFCCF14C32EE3A1C9A9C29EA89A190738E94"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\controller\\TransactionController.java",
+    "sha256": "F6B8E03DB68CC4DD153372ED07AC8DA4877EFFBE50359D6F40F54779DAFAEA48"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\controller\\VerificationController.java",
+    "sha256": "4FBD6BDD089C649AEA2ED77ED0908F7CE5B7AF7E278003896651032F33862D7B"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\dto\\account\\AccountBalanceResponse.java",
+    "sha256": "8C505B919756752569B7B3BE69109DF5468DCF34499829B7E14DF841BECDDA01"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\dto\\account\\AccountSummaryResponse.java",
+    "sha256": "BC22145C3371263A58CDBB01C183CE91F36504745EF35060623968BAF5333FF0"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\dto\\admin\\AdminAccountDetailResponse.java",
+    "sha256": "E83E23B649E247DFBECD7C0CE365CB7A72DD0EE9BBBC63965C74EBC8039425CA"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\dto\\admin\\AdminAccountSummaryResponse.java",
+    "sha256": "F39BFDC85E8F790C33EC0BB860872E14091ED26A168060AC3BFD90359749FF9F"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\dto\\admin\\AdminUserSecurityResponse.java",
+    "sha256": "044DD8F6EE50FB66B0E44A2D9BF87CB9014274636CBA1C73A6223629E820E417"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\dto\\admin\\OperationalDashboardResponse.java",
+    "sha256": "60A0B736E1DED73899718104CEAAF05D34BA360359576C66D963D030F8050885"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\dto\\admin\\OperationalFailureResponse.java",
+    "sha256": "93BF10E76C97BBA9A2B1BD23DC6E6F6F429E55E0A900A2151140CDE3E9473292"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\dto\\admin\\UpdateUserStatusRequest.java",
+    "sha256": "43B559E815B46FC82C4E0BDB82797586233E8D591F039CD309195ACF55E943E6"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\dto\\audit\\AuditExceptionResponse.java",
+    "sha256": "1A676B45431259AA1803C0BFFAB0E6ADFA7F3D56CB56579637FED61B416D4E23"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\dto\\audit\\AuditLedgerPostingResponse.java",
+    "sha256": "5D34BC567054E78A4763B404F3FA42A0367DC1D4BEBFD7990FA9A320D87DC024"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\dto\\audit\\AuditLogResponse.java",
+    "sha256": "E2ACADF88946BF96701EEA8F34DD0057D47B71A9D2BD21BE88018CADA5289C80"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\dto\\audit\\AuditReconciliationResponse.java",
+    "sha256": "48960E3296D2EB47473A2692B59A489956E82DD3C0195867084B14CD38EF95AE"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\dto\\audit\\AuditRiskPolicyResponse.java",
+    "sha256": "9B0C12C20886F0CA5F5E33BFFD6F935BCFC2343E1E65AB39A474ECEEEB3520F0"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\dto\\audit\\AuditSafeDetails.java",
+    "sha256": "7FA07E6572033AF6F5E6B29375FF882BCAB3EEDF991968BECB9102F5276FBF09"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\dto\\audit\\AuditTransactionDetailResponse.java",
+    "sha256": "96EAF79A445D9045EC08887EB28A8254DB461B7DA02FE20F16EE28CD80704715"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\dto\\audit\\TransactionAuditResponse.java",
+    "sha256": "07F98882162C79A78E5ED2FCBC7EFA8B440EF7122B03932E6F77702832F9D4D5"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\dto\\auth\\AuthTokenResponse.java",
+    "sha256": "B2ED2AF9C8DAF5C0C44D58A67E49EB0D4808D8355E293E1DE895A930DE451ED8"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\dto\\auth\\CsrfTokenResponse.java",
+    "sha256": "64242DEC3569BEC52B9558F20B1079FB4092FE92ADEB9EF1D41C6C162A910696"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\dto\\auth\\LoginRequest.java",
+    "sha256": "A70D46E42280973F163D49F51A7E31FFC25F698F697270E5F581453EAD23180F"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\dto\\auth\\RegisterUserRequest.java",
+    "sha256": "6FA8F2DAC46E0AA28C72986441F9767B6A25EABA6C33CCC607E4956161CA508F"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\dto\\auth\\RegisterUserResponse.java",
+    "sha256": "7532D90D9B8A5454F918F6B33D64C546F3C0D6DD695A5811A6574CFED3484C48"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\dto\\beneficiary\\BeneficiaryResponse.java",
+    "sha256": "E58B3AF6869C7D5976209AFE44CE40FE6E642748CF055C39718422BCA6F2FB1B"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\dto\\beneficiary\\CreateBeneficiaryRequest.java",
+    "sha256": "7B3AFBF5E017CA04F879ECA16CBBEBE080F6573DBC4B05C8DF72C467EE657C0B"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\dto\\beneficiary\\UpdateBeneficiaryStatusRequest.java",
+    "sha256": "84DEB43F630F9015EB69BF975550AC9BB46472EBCED76C5840D900C5128065C2"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\dto\\notification\\NotificationRealtimeEvent.java",
+    "sha256": "3EFAD1969031A5D29507071E270C1453543F1587302CBBC60DF30B88ED22FBEA"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\dto\\notification\\NotificationResponse.java",
+    "sha256": "1394AB72B0DC072C527E427D3E5DF02BC2ADD867F3C2929ABB0434D0F85EEF7C"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\dto\\otp\\OtpChallengeResponse.java",
+    "sha256": "6ED06C539789B8D61237E4040FD5E98F4C1C2DEDFFD90B5DAF0C2C500F15E8CE"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\dto\\otp\\OtpVerificationResponse.java",
+    "sha256": "D37F664ECA9080FF6B5E0A14B4B98750BE0B0E02B9E15D0A289D4C0C4EA89EF0"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\dto\\otp\\VerifyOtpRequest.java",
+    "sha256": "D2890C341996DC1CC6B9BD8611BC5D3C5A2C5B834CC4F93A9325C1F54E70569A"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\dto\\risk\\RiskEvaluationResult.java",
+    "sha256": "F01511A36B81F97008A7C7BB3388FDF140CFAF630A0A3BF817FEF74CF698453E"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\dto\\risk\\RiskPolicySnapshot.java",
+    "sha256": "934F36F8EA8DA5AC4F3736A5B50E934620F54C762E2FD92C0D6CFC662FC34035"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\dto\\riskreview\\RequiredRiskReviewDecisionRequest.java",
+    "sha256": "19D26BE69442ECBE6E82139C9759ADA300245B85EC6F0E5523D5E2C78DB16A7D"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\dto\\riskreview\\RiskReviewDecisionRequest.java",
+    "sha256": "07661BED18D7908A751F5A18EFF2D93B837A8AA55128712B3C77AB44DF32DB3C"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\dto\\riskreview\\RiskReviewDetailResponse.java",
+    "sha256": "3D35A0F39C37798154F96C6E061812A14E63D3D8A4D22F8EE3B574A31C7841D8"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\dto\\riskreview\\RiskReviewNoteRequest.java",
+    "sha256": "26AE8623603BEFF0A5021544EAE5D7C8B91A74AC3C46E7FAAF930B667FD8626C"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\dto\\riskreview\\RiskReviewNoteResponse.java",
+    "sha256": "84A3DB1497CAD9FBBAA264A662CA1C1D6584E1E0473EA1F8359DEB0EFB439009"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\dto\\riskreview\\RiskReviewSummaryResponse.java",
+    "sha256": "0F8679DF4286A3EF9572534D6CD30B2DDDB603683001910C03EB939DAE1BDDCB"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\dto\\transaction\\AuthorizeTransactionRequest.java",
+    "sha256": "E2A5DA326DA7E8555FF8B00BF564FD23C0F65A025EB8340EB52592958A934274"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\dto\\transaction\\CreateTransactionRequest.java",
+    "sha256": "3A42AF7F414DAA0C6B81C7E2BC3910C63E186A84458457496678635CE321122D"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\dto\\transaction\\TransactionResponse.java",
+    "sha256": "384CE300556098F587952AE8BCB68B00897F5C8284238334FFA1634AA986A2B8"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\dto\\transaction\\TransactionRiskExplanationResponse.java",
+    "sha256": "DC42A13CBC7D3F020F6FF0A6BCD52ABBCE36ADCE517ED9D7F884984C5CAB5C04"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\dto\\transaction\\TransactionSummaryResponse.java",
+    "sha256": "04F51E5201F74543F6A44C4CCB7F80FB6B42CB615C5661FFA65964964302E6A8"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\dto\\user\\CustomerProfileResponse.java",
+    "sha256": "7A5821214354A4F9CBF6EF1C48D14FAB64B9B12F3A42ED6E1BC1AA4AF7BFA8DE"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\excp\\BusinessRuleException.java",
+    "sha256": "F088AA48E445987451A7F1FEE3EB3A2EFBAC96EBD651C31103CE55431C43C634"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\excp\\DuplicateResourceExcp.java",
+    "sha256": "68AAF50B00F7924B66146927B829A432DAD15A293563C80D582348F184431DE2"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\excp\\GlobalExceptionHandler.java",
+    "sha256": "382AC14D58D6B6A779BA044DCB2BFCEFD758D448705483A580D2DBC01AD544AE"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\excp\\IdempotencyConflictException.java",
+    "sha256": "5B5DAB42C4DE7B287027100A90147D2C48EFA7773C76F721CF0750CA17814E64"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\excp\\InvalidStateTransitionException.java",
+    "sha256": "AF2B2D35773ED97EE3A57559AA5BBBB6741DA74991B62EB5AB2D7711C56531AC"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\excp\\OtpVerificationFailureException.java",
+    "sha256": "9097F1B568908C8034D9EE1265647C93696B8E571239D0154A8BE907044C0AE2"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\excp\\ResourceNotFoundExcp.java",
+    "sha256": "7F249E2CEABAF6243664EA96E25B91A0C0374AE061C305C7784FA8927B9AA3F6"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\repository\\AccountDao.java",
+    "sha256": "A7542DF325906B2588B8F164ABB13D198925D1D79DE352B3CD171EAC8765F85F"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\repository\\AppNotificationDao.java",
+    "sha256": "89140B5557B74294CBB11ECB7A33643614738A27275ADA0DEAE73B165CB52F28"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\repository\\AuditLogDao.java",
+    "sha256": "852213B74039A6E7493CECEFCE987BE9E41F8AC710B21BF412FC030C098A7150"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\repository\\AuthSessionDao.java",
+    "sha256": "D1464354D049F278EAE4C132BF1B75B630EF8B223C7A778E965BB6308A0AC0CA"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\repository\\BeneficiaryDao.java",
+    "sha256": "1FD945A6D3F9DF9EB284EB48E92CCFB23468F3E5D33F6FD0989C46D9DC62BB8B"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\repository\\IdempotencyRecordDao.java",
+    "sha256": "DE4E6C0F9D70F124FAB70432118ABA6243551627539B563A25B4306AAD7EF68D"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\repository\\LedgerEntryDao.java",
+    "sha256": "94101D2088D834FF7644DD4553D6393A40791DAB60487F80E3C23F1C4CB468D6"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\repository\\LedgerPostingDao.java",
+    "sha256": "60252DAC2E50918B2E0DF00EE7F5D894DB8B563D0BFB9BF93D65C6EDC539039A"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\repository\\OtpChallengeDao.java",
+    "sha256": "05CB6501B2783055D56406F44712E7368F1A740D18254E53292B985A1493B0C7"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\repository\\ProtectionPolicyDao.java",
+    "sha256": "C54E585D167CFC81D865B1171D651A7DF14FB1ABBDBA0AC3C20C3F505FAD3C1D"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\repository\\ReportingReadRepository.java",
+    "sha256": "B4C54DAE0749DD861319FAB41BF191434E2AF89407248B625DE16E6585E9A9AF"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\repository\\RiskPolicyBandDao.java",
+    "sha256": "4D246B0956C0F6422B07D6153A6FD1193055F27D0F837D71AA406E625C84EAAD"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\repository\\RiskPolicyDao.java",
+    "sha256": "094C0127AB026A4E9809B4C787BBBA6F64D6B15CBFA03AB7E3EEDB98048BC795"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\repository\\RiskReviewDao.java",
+    "sha256": "0D5A1F6F1BFC198A51E12ECAAB9CEE4CFAB705C51E4635F90E0B18797CB7ED68"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\repository\\RoleDao.java",
+    "sha256": "799267A9F82B2F89E2C33A5D5229ED72CB223181E4D4BF72CA6202C9F4317CEF"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\repository\\TransactionDao.java",
+    "sha256": "C85B59EFAA2A0D41C580D918CECA7E5A26EB699AE222B2E69281272552A43FFC"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\repository\\TransactionExceptionDao.java",
+    "sha256": "CD7FC32BD2DBF4502FE3636A966FF55CD6E78CD737AACFD14AF58CA5E32C1761"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\repository\\TransactionRiskFactorDao.java",
+    "sha256": "03B0601E022B61B245D2A6B9BAFE21D7DB3A10511AD61334B4327700164D1A4A"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\repository\\UserDao.java",
+    "sha256": "BEBDDC83AC5A984E98B8FF861D5143BBED4D4F47F0EB34283DA6D07261975953"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\repository\\UserRoleDao.java",
+    "sha256": "92CA5F8FEEDBBE12F98D7D3DE662CC071AC0D55145A7A0DE89847A8ED9672562"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\scheduler\\NotificationDispatcherConfiguration.java",
+    "sha256": "76C91F1CD6BEF85F65DB12E70D1FA17421EB27AC28377968DFA2F2B6B4963952"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\scheduler\\NotificationDispatcherProperties.java",
+    "sha256": "4A7B2C2D35992E8A3C43B322F1F3A6929BDC6D4A9EB8F74F9C4FD19262A12071"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\scheduler\\NotificationDispatcherScheduler.java",
+    "sha256": "118E92D222B3DCBA65B9C97F3571A7E5AD293991C60ED484D3D9E5C8F3D6F429"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\scheduler\\ProtectedTransactionScheduler.java",
+    "sha256": "F8A3B6D33C762AD7695D2B81422FCCEA4AD7D3CF250C0B593C2F262AFAE56BF5"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\scheduler\\ProtectionSchedulerConfiguration.java",
+    "sha256": "EA1A648D4913EBA5E07DC419D0D402203C218BC4FA742FC7D751E11EFB795F5F"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\scheduler\\ProtectionSchedulerProperties.java",
+    "sha256": "F86BFC7B65600A485606C273D0F5B7633AFC2FB51976FEA72D009DCBF146245E"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\scheduler\\ReleasedTransactionSettlementScheduler.java",
+    "sha256": "74762F380A0D1CBBD621E00734609313A3D2CE519ACAA8BD34FDE33422D76627"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\scheduler\\SettlementProcessorConfiguration.java",
+    "sha256": "C0268C934CB15BB886F8E142E2AACD15BA999787C33193129903B9258B651058"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\scheduler\\SettlementProcessorProperties.java",
+    "sha256": "003CAD452333D4EB1E77693D5ADFF968E76249F55A9E7745CB5B48100DFD7672"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\security\\AccessToken.java",
+    "sha256": "82D712920CC51C7149D9C8225675B03C31031C339A0845294F78EB805B7A14C5"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\security\\AccessTokenService.java",
+    "sha256": "CDC8719DB1C49ECEBD77052BF9E3249D0900C99DDF7CDD38E4CC67421580059C"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\security\\AuthenticatedUser.java",
+    "sha256": "3B0E2E5851D4ED08F4DF2A0F601400252DD1B9B0B583F60752E565E8271ED67A"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\security\\AuthenticationPolicyProperties.java",
+    "sha256": "42E902EC7AFBF3196B68012C5E3AFFE33E4C31A097DA690D6EBDC7FE15E3189A"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\security\\BrowserSecurityProperties.java",
+    "sha256": "4AD7388597DD7CFD21DD60CA7C214926B5EBF41B1782143844F154A98B200B1E"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\security\\JwtAccessTokenService.java",
+    "sha256": "809AC536B4ED23002249CA699EE39936D4B3B015DF3724D0DDAAE94E1BC28275"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\security\\JwtBeansConfiguration.java",
+    "sha256": "D815994648649FF258CD630953F443CA7D217A1F25CF3A0F62F5A9FFC868C431"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\security\\JwtSecurityProperties.java",
+    "sha256": "0AF0441D79F423C5B4735E4E7E73741EB31EE26D841EB36B07F92069274389F2"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\security\\RefreshCookieFactory.java",
+    "sha256": "EBC134CC710DC04EDC8761C9422252DCCD2D84E5AF44102CF67E2F6343F16FC3"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\security\\RefreshCookieOriginFilter.java",
+    "sha256": "3453BB74F35C4A69C58305BCA2BF21FA936DB2972960067D46675657728565C0"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\security\\RefreshCookieProperties.java",
+    "sha256": "DA9583FA07B857F9A1C15FCA4EAB2AB2EEA4D8D17B8815720DFDA453F755D37A"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\security\\RefreshRotationResult.java",
+    "sha256": "32058CCE6FD75B05D05912664639EC731115BD5B12E3982257178066843D567F"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\security\\RefreshRotationStatus.java",
+    "sha256": "343DD061019DA7905951192DF80E7FB5CA2338BF076459283FBA65D883C4C10C"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\security\\RefreshSessionResult.java",
+    "sha256": "91E72DDF5349479DA3EE0D5B5D07594C2055133519130D138E8B343CDD1A4391"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\security\\RefreshSessionService.java",
+    "sha256": "4153391F9BAB74693A9614095FDBC08F85915EAB470C2CA089CD758912FB1755"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\security\\RefreshSessionServiceImpl.java",
+    "sha256": "F8AF05E91F1000742714E3807846609BA93B7AF75BA218CA236D03C187BFCDA5"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\security\\RefreshTokenCodec.java",
+    "sha256": "CDA27EFA0C83733D08E99B3F1D6431165F315AB98A1460764DCF64E713125BEE"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\security\\SafePayAccessDeniedHandler.java",
+    "sha256": "22DD0252194BDF1B85D2F1B15D6127C8DB18CC06A6C1DFE3F84EB532EDE6AAFC"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\security\\SafePayAuthenticationEntryPoint.java",
+    "sha256": "8438D88AD344AD110F6A29B1E5820B95DDD574BDBBD183370F6C45FF07E9423D"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\security\\SafePayJwtAuthenticationConverter.java",
+    "sha256": "996451ED757AD1FD6E86C185D412E24DCF702D03F90C2A684FA33DA570D1F1C5"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\security\\SafePayPrincipal.java",
+    "sha256": "DAD774CD162944C4E7117AA110775B8E342B6E432D950EFED05C57CD476B7D2B"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\security\\SafePayUserDetailsService.java",
+    "sha256": "6BB1D14399FEB43B9C1DEA1B19FBCEBC8DF4E7D74EFA1619CC6479CC962EC88B"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\security\\SecurityConfig.java",
+    "sha256": "90CA3A409D8318E1DD9BF3AF563D2FD93432D48AFCC28E4D84BC92016C1392A5"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\security\\SecurityProblemWriter.java",
+    "sha256": "23E4CADC4468E30665561A60B4EE40E7800774AA829AEF64633B4B667D1AB085"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\security\\StaffReadAccess.java",
+    "sha256": "300001ABFE77F0444B4775EE86D6D4E224C60F26FD2E35888E7EFB0FCA42D999"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\security\\StompSecurityChannelInterceptor.java",
+    "sha256": "B8EDDC8E85586E739BD7A64E9F1DA2499DF3495A0BAD8E8256336E732076B7CE"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\AccountFundsService.java",
+    "sha256": "D882A31411A20DCFCF5855C3E2FB665856829D9E82EA43D48D3358A07FC3D225"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\AccountFundsServiceImpl.java",
+    "sha256": "B039C8A814A3ED83EB080319A609596995A3D84FD083B218612456CFF29D8DDC"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\AccountService.java",
+    "sha256": "053878A4875EB6DC91ED1E8DAEA28C7C74D16AB2242B524B157F60D5D835EEB0"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\AccountServiceImpl.java",
+    "sha256": "2D21EF39928E3417CBF0A9D3A548023067C33E8FC5D8FC1AC1AC9FD4087E635B"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\AdminAccountService.java",
+    "sha256": "ECEA6418D31CF22867A7E94C5F80B436565F02E5724FB22532CB3126E40ED4C7"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\AdminAccountServiceImpl.java",
+    "sha256": "13EF7FED31D5C10BB4878CFD259DAAEAB4736FF94F159ADFD0416853B7026B75"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\AdminOperationsService.java",
+    "sha256": "494E8640BD97A17C99BCA2E7F3A27C63124FE28CCEC4554740468CF6F67A2CE6"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\AdminOperationsServiceImpl.java",
+    "sha256": "9F4116FE5FDA2BA2615AA20365ED836E93DBD4EA864143173D030E876CA7CAFD"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\AdminUserSecurityService.java",
+    "sha256": "CAB159C618ED3C209EBEBC2FFAAEFC26DF3DE55E26ED73EE3EE07F2B3D5B0C2F"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\AdminUserSecurityServiceImpl.java",
+    "sha256": "B80E7F07F8B9C92BB76B6B0A72C9A9D4DE279F72D8AE6D8EE4A6FAB3570ADC7A"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\AmountRiskEngine.java",
+    "sha256": "B497E8246F4A2905B11C408763AB9877CB072E2814820172FAAD93A7B60A56E0"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\AuditDetailSanitizer.java",
+    "sha256": "3B0E7AF0CBB37570A5258BCFFAA8FA1B65886A3EF7F05B04A6DC766D00303CEA"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\AuditEvidenceService.java",
+    "sha256": "92A7A1CB9A3F97142DEB1AA49B597D42A7F26F67802389B284E5D1036D644E78"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\AuditEvidenceServiceImpl.java",
+    "sha256": "AE9AF564EE3A6B5EEC9972C2E18C34DBC470B4F6778C3DF551F98C1E03CED409"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\AuditQueryService.java",
+    "sha256": "69A3606EC721D5E977E5854861438F771CE014FEAFEF99BB1469D52ABEB9ACD1"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\AuditQueryServiceImpl.java",
+    "sha256": "ADACF3656CB2594D974375951E2A39AE3848F7E05018FD8E8F6A2B4D3E4BE825"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\AuthenticationAuditService.java",
+    "sha256": "82C3FF2A830298D6F51239395597FEB90E23E9B7C9EEB5A42751279DCD39C778"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\AuthenticationResult.java",
+    "sha256": "863E306E88FB83EF8179246801D542AEB6494BF82BD12F0AB24993A7E56B520D"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\AuthService.java",
+    "sha256": "FBFC37594F553775829232E000609E4A1D61CA4EAE1260BD77332275DA10EA89"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\AuthServiceImpl.java",
+    "sha256": "A8DF2C2DD324BCA28D20BF4875BE8A60A7441D636559C0BC4718295AB252C3A6"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\BCryptPasswordHashingService.java",
+    "sha256": "0D12956752E7E0B78D1DF6B0A5503E9278DA56F52071BBF26EA7E789F028AA14"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\BeneficiaryService.java",
+    "sha256": "F47A8D2386469521DF05B55C0A03B8CAAA3A33AB20DFE2B280B3DF365323424A"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\BeneficiaryServiceImpl.java",
+    "sha256": "1D3D408834A14DC5B44FEDD47EB8092506DFEFA876FA9936B0ECCD108E0C3E05"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\CredentialAuthenticationService.java",
+    "sha256": "DA5F01F68DA905E4CE70EB7A34F4DCFEC7B471C27B9F6A68AF39B678FE6F7A10"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\CredentialAuthenticationServiceImpl.java",
+    "sha256": "16ED5DE0077129D726638C3242185420AB841444E38D46CF082BC33DC53B730D"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\DisabledOtpDeliveryGateway.java",
+    "sha256": "48018E1CE5444F8E32A421C45F56929230BCA5E0AF3CCE54D54C7CCFFEF9CC4D"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\EmailOtpDeliveryGateway.java",
+    "sha256": "5ACB89D76271FD7EC9A9B3306FAF70B5A00BF4E97D395D5584609B2E31C62D31"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\IdempotencyExecutionResult.java",
+    "sha256": "D588058E437F36DCFEDEB9F53AD3180751788497ECC78C93B6CB4E3FED6F93EF"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\IdempotencyService.java",
+    "sha256": "0A5E6687B02253DD25FDAF4008AA02BFBC980DF16E4727F3D80CCF4C1B89EE2F"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\IdempotencyServiceImpl.java",
+    "sha256": "CFE7DBC8A1563AB56167447E5611616152A97FC4FCCDA382D1B56123BDCACA2F"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\LoginSecurityService.java",
+    "sha256": "BF682AE70B83C15B31E40BB6B86F43A9C9E8E154738A8801D81101D58D780FAE"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\LoginSecurityServiceImpl.java",
+    "sha256": "64471F1DFB5260458B9445797B75298A81EA0A5D2D1AAAFEA61B3F17179A23A8"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\NotificationDispatcher.java",
+    "sha256": "971408FF22ED92F909617A74499AEB7BEC33071A5BAEFAEAD53F1AF65EA5633E"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\NotificationDispatcherImpl.java",
+    "sha256": "87F864106A6F942757563908D2970A36BB19DA586801A3DAF52867894BED5175"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\NotificationDispatchOutcome.java",
+    "sha256": "B6E05D24DE2B49D78E6CBF5629C1B181628BF93969D6E585550AEA5A448890C3"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\NotificationDispatchWorker.java",
+    "sha256": "BD2ECBC36FFF8372C94FB3780DAB6DD6FBDDFF2594B9E420ADEE110A335D7179"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\NotificationDispatchWorkerImpl.java",
+    "sha256": "13DBD83405DF09EA9310AF6080A205CEAFE9DED1E857C55F997EB2BBA8F6B454"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\NotificationEventPublisher.java",
+    "sha256": "A8ABB79F93819977CA139A33785A19FF2F39B79C32230D84EAC6FA02AB476EF2"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\NotificationService.java",
+    "sha256": "01FAB231D8FDBEA041840CEC1E8E7EE54EE7910672B83587467A5FCD969B7893"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\NotificationServiceImpl.java",
+    "sha256": "980E759BBE30007206BF3872A0DBD78FE7DAF27E88D27B78D02148A40F895417"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\OperationContext.java",
+    "sha256": "A39BE73E68B4E5656CF1BEBAFC1332142FFAA2279B30B1FC1F2F71330A0EF3E0"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\OtpChallengeResult.java",
+    "sha256": "AF8430565D6D08745FEC7E77E74D5A4F8AD735B5136B35AEAA21578B6A73F04F"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\OtpCode.java",
+    "sha256": "949DF4011CBCB8512BE8D990568A3267E200B2BAA4F9B96D438F469A4FFB2554"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\OtpCodeGenerator.java",
+    "sha256": "E47F414A3243095C0CF23D4A1F16D9393AF3B7EF87CEAA56B7000566EC70A607"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\OtpDeliveryException.java",
+    "sha256": "6D2EDFC46766BD543E3851DDAFC35D8037F889062CFACEA32C5DB33759A9D12E"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\OtpDeliveryGateway.java",
+    "sha256": "DE2EB14E308464F29DDB5517735751558898B1AD8A7901416E21A780EA870287"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\OtpEmailProperties.java",
+    "sha256": "0868E5FC6EEB27FB04FAD5A3C16A4283454A6CC331482965D820DCA6BE272BBF"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\OtpEmailRoutingMode.java",
+    "sha256": "21FF8CC08993E9D884679C210818463261E47055C3037E51C4A0D8D5BB73A882"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\OtpHashingService.java",
+    "sha256": "ECFE830757925D1CEC9E9E93F709FC1F8AEEA5A568D663928CE379D31D3D08ED"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\OtpPolicyProperties.java",
+    "sha256": "22286EDC399B944B12A1A33A108D96E6CBF01B53BEF55E4045509FA83FD3A453"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\OtpService.java",
+    "sha256": "C661CEF6DFE7089F503ABA302C7C8A4CFD607C0AF576FA9BF4A8B11A4CEB1330"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\OtpServiceImpl.java",
+    "sha256": "58D90974FB3011E6B1787C2B606550B91D6467306569C017E53F6234228723EA"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\OtpVerificationResult.java",
+    "sha256": "8E7F99F3E35FD690835B533DDBE5F449A371A57A0D811DF36D48A7F8601130E2"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\PasswordHashingService.java",
+    "sha256": "F477034D85F3924AA2364C0FE02493BFF87969BF16A5E15F7ECFA80D8C2C2B12"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\ProtectedTransactionReleaseOutcome.java",
+    "sha256": "4A3F943C0D75FF9769537B2795E12A30438CD833D5000ACA4A7BF550BEB6D1AC"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\ProtectedTransactionReleaseService.java",
+    "sha256": "73E92736AB62185F9B4AA1442F244355B9BC5FA10172AE7480EF8FF4A498AD52"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\ProtectedTransactionReleaseServiceImpl.java",
+    "sha256": "C79B2D30D19757002F7E165306C2F8B11FB6871590F1C6CA5784ADD4EFB67AFB"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\ProtectedTransactionReleaseWorker.java",
+    "sha256": "BA737BAF5F3551A914F1449BC4E324B671DF37229539C574DD90831229720374"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\ProtectedTransactionReleaseWorkerImpl.java",
+    "sha256": "1EBA1AE3C7B609CA64301D0336D057D361EEFAF8F47B5A61E794ED83E5FDE36E"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\ReleasedTransactionSettlementProcessor.java",
+    "sha256": "4BAF6AD0204ADC0C63214D7452D8532EEBD730E237FC21E7C8CAC0F161F5B92D"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\ReleasedTransactionSettlementProcessorImpl.java",
+    "sha256": "7D0696C99AF6F427A1AED3E9C4559BA2F45FDC42B0B92AB657A92494B2AC075E"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\RequestFingerprintService.java",
+    "sha256": "065B9CE69D614DAFB1E98F95EDD7146652F78392F55B6B12AF3A79BD7DA1EF65"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\RiskPolicyService.java",
+    "sha256": "1F831B24B178140241590CE119137AC4197BD03E6FE9A9F00A91F51C92F3C318"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\RiskPolicyServiceImpl.java",
+    "sha256": "03C2410927EF88669EB35D1BB42595E407A5E40DB00CF7F09191AFBF028576CE"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\RiskReviewAuditService.java",
+    "sha256": "23AC527E208BF4934BF71DF489434A55E1EF9EA3BBD3C07DCB0342EF5297C767"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\RiskReviewAuditServiceImpl.java",
+    "sha256": "0B0841D5303FAD3286DA5E824CAD5D436A4161E043F2428C1A3D4DC462E44036"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\RiskReviewService.java",
+    "sha256": "D8B908E5446A6CFACD4B6A797A27856D6EAB9846DF4B70A0A1FD7CBD38277B6F"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\RiskReviewServiceImpl.java",
+    "sha256": "C411235D11B7024F766E7740123211763902FCD7AD9D34498CCFA862B1C32BA5"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\SecureOtpCodeGenerator.java",
+    "sha256": "CBDF9379D92DBCC870E24D9F432B6989E95F2EC143F3F1C79A54C3A4E847126E"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\SecurityIncidentAuditService.java",
+    "sha256": "B8BEC154B24C4E9DA436F0D68A02588D2EA4BCE3AC565987D6E7D2D30AE37858"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\SettlementAttemptOutcome.java",
+    "sha256": "BB5FED2BA53C5630579DD3C227A4AD892B20A6BB03B4B6B9A2A7EBFC5B761D0C"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\SettlementEvidenceService.java",
+    "sha256": "74785A1CE0ADAC985BDD0830DCE57C963ADC824358115F58EF14B35ABE48C946"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\SettlementEvidenceServiceImpl.java",
+    "sha256": "1541E710FF0AD0BBE846715AB1B01966DECC9D61CEF2D5A0774DE22358936DA7"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\SettlementFailureDisposition.java",
+    "sha256": "57C07900B3C42505502F98270DCB57E6714F608DFEFB659516B8BBF3D6D066B2"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\SettlementFailureRecorder.java",
+    "sha256": "DF8203889560924B3F9CCC4CA99ADC4B73FBBFEBED43BCDF4600123463AC9153"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\SettlementFailureRecorderImpl.java",
+    "sha256": "1931F2240CA4C884620BF3C2B2643D68AAC78DFA489D32F73D254C98D6350549"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\SettlementInvariantException.java",
+    "sha256": "C84B654A4BF5E4D2229391439DCB1D74721EFC9A513F1AF03CC3242A487BC172"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\SettlementPostingFactory.java",
+    "sha256": "7D0D71C1E7A61C3C1157FA492EFA636EBA0F9B9088276D848FBB35F71F376E87"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\SettlementPostingPair.java",
+    "sha256": "9883E64A9482EBD3F23851B14E907D20BF70B85AD8757E841B4C88F31E65AD9C"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\SettlementService.java",
+    "sha256": "5F011F3C4DD2567288BD0C8D094128C8FF1AACEB183D4D52FD6C805DB7B6FFC6"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\SettlementServiceImpl.java",
+    "sha256": "E5BE4466F85A619F0314E608C706E46F6A00416BA20BF0CB15073B2048604962"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\Sha256OtpHashingService.java",
+    "sha256": "082086836E009F4811272A3768BD7F7AA57960C26147424BECCA45FF0B1A3801"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\StompNotificationEventPublisher.java",
+    "sha256": "8C1F2AFC0684B59ACCA4FD67A21A45DCB3FEF1DD2987DA58C44051D9C23CE777"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\TransactionLifecycleEvent.java",
+    "sha256": "FABB708B765958CF439F414164B78709E19F80C29A4C5EBDFE2F26D82DD2233F"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\TransactionLifecycleEvidenceService.java",
+    "sha256": "CF349C89DB9A4EF602F0BC38AB0CF46E589384C2BD79A0615505A2968C2D9970"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\TransactionLifecycleEvidenceServiceImpl.java",
+    "sha256": "04C06A450E0E6E61333EA5B774F1AAE5D4127202FBCAD85B38030A72EACE57D5"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\TransactionService.java",
+    "sha256": "2D04180BD94FCC34F07D3D32B68F6648863A5D2D088D6ABC60AE678FAA8D9A11"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\TransactionServiceImpl.java",
+    "sha256": "7B458BE999075CB3AF1B18CCFFEEC73245C81D9775FF655445F060C5AA408A24"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\TransactionStateService.java",
+    "sha256": "DEDC521E93B97E0F10EE19951AFAF34F6D5D05844FE8B3AD4BFABF0B3DB09EA1"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\TransactionStateServiceImpl.java",
+    "sha256": "3949E7CF93D34A972A52D9358FD8B9804F0E9C1A142EAE9144659A96A77A6158"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\UserRegistrationService.java",
+    "sha256": "FFF55EF2247BE9409A971799F52F4B9596C855D878563B37AAD54F61100FE17A"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\UserRegistrationServiceImpl.java",
+    "sha256": "AA15BB43D3979A000375CE12F70BBF4184C021DC63F57F0C0AD1F9EE16D417DB"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\UserService.java",
+    "sha256": "C53E8F338266E6F67D0A6CC1C19786C5E46E6A62644E917CBE10FB365BAA476A"
+  },
+  {
+    "path": "src\\main\\java\\com\\ofss\\services\\UserServiceImpl.java",
+    "sha256": "63454C8528167C3B4213BC40C07C446A06C274C909D8AAFA6278B81DB6720DCB"
+  },
+  {
+    "path": "src\\main\\resources\\application.properties",
+    "sha256": "A45E9B43D4B0506F142E8B0A5FB0EC465BB39520A44AC10EC28D8DF94D1D054C"
+  },
+  {
+    "path": "src\\main\\resources\\db\\migration\\R__safepay_app_grants.sql",
+    "sha256": "DF000030BDEAF7D456B902E60178AA7607EBDB171A8D579B08CC43CBD2CC52EC"
+  },
+  {
+    "path": "src\\main\\resources\\db\\migration\\V1__security_and_users.sql",
+    "sha256": "BA3FADA12F3F801EECA0E7F0B0C8F4B6846D1F8F97079914DAC5412AF0DC9E7E"
+  },
+  {
+    "path": "src\\main\\resources\\db\\migration\\V10__phase_1_9_integrity_hardening.sql",
+    "sha256": "C5D58877E11E83C7C31AF2343D5F1B52F9D14B5A410F37117A2B4DCB64277BA8"
+  },
+  {
+    "path": "src\\main\\resources\\db\\migration\\V11__canonical_v1_reference_data.sql",
+    "sha256": "7EBA595B44A546FB21FF3581A17913DFB64D671171ED598352AD6E5BA6D9BEF9"
+  },
+  {
+    "path": "src\\main\\resources\\db\\migration\\V13__payment_category.sql",
+    "sha256": "32D7F9F693A6BF254A136D79151195E3944E15B94208F77E0B1A3CFBFE05807E"
+  },
+  {
+    "path": "src\\main\\resources\\db\\migration\\V2__accounts_and_beneficiaries.sql",
+    "sha256": "CFE50E42414086C82F5F69091069516D07D80F158626B6B2BF846D9C4EAD2A8A"
+  },
+  {
+    "path": "src\\main\\resources\\db\\migration\\V3__risk_policy.sql",
+    "sha256": "5ED9247E1DEB884DA10A589D7EF19C8F75B434F28295AF3BC3C7713499564FEF"
+  },
+  {
+    "path": "src\\main\\resources\\db\\migration\\V4__transactions_and_idempotency.sql",
+    "sha256": "2263945D98EA9B759CECEECE2A3E015DFD6DCC08B0C86DF8C7F969CDF7312903"
+  },
+  {
+    "path": "src\\main\\resources\\db\\migration\\V5__otp_and_risk_approvals.sql",
+    "sha256": "FDBAABD04C5786FF8A8373233E09A228B050A9E7E18BB124FEB63BE826A49C24"
+  },
+  {
+    "path": "src\\main\\resources\\db\\migration\\V6__ledger_and_exceptions.sql",
+    "sha256": "932ED72802E5FE0EDF980B42BCE00FFB3F98BAAC0022CF4FCDD9C47CE91DE865"
+  },
+  {
+    "path": "src\\main\\resources\\db\\migration\\V7__audit_and_notifications.sql",
+    "sha256": "44BE9E798F195BACAC0E0912C9766918BFD638C908A4B125F66E16D680BD7342"
+  },
+  {
+    "path": "src\\main\\resources\\db\\migration\\V8__analytical_and_reconciliation_views.sql",
+    "sha256": "16CF2C6F59C572F7FB3F86F7D5BEA67614896B4A7EB9FC7D50B5822B27BE8828"
+  },
+  {
+    "path": "src\\main\\resources\\db\\migration\\V9__phase_1_9_vocabulary_reconciliation.sql",
+    "sha256": "FA27DD3B433AF02EC004CEAB37D18C4B3445498108C093E8DE83B22EA194779D"
+  },
+  {
+    "path": "src\\main\\resources\\db\\showcase\\V12__safepay_v1_showcase_seed.sql",
+    "sha256": "F7FCB52487F0FF30EFA25AF92128E65033DC7B1CAB47410DC4D972DA873B02AE"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\SafePayApplicationTests.java",
+    "sha256": "0F00646229E9064F17A8B0D58677AC483B73BFD8E56039AAAF4651DB0EB3DD8B"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\beans\\AccountFinancialStateTest.java",
+    "sha256": "1AE6899B29652AC7395719FB8FA502F6BD35A525A17A91392B7F3E6F6C6E66D5"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\beans\\AccountTest.java",
+    "sha256": "9AA0EA125EBDC149B0511F262EE4E89B66DCB366A2CE779642CC1983ED36EAD0"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\beans\\AdministrativeAuditModelTest.java",
+    "sha256": "F7C1D02FA87AE5839AE1649F3C51DFCD4D51664D5B7C228C599DD10705001958"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\beans\\AppNotificationLifecycleTest.java",
+    "sha256": "494A6BC203256338977B3BB3943E804C8333C3F07821638DF1A596EB520FFF39"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\beans\\AuthenticationAuditModelTest.java",
+    "sha256": "1E9A29FA03827BAB659871EB5A9AD81E6D152E322DE7C5671DDC8CBBC2EF7763"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\beans\\BeneficiaryTest.java",
+    "sha256": "90D14B0C4B0E565EDBC6C4195C14F44B11FFDA4FEF2FE807F7F5EC7AC75F8177"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\beans\\IdempotencyRecordTest.java",
+    "sha256": "BB2C3685B9775551F4526C5A4CB6359E32A8C720E9EFBB11049C16F3109875C9"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\beans\\LedgerEntryTest.java",
+    "sha256": "5B6970171056000C55A7B016F44208339A8F51A9C493CFA03D9DE1CC757B3C65"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\beans\\LedgerPostingTest.java",
+    "sha256": "9612A9114B8F03D249FC3A03F479B37767A596F2E4621F4793A69D0015F58089"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\beans\\OtpChallengeMappingTest.java",
+    "sha256": "2233C35AC47E07437C40C261A5980C6FCA860BC4F949F6292E83937226E94D99"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\beans\\OtpChallengeTest.java",
+    "sha256": "A826E24C65563CC5514B6A39833E9259824AACE7BAB90A785429CDC92AD42D8B"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\beans\\RiskPolicyEntityTest.java",
+    "sha256": "D1D46042BC15F2676E6988383A74FA4E6E4DC0C9774882039F0AF462CA019AA0"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\beans\\RiskReviewMappingTest.java",
+    "sha256": "9BA9525321DEA4476873872B93D235D8C07794F16A53724BF7111EAE86F39E33"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\beans\\RiskReviewTest.java",
+    "sha256": "697DD28904140125FE047643784973797FCFD34AEA4329A16F5CA36A0D0815AB"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\beans\\SettlementEvidenceModelTest.java",
+    "sha256": "58E39ABABBD9B6B355CB478B41CF5877F6DA65E8366C0ADAA752CA79193AD069"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\beans\\TransactionEntityTest.java",
+    "sha256": "ECE1D9FF1CD1808562160E1C5A4F68B101AA1B6EEEA5318971C24BC73BC22A3E"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\beans\\TransactionExceptionLogTest.java",
+    "sha256": "2D1B2024923BBD31E3FA452A5F441C731337BCBAD8B5211B1F2ECE156DA627A2"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\beans\\UserAdministrativeStateTest.java",
+    "sha256": "721088245BCDE268CED3E03B5F1F63978B55B2FDBFBA09BFF1D98258253F5FAB"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\beans\\UserAuthenticationStateTest.java",
+    "sha256": "E40D18B261E3236645B68C9E3BC5F20EE14196241E1B760A9A7E6C1626043F13"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\common\\CorrelationIdFilterTest.java",
+    "sha256": "999E73A19121C03BF6BBA0B035602089B75FC653197CB7B9C0220495E380C422"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\common\\MoneyUtilityTest.java",
+    "sha256": "F3F02578A038B4437BA4711DFB5AAB8BDAF242A772C97D509B678F55A545DC1E"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\common\\OtpConfigurationTest.java",
+    "sha256": "9645818C38114432CDF4A552A02C913FDE798E906852EFD99AB0F18D39BA97B9"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\common\\SensitiveDataMaskerTest.java",
+    "sha256": "04576293B3279D8BEAD255E942117657F0A9A6ECF66F180C2F2BF736DEF74236"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\common\\WebSocketConfigTest.java",
+    "sha256": "F0F95F7C232341E2CA674BA69D492A69049E513819ED0FE4034B2771740A538F"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\common\\api\\PagedResponseTest.java",
+    "sha256": "29207791BA84322DAF5E4E8A17E38E05EA30A4F610C7C98CE45CF97EDB920B8A"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\controller\\AccountControllerTest.java",
+    "sha256": "2DB70AF3E05C556E4B172CACD2AD08C722239A5BC6B15E15CC1CBB03511FBCBA"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\controller\\AdminAccountControllerTest.java",
+    "sha256": "98F91B4649C3F535585E481463697F2D09DA3719E881C073621B53B9D3154EC2"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\controller\\AdminOperationsControllerTest.java",
+    "sha256": "3084406E3AB4C26843C5C49FCEE8B0B6FA4DB7BBEC5F44C2C121EAE50BAAD1A5"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\controller\\AdminUserSecurityControllerTest.java",
+    "sha256": "F74CFFB3B0FC5F906702EFEC56DEFF5212FC709C52F44C7AA9825E232E2EB24B"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\controller\\AuditControllerTest.java",
+    "sha256": "0EA364D3A7A67CA9C8C2CA797603A096A87EE50C3CD85F0C8733B1994CA5751D"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\controller\\AuditEvidenceControllerTest.java",
+    "sha256": "BF19DD8C2ED28A255E8300B6897FD82FCA94BFAB39713E6FBC4FB2C90A48FEED"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\controller\\AuthControllerTest.java",
+    "sha256": "C57B4FC08FB4AC32F32B30744AAA714B5053D7B399B05577016F81E080159E57"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\controller\\AuthSessionControllerTest.java",
+    "sha256": "71F4D3453C0E651CB6590CCEE25AFBCCB2C92741B593F95F6854255C83E2DF61"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\controller\\BeneficiaryControllerTest.java",
+    "sha256": "71867986CC447CB1C1012C3C1C29F0DD438BACABF962756508C3C10C9A30A27C"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\controller\\CustomerProfileControllerTest.java",
+    "sha256": "C13110C12CB8974A3E209506C54C9DC9EF7A0720B07CEB58F62D32EA8E36B1DF"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\controller\\NotificationControllerTest.java",
+    "sha256": "42A0FED51DB83A97A0EEF1109CA34F90E96CE24C99E2F98AD61C183844FDD31D"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\controller\\RiskReviewControllerTest.java",
+    "sha256": "F9B89352FD9AE848E115AF18A0688503702A671B79AD39BC367D948BBC02E016"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\controller\\TransactionControllerTest.java",
+    "sha256": "06C21842C75D7C93F552D9C011FDEF5630C496FD9F43587BE7989CDB520B5BF1"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\controller\\VerificationControllerTest.java",
+    "sha256": "FFF8C097B560E56C03742FAFA186D045B7E82B6F0C983CE0498FBE8577C517D3"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\dto\\audit\\AuditReportingResponseTest.java",
+    "sha256": "461C0BF28752D98BC8ED3B76C71AB033416F9E23B3F9046FE3C6C68A6C54ACC2"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\dto\\auth\\LoginRequestTest.java",
+    "sha256": "D3C06F00370CDFEA4D32731AB167963DCEBDF5DDF324A27E0888405A625913F4"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\dto\\auth\\RegisterUserRequestTest.java",
+    "sha256": "81F1A1560903295A52E5182B2D05641412083FB53E5370D42AC90404C6E9D30E"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\dto\\beneficiary\\BeneficiaryResponseTest.java",
+    "sha256": "364E0013F42A825AA360C3583419CB19E427953A673261A081C2D227888F7FD5"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\dto\\beneficiary\\CreateBeneficiaryRequestTest.java",
+    "sha256": "779B16D5884D847BFC26FF5094501B336D206961781C3443218255EFB583AB6A"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\dto\\beneficiary\\UpdateBeneficiaryStatusRequestTest.java",
+    "sha256": "4BF1030AD96A8C1A4BC26BDC363FCC0112457AC6732DECA1907A187554463F63"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\dto\\risk\\RiskEvaluationResultTest.java",
+    "sha256": "6975CCCB87D38E37FFFE957673EBD7E8A24E5E43F06B669ED3C3EE2879E26CAF"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\dto\\riskreview\\RiskReviewResponseTest.java",
+    "sha256": "B1F8C0055AD655474C26B1239D952A6E1500D32BF20DE33186195BB69957689A"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\dto\\transaction\\AuthorizeTransactionRequestTest.java",
+    "sha256": "7993CA999A81E7C9FD93D5D0CD49E1E0422B8ACAA112626A5DE1F2100EFB7168"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\dto\\transaction\\CreateTransactionRequestTest.java",
+    "sha256": "0173D4A0C8054CF16BDD2068A0DD7BFA5EDA9C1E03202855BDDB33483F3F871F"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\dto\\transaction\\TransactionResponseTest.java",
+    "sha256": "306EE414EE9DCD5F7F390BE20F0E7A262F9C5A7797271CC0F07CFE963A6F2527"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\excp\\DuplicateResourceErrorTest.java",
+    "sha256": "8F65C2F7B505FDB726238F716C0772CC31E7DC680C904694242F6F5F1A4D0793"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\excp\\GlobalExceptionHandlerTest.java",
+    "sha256": "23D19E6EA12B20FE30EA4CCBDD5C1234319213C3649F3AD5E4C6ABC5E053248C"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\excp\\IdempotencyConflictExceptionTest.java",
+    "sha256": "99AEAFB34AD3FBFE8D6F1E31EDD310FE1F6E80CE2C7B24E8E172B5855A211245"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\excp\\RequestValidationErrorTest.java",
+    "sha256": "78393812EC1B99DA23A05B06D53E372AB21E9559498E37AD48C2553E291F8923"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\excp\\ResourceNotFoundErrorTest.java",
+    "sha256": "1253FB0282C7E726988BF223F428108B6EA87A12289C97C2423671217F8DD240"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\repository\\AccountDaoIntegrationTest.java",
+    "sha256": "DAFD9FA06FD01891EA74D462794FC97A9FCDA7A4BA501F7DA9FE655CDC187A17"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\repository\\AdminSecurityRepositoryOracleIntegrationTest.java",
+    "sha256": "61C912BFED80AD3D86126F37532EB9E856B45FC605113BA128085E80108D5C7E"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\repository\\AppNotificationRepositoryContractTest.java",
+    "sha256": "98AD7D4314678FFF13AAC4DB469B1FA7F825E06C307A54CFF76B71A56D4E32C8"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\repository\\AuditRepositoryContractTest.java",
+    "sha256": "9FB7A2822F2313FC621FCDA68776255F6450C2C9334A73C48DF8CD90F3A542A4"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\repository\\AuthSessionDaoIntegrationTest.java",
+    "sha256": "43F24A54A30527C9A266E684D0C105E2B4F32A61B047210E20AB17B06EEB44E4"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\repository\\BeneficiaryDaoIntegrationTest.java",
+    "sha256": "113933BE088BF8F3BD61D81FF322121298A8822C228A5AAF996E1A43DFC925F4"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\repository\\IdempotencyRecordDaoIntegrationTest.java",
+    "sha256": "6F27373B382EC35ED0EA560E2045F262F0BF9380FCE0FF115E7010E397951A23"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\repository\\LedgerDaoOracleIntegrationTest.java",
+    "sha256": "E81CBE0599211FE14F556808A5B974A8874B8EEE056F1C22D1EC3DE09262EFBA"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\repository\\LedgerRepositoryContractTest.java",
+    "sha256": "E79EBB0BE7835F0CCAD6F5FCB31D8F7C9C646A6E0817F7DC6DC96AFD6A774F31"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\repository\\OtpChallengeDaoOracleIntegrationTest.java",
+    "sha256": "120389AF704020E1ECBA0F2F679ACC06127F10F2C63C16BC3F2857BB3212AABF"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\repository\\OtpChallengeRepositoryContractTest.java",
+    "sha256": "35DB4C6C00579FB43C074D3FA29EA5AC6D3E894891BDBD45AF6E09D18B725CE3"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\repository\\ReportingReadRepositoryOracleIntegrationTest.java",
+    "sha256": "33060059488645022D39B64368ED17E612AAF328C22422ABCCB88B6C48A3329E"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\repository\\ReportingReadRepositoryTest.java",
+    "sha256": "26D672A6800DE57682C6D02986196C50ADCEBD8124E156D81CF3BCB7180C5654"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\repository\\RiskPolicyDaoIntegrationTest.java",
+    "sha256": "236DF635043C94140DF3A1CB84CFA308DFEBB61E6422A5A2A8530476993F8113"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\repository\\RiskReviewRepositoryContractTest.java",
+    "sha256": "0CA93490DD960521F0DB2E899260A942F1D8427C6E1B8EB23F7E1DC46078AED5"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\repository\\RoleDaoIntegrationTest.java",
+    "sha256": "9CFDD75B7D6FAF457A026D1ED8F4F79FDD6A57D6A2EF957A4E5F8321CF472FDF"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\repository\\SecurityRefreshRepositoryOracleIntegrationTest.java",
+    "sha256": "9360FFAC15081C687962D400AEE684D346099775D692E55E79F620F96A593E47"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\repository\\SecurityUserRepositoryOracleIntegrationTest.java",
+    "sha256": "3D327C1280BAD40D110C9145A48608BF4CF346816E1553D264F130E285393D9C"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\repository\\SettlementEvidenceRepositoryContractTest.java",
+    "sha256": "C15FACF805EACAF31436E58CCDE77A8BB2442C63F79DF791677B54A82F590B78"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\repository\\TransactionDaoIntegrationTest.java",
+    "sha256": "6E91257A096B86677A2905D4675352C434B23B1DAE88D54226E95EC54735F3AD"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\repository\\TransactionSchedulerDaoIntegrationTest.java",
+    "sha256": "6B8F06FB1595AC34C7727D2D2E3E5F9292C08E66542E2F6763C0D797908C14A1"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\repository\\UserDaoIntegrationTest.java",
+    "sha256": "AB4BFD373F5561A7965D8CD35D9FF602A651B5ED6FAC87A85ACA91128AE59EC2"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\repository\\UserRoleDaoIntegrationTest.java",
+    "sha256": "82C1D6EA8B419677DDBBF82283F3721054C829B4D1F9CEA3D2EC6AE07F92A322"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\scheduler\\NotificationDispatcherPropertiesTest.java",
+    "sha256": "5885F3F93B6C7E0C4EA8FE6C80356D0FBB206F514FB52710A549FADBB721ADEF"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\scheduler\\NotificationDispatcherSchedulerTest.java",
+    "sha256": "E88988FD8E0E45D432822B7A0AC4AD1A7F2429EBAA5767EF7F1B267DD98FBFF5"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\scheduler\\ProtectedTransactionSchedulerTest.java",
+    "sha256": "5978552B57AABC8FCA311B76160207CB6964E932D28DE989698806B04C859CB0"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\scheduler\\ProtectionSchedulerPropertiesTest.java",
+    "sha256": "64AA98686DD2651ABBFD8170A4DAE3E06616BA3581D14DB7A2F649B8C3DB99A8"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\scheduler\\ReleasedTransactionSettlementSchedulerTest.java",
+    "sha256": "3ABFE4BAEBD47FA1D1D0D1F0EAF5F15174D6A94B5F55194C738DEEC852734711"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\scheduler\\SettlementProcessorPropertiesTest.java",
+    "sha256": "59F556C5B319EEB4A0D751FFDFD42AC4952D50834BF7971A06C0BC8A2E69A4DE"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\security\\AccountEndpointSecurityTest.java",
+    "sha256": "DAFBCC9FD6D74D6171BD388DF27A9F6BAFACDBA5C1B791040A54D68D8C1464F7"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\security\\AuthenticatedUserTest.java",
+    "sha256": "D3119BB8A2599D4AB11EFD2934A713BA41DC909E530AF020096C9AE5435E8357"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\security\\BrowserSecurityConfigurationTest.java",
+    "sha256": "C5682AFC009D3479F39E30D2B7DF9A617BA2F44C74A69D1F68488467615CFD85"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\security\\BrowserSecurityPropertiesTest.java",
+    "sha256": "7B3938DBFF922D8C330CF8C9A329033815828C31893DDB61DBBEA426A520E5D5"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\security\\JwtAccessTokenServiceTest.java",
+    "sha256": "F7FBBC498230D3DC7FD8A09FE991704B951E0075813264D77EFFE359EA1E2055"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\security\\JwtDecoderSecurityContractTest.java",
+    "sha256": "0D8DEA2164BECBE9D860A19851C55C321C8FD908F2A77807F24CC2C0815CD0EB"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\security\\RefreshCookieOriginFilterTest.java",
+    "sha256": "96372C1B9D556F926F8C5A7DE6EF72A553C2F21487915EDFDAC9515B088538C7"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\security\\RefreshSessionServiceImplTest.java",
+    "sha256": "222DD7B128205AF2C73C0B3C7E6F0B9F42361E73DDF5A35ED81E76C245F693FE"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\security\\RefreshTokenCodecTest.java",
+    "sha256": "FA45106F7A204F363384BE5796C9AE4AAB976B0C1C30B7A3BF098987EC7D6921"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\security\\SafePayJwtAuthenticationConverterTest.java",
+    "sha256": "97992892BFA5053F3CF756014D373D8BC347A2083809879A5C2A4FE5C97B9340"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\security\\SafePayUserDetailsServiceTest.java",
+    "sha256": "4C7106A226A5C7ACD7DFF382839A2E6A7D0382780B17163D16DB8B9F980B0A69"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\security\\SecurityAuthorizationContractTest.java",
+    "sha256": "497EBF11BAD4D5BD7B6EFD95F86CE93335DDF3BAF0753EFC1C6921515924B9CD"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\security\\SecurityPolicyPropertiesTest.java",
+    "sha256": "26D4AB6196D89A5787BDB3FEB39C8E4515C75187152BB4D29F3986014EB93634"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\security\\SecurityProblemHandlerTest.java",
+    "sha256": "D4640AC46DC088C74D3F28F66AC12917C0559EBF891FCBFCFB0740B533A260D8"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\security\\StaffReadAccessTest.java",
+    "sha256": "55798638E7E30C34EFEDF68F1DDC03DAA458ED060BE6DD3BCE0438ACA8195879"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\security\\StaffReadEndpointSecurityTest.java",
+    "sha256": "41069AB5031DBA6DA814BD119B6F0360292385AE8592F537A40D478C5A7AD4CF"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\security\\StompSecurityChannelInterceptorTest.java",
+    "sha256": "7AD25955734A5021E79A5F04A7B932FE1C800EA88D02BA9B240490A6AA6A888D"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\services\\AccountFundsServiceImplTest.java",
+    "sha256": "97BDC8918624E1F27A4C2F3340A8FC94975F68085F746BA9C8F0710080F1AFD6"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\services\\AccountFundsServiceOracleIntegrationTest.java",
+    "sha256": "4501E7AEFD58BDE9DA0689556C2B944807DA8052B1C1566F5FB9CA98F2D8A6EA"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\services\\AccountServiceImplTest.java",
+    "sha256": "84C32F8523D43F9457CA91BD7C3A8DAC61A3B7CFCEFC8619ECCF9C4D43FF4D1B"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\services\\AdminAccountServiceImplTest.java",
+    "sha256": "BADA35D9F39D7723A37DAE79E0D0CE1E278D423EE2BFE1440B86E8AE5DC3FC18"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\services\\AdminOperationsServiceImplTest.java",
+    "sha256": "A9DA097D402D69E91F428FCBE2B273FC96AACA10347E17302149CF7BE9D23A24"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\services\\AdminUserSecurityServiceImplTest.java",
+    "sha256": "93DCAEB23C9F3C0DBF1B537DA6293AB4EBAD760869CDD87E35B5EF5FE983B38A"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\services\\AmountRiskEngineOracleIntegrationTest.java",
+    "sha256": "51BB86DE621BF10DAA2DB755A3CB686E60E87585EFC6649607CEDE0E5E5E5820"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\services\\AmountRiskEngineTest.java",
+    "sha256": "804A18B74F61B5714C6F62F482E049338DFBD1826A9EFE769B3862853A158DDB"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\services\\AuditDetailSanitizerTest.java",
+    "sha256": "A146F5F9690105F4680EED2CD0D81E964C6ABE4352E06111A45BE2EC59B3E00C"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\services\\AuditEvidenceServiceImplTest.java",
+    "sha256": "77C99B86654A1D81D1A6C17424EF26B5515D1625BB04131715403F159E6889B4"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\services\\AuditQueryServiceImplTest.java",
+    "sha256": "4C089951824B282DE036F8B2AEBFAA52A7F055663885D4D7B2A7DBE175BBD4F6"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\services\\AuthServiceImplTest.java",
+    "sha256": "19F641EBA88EF9BA068CF1E631A39A20512ABBAAC0D1177D68E9CA5D66726666"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\services\\BCryptPasswordHashingServiceTest.java",
+    "sha256": "BF3907E930B8F184DA0272ED39E4241C9DB87F1A8C4CD7D7C783F50B76F74005"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\services\\BeneficiaryServiceImplTest.java",
+    "sha256": "98C5FBB6489EA7D1005426BC2B9C891FC982171DCDB873EC2760B6718C832919"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\services\\BeneficiaryServiceOracleIntegrationTest.java",
+    "sha256": "E0E527D8162A99411968DFC25D3A7447D7C827DDE065C0D37444256B41665111"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\services\\CredentialAuthenticationServiceImplTest.java",
+    "sha256": "63B5082E489841DA959202C147D0A1D9B2F1DBCDD6AC06F1A433A6FD2D082789"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\services\\EmailOtpDeliveryGatewayTest.java",
+    "sha256": "DFFE43C0164C02F73AF80665430DB37535C1561BFE41CA0131F00AB086F83395"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\services\\IdempotencyExecutionResultTest.java",
+    "sha256": "1A5672F6A3AAA30390120D699C3789ABF968F3E8AEF5B4D1FCB3356C61CF520F"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\services\\IdempotencyServiceImplTest.java",
+    "sha256": "1CBF7FD839B98724098D1DBABD826C2A25B01AD7AAA1899E856AEC719845FBDC"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\services\\IdempotencyServiceOracleIntegrationTest.java",
+    "sha256": "9D3573E0751983E138124EB2BC4B5600E48DB1A9FCD69B93D1CDACF7CAEE7562"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\services\\LoginSecurityServiceImplTest.java",
+    "sha256": "17C7104BC66526E1D55F27DF2D4298B88C6B5625A1E168F833042DD010820B59"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\services\\NotificationDispatcherImplTest.java",
+    "sha256": "B120106CD1356B98B83EA24EED1B24C1223CEA54C1B4295B9D066CFDFFBBBA5B"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\services\\NotificationDispatchWorkerImplTest.java",
+    "sha256": "1BC0B47051D957D34D0D71E20BA02BC255D7A61324C196F3FD88C4D230AB2159"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\services\\NotificationServiceImplTest.java",
+    "sha256": "7BFDBE83545783BEFBB5105F32F90FC42D4D3D77AC26AA155E1379E271945AF1"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\services\\NotificationServiceOracleIntegrationTest.java",
+    "sha256": "B5ACE11EE851A0EC0F5F52453BBC2A87E3F37717363B9CA5BA0CE2227222DFF1"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\services\\OperationContextTest.java",
+    "sha256": "45A992CB78F262BCADEA28C1E9FBF5A578A4F6C2B6F0733D1A7E50B548C577FB"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\services\\OtpConcurrencyContractTest.java",
+    "sha256": "C78A9F5911BA6BF3D640853A86E9096E9E9FC2CA4D73542D7B9A89C30BD5796F"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\services\\OtpPolicyPropertiesTest.java",
+    "sha256": "2427EE587A1D45876D20784331EF2EBBB0A1D759CFC67AB6C4F8BC938E93B70D"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\services\\OtpServiceImplTest.java",
+    "sha256": "94ECF4D67664BC661221C0D42E7FA1B98EAEEAA90C15C72B9F7AD56FB31155F7"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\services\\OtpServiceOracleIntegrationTest.java",
+    "sha256": "E0664D68B99DA90F8A668ACD5508620563B73FFE8EC7A69478CBB5D911F0C679"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\services\\ProtectedTransactionReleaseServiceTest.java",
+    "sha256": "2FD930EFD89DED59D2227EA849E7C5F8170CB42F298763199E56DE27402F8EBD"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\services\\ProtectedTransactionReleaseWorkerTest.java",
+    "sha256": "F1CEE6FD11DAF85EE37EDCB6BE261AF26E95B81913D03B79E952B51E6CD8B7CA"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\services\\ProtectedTransactionSchedulerOracleIntegrationTest.java",
+    "sha256": "16FF2FA7EF2B4442A67D56A8795B5293F2FC3DB6CCA2991C2A368FE3646B92AA"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\services\\ReleasedTransactionSettlementProcessorTest.java",
+    "sha256": "4F639CBE50603C9BDD775165783770326CFA1DDD1083560FBE023BCA1546885A"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\services\\RequestFingerprintServiceTest.java",
+    "sha256": "ADAF90D9739005EE5F400DB1191CC96AD181F6D6C8BF5DE8DDDA2C95AC710BC0"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\services\\RiskPolicyServiceImplTest.java",
+    "sha256": "9E5F7E057F775B920D27CF25C56596074D69D1714FA36ECF08EF343ED4F166C6"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\services\\RiskReviewAuditServiceTest.java",
+    "sha256": "A6F7BBFCB4D2D2B5099EB1CB8B01145F9D8EAE38B5A9CE4742F9870732DC2A3A"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\services\\RiskReviewServiceImplTest.java",
+    "sha256": "ED21B8D16272449E69697DCE9553EE85330C764B664CCDF19454E1255CF8945E"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\services\\RiskReviewServiceOracleIntegrationTest.java",
+    "sha256": "B6292D4A7D77974B752196D88DAD3EC5B53D40D7B229389AF49A418859C56D4D"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\services\\SecureOtpCodeGeneratorTest.java",
+    "sha256": "2AA6C9ECEB14A24C2D75FE994A599EB621D1FA019DEF494A8F8D86A91F7ABF41"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\services\\SecurityIncidentAuditServiceTest.java",
+    "sha256": "06D77A33430C3358E94F17BA3666A46AE4F33D4E7D575285ADC697627F9CF0F0"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\services\\SettlementEvidenceServiceTest.java",
+    "sha256": "A6B15577FEFABB4BB4DF82DDE7F001DAEFEA230143FA9C37EBC16F6346F5F368"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\services\\SettlementFailureRecorderImplTest.java",
+    "sha256": "30866411636BCD0F801AB782A90EC9333FB9C2D65ABAEBEE6391B548B0AAEBD7"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\services\\SettlementPostingFactoryTest.java",
+    "sha256": "4475B7D767F42604105E2B4CEB06FF78AD4D27EB9CCDC3199A0976504216612D"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\services\\SettlementServiceImplTest.java",
+    "sha256": "C357054A59399DFEDD93383BD5CE808E4C91716D49193CD06E963F49BA0FE483"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\services\\SettlementServiceOracleIntegrationTest.java",
+    "sha256": "B3F6A49185C11FED1CDE58691A6A5CD6416EEB3940C6FA180A76A93D3A4BC865"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\services\\Sha256OtpHashingServiceTest.java",
+    "sha256": "44F1A0629E53DDDAA82AEB7E90C1CE759580D7429B1E4B8A6FE7750F13A30FF1"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\services\\StompNotificationEventPublisherTest.java",
+    "sha256": "B0BE315563308B81469C07564825251CBEF18D809464F05535EE366B7F3592C8"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\services\\TransactionAuthorizationServiceTest.java",
+    "sha256": "0ED2059391F49FDA0C327EE762A0944A07B18B9EA486A7C8FE1632F35AD29770"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\services\\TransactionCancellationServiceTest.java",
+    "sha256": "FE55A3683C6692438D75D67D51B6DA1FE01E49615F03CFAA13608ED9DC63C8C7"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\services\\TransactionCreationServiceTest.java",
+    "sha256": "D31E735148B3DEA97A845637CC4812ED7821315662E98269329C1453A05117F8"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\services\\TransactionLifecycleEvidenceServiceTest.java",
+    "sha256": "BC24B61F214313EB89BA3E7BD7110653646660E71CD24C76E9FE89EA7CAD6534"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\services\\TransactionQueryServiceTest.java",
+    "sha256": "537A517C7771914098380F5C7A724D62D1C102EF482F69FC0E54F0A0DAA22741"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\services\\TransactionServiceOracleIntegrationTest.java",
+    "sha256": "45F70D8F39AF93EC09C77C01A4A730DFB44C41E415A3EE049D3580BEA8093AD6"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\services\\TransactionStateServiceImplTest.java",
+    "sha256": "0949AE5AE7EE85370543AD9FBCCE4A3BCF99C404C8010072DDF2C42BF699A68F"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\services\\UserRegistrationServiceImplTest.java",
+    "sha256": "C79E4092D7E49EE77185A21516A8B6EB885CD3DA0D4874A18168333480A21EE4"
+  },
+  {
+    "path": "src\\test\\java\\com\\ofss\\services\\UserServiceImplTest.java",
+    "sha256": "3CFEF58EC7A279C9FFE9E8979C1594C0B543D12C792861BCF9278FF5736301BA"
+  },
+  {
+    "path": "src\\test\\resources\\db\\verification\\phase_1_9_read_only_verification.sql",
+    "sha256": "0611424F4D88AA0B64D765292047FFA70E228E859884E6B5FA50E050F47A735F"
+  }
+]

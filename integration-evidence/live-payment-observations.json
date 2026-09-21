@@ -1,0 +1,79 @@
+[
+  {
+    "test": "MEDIUM_CREATE",
+    "transactionId": "1554",
+    "state": "CREATED",
+    "amount": "5000.01",
+    "terminalReasonCode": null
+  },
+  {
+    "test": "MEDIUM_AUTHORIZE",
+    "transactionId": "1554",
+    "state": "PROTECTED",
+    "amount": "5000.01",
+    "terminalReasonCode": null
+  },
+  {
+    "test": "PROTECTED_CANCEL",
+    "transactionId": "1554",
+    "state": "CANCELLED",
+    "amount": "5000.01",
+    "terminalReasonCode": "CUSTOMER_CANCELLED"
+  },
+  {
+    "test": "CANCEL_SAME_KEY_REPLAY",
+    "transactionId": "1554",
+    "state": "CANCELLED",
+    "amount": "5000.01",
+    "terminalReasonCode": "CUSTOMER_CANCELLED"
+  },
+  {
+    "test": "HIGH_CREATE",
+    "transactionId": "1555",
+    "state": "CREATED",
+    "amount": "25000.01",
+    "terminalReasonCode": null
+  },
+  {
+    "test": "HIGH_AUTHORIZE",
+    "transactionId": "1555",
+    "state": "PROTECTED",
+    "amount": "25000.01",
+    "terminalReasonCode": null
+  },
+  {
+    "test": "HIGH_CANCEL",
+    "transactionId": "1555",
+    "state": "CANCELLED",
+    "amount": "25000.01",
+    "terminalReasonCode": "CUSTOMER_CANCELLED"
+  },
+  {
+    "test": "VERY_HIGH_CATEGORY_CREATE",
+    "transactionId": "1556",
+    "state": "CREATED",
+    "amount": "100000.01",
+    "terminalReasonCode": null
+  },
+  {
+    "test": "CREATED_CANCEL",
+    "transactionId": "1556",
+    "state": "CANCELLED",
+    "amount": "100000.01",
+    "terminalReasonCode": "CUSTOMER_CANCELLED"
+  },
+  {
+    "test": "INSUFFICIENT_FUNDS_CREATE",
+    "transactionId": "1557",
+    "state": "CREATED",
+    "amount": "200000.01",
+    "terminalReasonCode": null
+  },
+  {
+    "test": "INSUFFICIENT_FUNDS_AUTHORIZE",
+    "transactionId": "1557",
+    "state": "FAILED",
+    "amount": "200000.01",
+    "terminalReasonCode": "INSUFFICIENT_AVAILABLE_BALANCE"
+  }
+]
