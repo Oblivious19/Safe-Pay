@@ -3,6 +3,7 @@ package com.ofss.repository;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.EnumMap;
@@ -23,6 +24,8 @@ import com.ofss.dto.audit.AuditReconciliationResponse;
 import com.ofss.dto.audit.AuditExceptionResponse;
 import com.ofss.dto.admin.OperationalDashboardResponse;
 import com.ofss.dto.admin.OperationalFailureResponse;
+import com.ofss.dto.riskreview.RiskDashboardResponse;
+import com.ofss.dto.audit.AuditDashboardResponse;
 
 /** Read projections only; no entity mutation or worker invocation. */
 @Repository
@@ -177,6 +180,38 @@ public class ReportingReadRepository {
             return new OperationalDashboardResponse(time(r, "observed_at"), payments, r.getLong("pending_reviews"),
                     exceptions, notifications, r.getLong("expired_protected"), r.getLong("due_settlement"));
         });
+    }
+
+    public RiskDashboardResponse riskDashboard() {
+        OffsetDateTime observedAt = jdbc.queryForObject("select SYSTIMESTAMP from dual",
+                new MapSqlParameterSource(), OffsetDateTime.class);
+        Map<String, Long> reviewStatuses = groupedCounts(
+                "select status, count(*) as total from SAFEPAY_OWNER.RISK_REVIEW group by status");
+        Map<String, Long> riskTiers = groupedCounts(
+                "select risk_tier as status, count(*) as total from SAFEPAY_OWNER.PAYMENT_TRANSACTION where risk_tier is not null group by risk_tier");
+        BigDecimal pendingAmount = jdbc.queryForObject("""
+                select nvl(sum(payment.amount), 0) from SAFEPAY_OWNER.RISK_REVIEW review
+                  join SAFEPAY_OWNER.PAYMENT_TRANSACTION payment on payment.transaction_id = review.transaction_id
+                 where review.status = 'PENDING' and payment.state = 'PENDING_RISK_REVIEW'
+                """, new MapSqlParameterSource(), java.math.BigDecimal.class);
+        long pending = reviewStatuses.getOrDefault("PENDING", 0L);
+        return new RiskDashboardResponse(observedAt, pending, pendingAmount, reviewStatuses, riskTiers);
+    }
+
+    public AuditDashboardResponse auditDashboard() {
+        OffsetDateTime observedAt = jdbc.queryForObject("select SYSTIMESTAMP from dual",
+                new MapSqlParameterSource(), OffsetDateTime.class);
+        return new AuditDashboardResponse(observedAt,
+                groupedCounts("select reconciliation_status as status, count(*) as total from SAFEPAY_OWNER.VW_LEDGER_RECONCILIATION group by reconciliation_status"),
+                groupedCounts("select reconciliation_status as status, count(*) as total from SAFEPAY_OWNER.VW_RESERVATION_RECONCILIATION group by reconciliation_status"),
+                groupedCounts("select status, count(*) as total from SAFEPAY_OWNER.TRANSACTION_EXCEPTION group by status"));
+    }
+
+    private Map<String, Long> groupedCounts(String sql) {
+        Map<String, Long> result = new LinkedHashMap<>();
+        jdbc.query(sql, (org.springframework.jdbc.core.RowCallbackHandler)
+                rs -> result.put(rs.getString("status"), rs.getLong("total")));
+        return result;
     }
 
     private static final String[] EXCEPTION_STATUSES = {"OPEN", "RETRY_PENDING", "MANUAL_REVIEW"};

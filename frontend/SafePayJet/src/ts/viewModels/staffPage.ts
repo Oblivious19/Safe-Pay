@@ -14,12 +14,19 @@ type Field={label:string;value:string};
 type Group={title:string;fields:Field[]};
 export class StaffPage extends PageModel {
  area:string;tabs:StaffTab[];tab=ko.observable<StaffTab>();filters=ko.observableArray<any>([]);rows=ko.observableArray<Evidence>([]);result=ko.observable<Page<Evidence>|null>(null);page=ko.observable(0);loading=ko.observable(false);stale=ko.observable(false);detail=ko.observable<Evidence|null>(null);selectedId=ko.observable('');lookupId=ko.observable('');groups=ko.observableArray<Group>([]);statistics=ko.observableArray<Group>([]);timeline=ko.observableArray<Group>([]);timelinePage=ko.observable(0);timelineResult=ko.observable<Page<Evidence>|null>(null);timelineBusy=ko.observable(false);
- statusValue=ko.observable('ACTIVE');roleValue=ko.observable('CUSTOMER');roles=roles;reason=ko.observable('');note=ko.observable('');reviewPending=reviewPending;replayAvailable=ko.observable(false);pendingDescription=ko.observable('');adminUncertain=ko.observable(false);liveStatus=realtimeStatus;
+ statusValue=ko.observable('ACTIVE');roleValue=ko.observable('CUSTOMER');roles=roles;reason=ko.observable('');note=ko.observable('');reviewPending=reviewPending;replayAvailable=ko.observable(false);pendingDescription=ko.observable('');adminUncertain=ko.observable(false);liveStatus=realtimeStatus;dashboard=ko.observable<Evidence|null>(null);
  pinResetRequests=ko.observableArray<PinResetRequest>([]);
  private epoch=0;private detailEpoch=0;private timelineEpoch=0;private stop?:()=>void;private activeFilters:Record<string,string|number>={};
  title=ko.pureComputed(()=>this.area==='admin'?'Administration':this.area==='risk'?'Risk review':'Audit & evidence');
  subtitle=ko.pureComputed(()=>this.area==='admin'?'Access, accounts and operational health.':this.area==='risk'?'Review the evidence. Make a considered decision.':'Trace every step, from payment instruction to ledger.');
  currentTitle=ko.pureComputed(()=>this.tab()?.label||'');columns=ko.pureComputed(()=>this.tab()?.columns||[]);
+ adminStates=ko.pureComputed(()=>{const states=this.dashboard()?.paymentsByState||{};const total=Object.values(states).reduce((sum:number,value:any)=>sum+Number(value||0),0);return Object.entries(states).map(([name,value])=>({name:this.label(name),value:Number(value||0),width:total?Math.max(4,Math.round(Number(value||0)*100/total)):0})).filter(x=>x.value>0);});
+ riskBars=ko.pureComputed(()=>{const data=this.dashboard()?.paymentsByRiskTier||{};const total=Object.values(data).reduce((sum:number,value:any)=>sum+Number(value||0),0);return Object.entries(data).map(([name,value])=>({name:this.label(name),value:Number(value||0),width:total?Math.max(4,Math.round(Number(value||0)*100/total)):0})).filter(x=>x.value>0);});
+ reviewBars=ko.pureComputed(()=>{const data=this.dashboard()?.reviewsByStatus||{};const total=Object.values(data).reduce((sum:number,value:any)=>sum+Number(value||0),0);return Object.entries(data).map(([name,value])=>({name:this.label(name),value:Number(value||0),width:total?Math.max(4,Math.round(Number(value||0)*100/total)):0})).filter(x=>x.value>0);});
+ auditBars=(key:string)=>ko.pureComputed(()=>{const data=this.dashboard()?.[key]||{};const total=Object.values(data).reduce((sum:number,value:any)=>sum+Number(value||0),0);return Object.entries(data).map(([name,value])=>({name:this.label(name),value:Number(value||0),width:total?Math.max(4,Math.round(Number(value||0)*100/total)):0})).filter(x=>x.value>0);});
+ ledgerBars=this.auditBars('ledgerReconciliation');reservationBars=this.auditBars('reservationReconciliation');exceptionBars=this.auditBars('exceptionsByStatus');
+ adminMetric=(key:string)=>String(this.dashboard()?.[key] ?? 0);
+ dashboardUpdated=ko.pureComputed(()=>{const value=this.dashboard()?.observedAt;return value?'Last updated '+this.date(String(value)):'Loading current data…';});
  canReview=ko.pureComputed(()=>this.area==='risk'&&this.detail()?.review?.status==='PENDING'&&this.detail()?.review?.transactionState==='PENDING_RISK_REVIEW'&&!this.busy()&&!this.stale()&&!this.reviewPending());
  canAdmin=ko.pureComputed(()=>this.area==='admin'&&this.tab()?.key==='users'&&!!this.detail()&&!this.busy()&&!this.stale()&&!this.adminUncertain());
  transactionId=ko.pureComputed(()=>{const d=this.detail();return String(d?.review?.transactionId||d?.transaction?.transactionId||d?.posting?.transactionId||d?.transactionId||'');});
@@ -44,7 +51,7 @@ export class StaffPage extends PageModel {
   });
   return [{title,fields},...groups].filter(g=>g.fields.length);
  }
- private setTab(key:string){const tab=this.tabs.find(t=>t.key===key)||this.tabs[0];this.loading(false);this.busy(false);this.tab(tab);this.filters(tab.filters.map(f=>({...f,value:ko.observable(f.key==='sort'?'PRIORITY':this.area==='audit'&&tab.key==='reviews'&&f.key==='status'?'PENDING':'')})));this.activeFilters={};this.page(0);this.result(null);this.rows([]);this.statistics([]);this.closeDetail();this.adminUncertain(false);}
+ private setTab(key:string){const tab=this.tabs.find(t=>t.key===key)||this.tabs[0];this.loading(false);this.busy(false);this.tab(tab);this.filters(tab.filters.map(f=>({...f,value:ko.observable(f.key==='sort'?'PRIORITY':this.area==='audit'&&tab.key==='reviews'&&f.key==='status'?'PENDING':'')})));this.activeFilters={};this.page(0);this.result(null);this.rows([]);this.statistics([]);this.dashboard(null);this.closeDetail();this.adminUncertain(false);}
  parametersChanged(params:any){if(params.page!==this.tab()?.key){this.epoch++;this.setTab(params.page);void this.search();}}
  switchTab=(tab:StaffTab)=>{if(!this.busy())this.navigate(this.area+'/'+tab.key);};
  private queryFilters():Record<string,string|number>{
@@ -61,7 +68,7 @@ export class StaffPage extends PageModel {
  load=async()=>{
   if(this.loading()||this.busy())return;
   const n=++this.epoch,tab=this.tab()!;this.loading(true);this.error('');
-  try{if(this.area==='admin'){this.pinResetRequests(await adminSafePayPinResets.list());}if(tab.stats){const data=await staff.get(tab.path);if(this.alive&&n===this.epoch)this.statistics(this.evidence(data,'At a glance'));}
+  try{if(this.area==='admin'){this.pinResetRequests(await adminSafePayPinResets.list());}if(tab.stats){const data=await staff.get(tab.path);if(this.alive&&n===this.epoch){this.dashboard(data);this.statistics(this.evidence(data,'At a glance'));}}
    else{const data=await staff.list(tab.path,{...this.activeFilters,page:this.page(),size:20});if(this.alive&&n===this.epoch){this.result(data);this.rows(data.items);}}}
   catch(e){if(this.alive&&n===this.epoch)this.error(errorText(e));}
   finally{if(this.alive&&n===this.epoch)this.loading(false);}

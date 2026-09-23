@@ -56,7 +56,9 @@ public record CreateBeneficiaryRequest(
         @Size(
                 max = 140,
                 message = "purposeNote must not exceed 140 characters")
-        String purposeNote) {
+        String purposeNote,
+
+        Boolean externalDetailsConfirmed) {
 
     public CreateBeneficiaryRequest {
         beneficiaryName = normalizeRequiredText(

@@ -32,7 +32,7 @@
           <p class="recipient-number" data-bind="text: $parent.mask(maskedDestinationIdentifier)"></p>
         </div>
       </header>
-      <div class="recipient-badges"><span class="recipient-bank" data-bind="text: ifscCode || paymentMethod"></span><span data-bind="text: status === 'ACTIVE' ? 'Active' : 'Disabled'"></span><span class="recipient-new" data-bind="visible: $parent.isNew(createdAt)">New</span></div>
+      <div class="recipient-badges"><span class="recipient-bank" data-bind="text: ifscCode || paymentMethod"></span><span data-bind="text: externalRecipient ? 'External · simulated' : 'SafePay recipient'"></span><span data-bind="text: status === 'ACTIVE' ? 'Active' : 'Disabled'"></span><span class="recipient-new" data-bind="visible: $parent.isNew(createdAt)">New</span></div>
       <p class="recipient-meta" data-bind="text: $parent.added(createdAt)"></p>
       <p class="recipient-meta recipient-pause-hint" data-bind="visible: $parent.isNew(createdAt)">Risk classification follows the payment amount.</p>
       <div class="recipient-card-actions">
@@ -65,6 +65,10 @@
       <label for="recipient-ifsc">IFSC</label>
       <input id="recipient-ifsc" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="11" required placeholder="e.g. HDFC0001234" data-bind="textInput: ifsc, disable: saving, attr: {'aria-invalid': !!fieldErrors().ifsc}" aria-describedby="ifsc-error">
       <p class="recipient-field-error" id="ifsc-error" data-bind="text: fieldErrors().ifsc"></p>
+      <div data-bind="visible: externalConfirmationRequired">
+        <label class="integration-account"><input type="checkbox" data-bind="checked: externalDetailsConfirmed, disable: saving"> I have verified the account holder name, account number, bank and IFSC. This recipient is outside SafePay, so any payment is simulated and confirmed only within SafePay.</label>
+        <p class="recipient-field-error" data-bind="text: fieldErrors().externalDetailsConfirmed"></p>
+      </div>
       <!-- /ko --><!-- ko if:paymentMethod()==='UPI' --><label for="recipient-upi">UPI identifier</label><input id="recipient-upi" maxlength="255" data-bind="textInput:upiId"><p class="recipient-field-error" data-bind="text:fieldErrors().upiId"></p><!-- /ko -->
       <label for="recipient-relationship">Relationship (optional)</label><input id="recipient-relationship" maxlength="50" data-bind="textInput:relationshipLabel"><label for="recipient-purpose">Purpose note (optional)</label><input id="recipient-purpose" maxlength="140" data-bind="textInput:purposeNote"><p role="alert" data-bind="visible:uncertain">The last creation outcome is unknown. Review the directory before submitting again.</p><button type="button" class="recipient-secondary" data-bind="visible:uncertain,click:acknowledge">I have reviewed the directory</button>
       <button class="recipient-primary" type="submit" data-bind="disable: saving"><span class="spin" aria-hidden="true" data-bind="visible: saving"></span><span data-bind="text: saving() ? 'Saving…' : 'Add Beneficiary'"></span></button>
@@ -75,14 +79,14 @@
   <div class="recipient-form-card"><button class="recipient-link" data-bind="click: back, disable: loading() || saving()">← Back to beneficiaries</button>
     <!-- ko with: selected -->
     <h2 data-bind="text: beneficiaryName"></h2>
-    <dl class="recipient-details"><dt>Destination</dt><dd data-bind="text: $parent.mask(maskedDestinationIdentifier)"></dd><dt>IFSC</dt><dd data-bind="text: ifscCode || 'Not applicable'"></dd><dt>Status</dt><dd data-bind="text: status === 'ACTIVE' ? 'Active' : 'Disabled'"></dd><dt>Payment method</dt><dd data-bind="text:paymentMethod"></dd><dt>Bank name</dt><dd data-bind="text:$data.bankName || '—'"></dd><dt>Nickname</dt><dd data-bind="text:$data.nickname || '—'"></dd><dt>Relationship</dt><dd data-bind="text:$data.relationshipLabel || '—'"></dd><dt>Purpose note</dt><dd data-bind="text:$data.purposeNote || '—'"></dd><dt>Saved</dt><dd data-bind="text: $parent.added(createdAt)"></dd></dl>
+    <dl class="recipient-details"><dt>Destination</dt><dd data-bind="text: $parent.mask(maskedDestinationIdentifier)"></dd><dt>IFSC</dt><dd data-bind="text: ifscCode || 'Not applicable'"></dd><dt>Recipient type</dt><dd data-bind="text: externalRecipient ? 'External — simulated and confirmed in SafePay' : 'SafePay recipient'"></dd><dt>Status</dt><dd data-bind="text: status === 'ACTIVE' ? 'Active' : 'Disabled'"></dd><dt>Payment method</dt><dd data-bind="text:paymentMethod"></dd><dt>Bank name</dt><dd data-bind="text:$data.bankName || '—'"></dd><dt>Nickname</dt><dd data-bind="text:$data.nickname || '—'"></dd><dt>Relationship</dt><dd data-bind="text:$data.relationshipLabel || '—'"></dd><dt>Purpose note</dt><dd data-bind="text:$data.purposeNote || '—'"></dd><dt>Saved</dt><dd data-bind="text: $parent.added(createdAt)"></dd></dl>
     <p class="recipient-meta">Risk classification follows the payment amount.</p>
     <!-- /ko -->
     <!-- ko if: selected -->
 <button type="button" class="recipient-primary" data-bind="visible: selected().status !== 'ACTIVE', click: reactivate, disable: saving">Reactivate beneficiary</button>
-    <button class="recipient-secondary" data-bind="visible: selected().status === 'ACTIVE' && !confirmDeactivate(), click: function() { confirmDeactivate(true); }, disable: saving">Deactivate beneficiary</button>
-    <div class="recipient-confirm" data-bind="visible: confirmDeactivate"><h3>Deactivate this beneficiary?</h3><p>They will be removed from your active list. Existing transaction history is preserved.</p>
-      <button class="recipient-secondary" data-bind="click: deactivate, disable: saving"><span class="spin" aria-hidden="true" data-bind="visible: saving"></span><span data-bind="text: saving() ? 'Deactivating…' : 'Confirm deactivation'"></span></button>
+    <button class="recipient-secondary" data-bind="visible: selected().status === 'ACTIVE' && !confirmDeactivate(), click: function() { confirmDeactivate(true); }, disable: saving">Remove beneficiary</button>
+    <div class="recipient-confirm" data-bind="visible: confirmDeactivate"><h3>Remove this beneficiary?</h3><p>They will be removed from your active list. Existing transaction history is preserved.</p>
+      <button class="recipient-secondary" data-bind="click: deactivate, disable: saving"><span class="spin" aria-hidden="true" data-bind="visible: saving"></span><span data-bind="text: saving() ? 'Removing…' : 'Confirm removal'"></span></button>
       <button class="recipient-link" data-bind="click: function() { confirmDeactivate(false); }, disable: saving">Keep beneficiary</button>
     </div>
     <!-- /ko -->

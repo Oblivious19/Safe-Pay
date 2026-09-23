@@ -18,6 +18,7 @@ public record BeneficiaryResponse(
         String ifscCode,
         String relationshipLabel,
         String purposeNote,
+        boolean externalRecipient,
         BeneficiaryStatus status,
         OffsetDateTime createdAt,
         OffsetDateTime updatedAt) {
@@ -57,6 +58,8 @@ public record BeneficiaryResponse(
                 beneficiary.getIfscCode(),
                 beneficiary.getRelationshipLabel(),
                 beneficiary.getPurposeNote(),
+                beneficiary.getPaymentMethod() == BeneficiaryPaymentMethod.BANK_ACCOUNT
+                        && beneficiary.getDestinationAccount() == null,
                 beneficiary.getStatus(),
                 beneficiary.getCreatedAt(),
                 beneficiary.getUpdatedAt());

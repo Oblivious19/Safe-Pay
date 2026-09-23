@@ -70,7 +70,7 @@ public class BeneficiaryServiceImpl
         validateCreateRequest(request);
 
         User owner = userService.getRequiredUser(ownerUserId);
-        Account destinationAccount = resolveVerifiedDestinationAccount(request);
+        Account destinationAccount = resolveDestinationAccount(request);
 
         Beneficiary beneficiary = createBeneficiary(
                 owner,
@@ -172,18 +172,15 @@ public class BeneficiaryServiceImpl
             OffsetDateTime createdAt) {
 
         return switch (request.paymentMethod()) {
-            case BANK_ACCOUNT ->
-                    Beneficiary.createVerifiedBankAccountBeneficiary(
-                            owner,
-                            request.beneficiaryName(),
-                            request.nickname(),
-                            request.bankName(),
-                            request.bankAccountNumber(),
-                            request.ifscCode(),
-                            request.relationshipLabel(),
-                            request.purposeNote(),
-                            destinationAccount,
-                            createdAt);
+            case BANK_ACCOUNT -> destinationAccount == null
+                    ? Beneficiary.createBankAccountBeneficiary(
+                            owner, request.beneficiaryName(), request.nickname(),
+                            request.bankName(), request.bankAccountNumber(), request.ifscCode(),
+                            request.relationshipLabel(), request.purposeNote(), createdAt)
+                    : Beneficiary.createVerifiedBankAccountBeneficiary(
+                            owner, request.beneficiaryName(), request.nickname(),
+                            request.bankName(), request.bankAccountNumber(), request.ifscCode(),
+                            request.relationshipLabel(), request.purposeNote(), destinationAccount, createdAt);
 
             case UPI -> Beneficiary.createUpiBeneficiary(
                     owner,
@@ -196,16 +193,28 @@ public class BeneficiaryServiceImpl
         };
     }
 
-    private Account resolveVerifiedDestinationAccount(
+    private Account resolveDestinationAccount(
             CreateBeneficiaryRequest request) {
 
         if (request.paymentMethod() != BeneficiaryPaymentMethod.BANK_ACCOUNT) {
             return null;
         }
 
-        return accountDao.findByAccountNumber(request.bankAccountNumber())
-                .filter(account -> matchesVerifiedSafePayRecipient(account, request))
-                .orElseThrow(BeneficiaryServiceImpl::safePayRecipientNotFound);
+        Account matchingAccount = accountDao.findByAccountNumber(request.bankAccountNumber())
+                .orElse(null);
+
+        if (matchingAccount == null) {
+            if (!Boolean.TRUE.equals(request.externalDetailsConfirmed())) {
+                throw externalDetailsConfirmationRequired();
+            }
+            return null;
+        }
+
+        if (!matchesVerifiedSafePayRecipient(matchingAccount, request)) {
+            throw safePayRecipientNotFound();
+        }
+
+        return matchingAccount;
     }
 
     private static boolean matchesVerifiedSafePayRecipient(
@@ -364,6 +373,12 @@ public class BeneficiaryServiceImpl
         return new BusinessRuleException(
                 "SAFE_PAY_RECIPIENT_NOT_FOUND",
                 "This account is not registered with SafePay, or its details do not match.");
+    }
+
+    private static BusinessRuleException externalDetailsConfirmationRequired() {
+        return new BusinessRuleException(
+                "EXTERNAL_DETAILS_CONFIRMATION_REQUIRED",
+                "Confirm that the recipient's bank details have been verified before saving.");
     }
 
     private void requirePositiveId(

@@ -170,7 +170,7 @@ public class TransactionServiceImpl
                 .getRequiredActiveOwnedBeneficiary(
                         customerUserId,
                         request.beneficiaryId());
-        Account destinationAccount = requireActiveVerifiedDestination(
+        Account destinationAccount = resolveActiveDestination(
                 beneficiary,
                 sourceAccount);
         requireSafePayPin(customer, request.safePayPin());
@@ -696,14 +696,19 @@ public class TransactionServiceImpl
         }
     }
 
-    private Account requireActiveVerifiedDestination(
+    private Account resolveActiveDestination(
             Beneficiary beneficiary,
             Account sourceAccount) {
 
-        if (beneficiary.getPaymentMethod()
-                != BeneficiaryPaymentMethod.BANK_ACCOUNT
-                || beneficiary.getDestinationAccount() == null
-                || beneficiary.getDestinationAccount().getAccountId() == null) {
+        if (beneficiary.getPaymentMethod() != BeneficiaryPaymentMethod.BANK_ACCOUNT) {
+            throw verifiedBeneficiaryRequired();
+        }
+
+        if (beneficiary.getDestinationAccount() == null) {
+            return null;
+        }
+
+        if (beneficiary.getDestinationAccount().getAccountId() == null) {
             throw verifiedBeneficiaryRequired();
         }
 

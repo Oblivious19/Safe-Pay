@@ -97,41 +97,48 @@ public class SettlementServiceImpl implements SettlementService {
         requirePersistedAccount(sourceAccount, "source account");
 
         Account destinationAccount = transaction.getDestinationAccount();
-        requirePersistedAccount(destinationAccount, "destination account");
-        if (sourceAccount.getAccountId().equals(destinationAccount.getAccountId())) {
-            throw new SettlementInvariantException(
-                    "DESTINATION_ACCOUNT_COLLISION",
-                    "Source and destination accounts must be different");
+        boolean externalRecipient = destinationAccount == null;
+        Account settlementCounterparty = externalRecipient
+                ? requiredLockedAccount(properties.requireOutboundClearingAccountId())
+                : destinationAccount;
+        requirePersistedAccount(settlementCounterparty,
+                externalRecipient ? "outbound clearing account" : "destination account");
+        if (sourceAccount.getAccountId().equals(settlementCounterparty.getAccountId())) {
+            throw new SettlementInvariantException("DESTINATION_ACCOUNT_COLLISION",
+                    "Source and settlement destination accounts must be different");
         }
 
-        Account[] lockedAccounts = lockAccountsInIdOrder(
-                sourceAccount.getAccountId(),
-                destinationAccount.getAccountId());
+        Account[] lockedAccounts = lockAccountsInIdOrder(sourceAccount.getAccountId(),
+                settlementCounterparty.getAccountId());
         Account lockedSource = sourceAccount.getAccountId().equals(lockedAccounts[0].getAccountId())
                 ? lockedAccounts[0] : lockedAccounts[1];
-        Account lockedDestination = destinationAccount.getAccountId().equals(lockedAccounts[0].getAccountId())
+        Account lockedCounterparty = settlementCounterparty.getAccountId().equals(lockedAccounts[0].getAccountId())
                 ? lockedAccounts[0] : lockedAccounts[1];
 
-        validateSettlementState(transaction, lockedSource, lockedDestination);
+        if (externalRecipient) {
+            validateExternalSettlementState(transaction, lockedSource, lockedCounterparty);
+        } else {
+            validateSettlementState(transaction, lockedSource, lockedCounterparty);
+        }
 
-        SettlementPostingPair pair = postingFactory.createToDestination(
-                transaction,
-                lockedDestination,
-                settlementTime);
+        SettlementPostingPair pair = externalRecipient
+                ? postingFactory.create(transaction, lockedCounterparty, settlementTime)
+                : postingFactory.createToDestination(transaction, lockedCounterparty, settlementTime);
 
         ledgerPostingDao.saveAndFlush(pair.posting());
         ledgerEntryDao.saveAll(pair.entriesInPostingOrder());
         entityManager.flush();
 
         lockedSource.consumeReservedFunds(transaction.getAmount(), settlementTime);
-        int creditedAccounts = accountDao.creditIncomingSettlementBalance(
-                lockedDestination.getAccountId(),
-                transaction.getAmount(),
-                settlementTime);
-        if (creditedAccounts != 1) {
-            throw new SettlementInvariantException(
-                    "DESTINATION_CREDIT_FAILED",
-                    "The destination account could not be credited");
+        if (externalRecipient) {
+            lockedCounterparty.creditSettlementFunds(transaction.getAmount(), settlementTime);
+        } else {
+            int creditedAccounts = accountDao.creditIncomingSettlementBalance(
+                    lockedCounterparty.getAccountId(), transaction.getAmount(), settlementTime);
+            if (creditedAccounts != 1) {
+                throw new SettlementInvariantException("DESTINATION_CREDIT_FAILED",
+                        "The destination account could not be credited");
+            }
         }
         transaction.endReservation(settlementTime);
         stateService.transition(transaction, TransactionState.SETTLED, settlementTime);
@@ -216,6 +223,30 @@ public class SettlementServiceImpl implements SettlementService {
                 || source.getCurrentBalance().compareTo(amount) < 0) {
             throw new SettlementInvariantException(
                     "SETTLEMENT_RESERVATION_INVALID",
+                    "Settlement requires a complete source reservation");
+        }
+    }
+
+    private static void validateExternalSettlementState(
+            TransactionDb transaction, Account source, Account clearingAccount) {
+        if (clearingAccount.getAccountType() != AccountType.OUTBOUND_CLEARING
+                || !clearingAccount.isActive()
+                || clearingAccount.getCurrencyCode() != CurrencyCode.INR) {
+            throw new SettlementInvariantException("INVALID_OUTBOUND_CLEARING_ACCOUNT",
+                    "The simulated external-settlement account is unavailable");
+        }
+        validateReservation(transaction, source);
+    }
+
+    private static void validateReservation(TransactionDb transaction, Account source) {
+        BigDecimal amount = transaction.getAmount();
+        if (transaction.getReservedAmount() == null
+                || transaction.getReservedAmount().compareTo(amount) != 0
+                || transaction.getReservedAt() == null
+                || transaction.getReservationEndedAt() != null
+                || source.getReservedAmount().compareTo(amount) < 0
+                || source.getCurrentBalance().compareTo(amount) < 0) {
+            throw new SettlementInvariantException("SETTLEMENT_RESERVATION_INVALID",
                     "Settlement requires a complete source reservation");
         }
     }

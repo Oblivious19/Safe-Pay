@@ -13,8 +13,12 @@ export const staffTabs:Record<string,StaffTab[]>={
  {key:'accounts',label:'Accounts',path:'/admin/accounts',id:'accountId',columns:['ownerName','maskedAccountNumber','accountType','bankName','status'],filters:[f('customerId','Customer ID'),f('minCurrentBalance','Minimum current balance'),f('accountType','Account type',['SAVINGS','CURRENT','OUTBOUND_CLEARING','OPENING_BALANCE_CONTROL'])],detail:true},
  {key:'failures',label:'Operational failures',path:'/admin/operations/failures',id:'recordId',columns:['source','transactionId','processingStage','status','displayExplanation','occurredAt'],filters:[f('source','Source',['TRANSACTION','NOTIFICATION']),tx,...dates]}
  ],
- risk:[{key:'reviews',label:'Review queue',path:'/admin/risk-reviews',id:'reviewId',columns:['transactionReference','customerName','beneficiaryName','amount','category','reviewRound','requestedAt'],filters:[f('category','Category',categories.map(c=>c.value)),f('sort','Queue order',['PRIORITY','OLDEST'])],detail:true}],
+ risk:[
+ {key:'dashboard',label:'Overview',path:'/risk/dashboard',id:'',columns:[],filters:[],stats:true},
+ {key:'reviews',label:'Review queue',path:'/admin/risk-reviews',id:'reviewId',columns:['transactionReference','customerName','beneficiaryName','amount','category','reviewRound','requestedAt'],filters:[f('category','Category',categories.map(c=>c.value)),f('sort','Queue order',['PRIORITY','OLDEST'])],detail:true}
+ ],
  audit:[
+ {key:'dashboard',label:'Overview',path:'/audit/dashboard',id:'',columns:[],filters:[],stats:true},
  {key:'logs',label:'Audit trail',path:'/audit-logs',id:'auditLogId',columns:['occurredAt','actionCode','actorType','transactionId','outcome'],filters:[tx,f('actionCode','Action'),f('outcome','Outcome'),f('actorType','Actor type'),f('correlationId','Correlation reference'),...dates]},
  {key:'transactions',label:'Payments',path:'/audit/transactions',id:'transactionId',columns:['transactionReference','beneficiaryName','amount','state','category','createdAt'],filters:[f('customerId','Customer ID'),f('state','State',states),...dates],detail:true},
  {key:'reviews',label:'Risk reviews',path:'/audit/risk-reviews',id:'reviewId',columns:['transactionReference','customerName','amount','status','reviewRound','updatedAt'],filters:[status(reviewStatuses)],detail:true},
