@@ -61,6 +61,7 @@
 .pay-sheet .protect-phone{margin:8px 0;padding:16px 12px;border-radius:18px}
 .pay-sheet .send-continue{position:sticky;bottom:2px;z-index:2;margin-top:12px;min-height:48px;box-shadow:0 0 0 10px #0e262c}
 .pay-sheet .send-continue.pay-shimmer:not(:disabled){animation:pay-breathe-cta 3.2s ease-in-out infinite}
+.pin-stage{position:absolute;inset:0;z-index:50;display:grid;place-items:center;padding:18px;background:rgba(5,22,27,.78);backdrop-filter:blur(4px)}.pin-stage-card{width:min(100%,310px);padding:22px;border-radius:20px;background:#fff;color:#173c35;box-shadow:0 20px 48px #00101288}.pin-stage-card h2{color:#173c35!important;text-align:left;margin:0 0 8px}.pin-stage-card p{color:#49645f;font-size:14px;line-height:1.4}.pin-stage-card .sp-field{display:grid;gap:7px;margin:16px 0;font-weight:700}.pin-stage-card input{border:1px solid #9fc6b5;border-radius:10px;padding:12px;font:inherit;background:#fff;color:#173c35}.pin-stage-actions{display:flex;gap:10px;align-items:center}.pin-stage-actions .send-continue{margin:0;position:static;box-shadow:none}.pin-stage-actions .pay-ghost{color:#315d52}
 .pay-sheet .protect-stage h2{color:#fff;font-size:22px;margin:4px 0 6px;text-align:center}
 .pay-tone{display:block;width:fit-content;margin:0 auto 8px;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:700}
 .pay-pin{margin:12px 0 4px}

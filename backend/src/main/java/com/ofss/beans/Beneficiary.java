@@ -101,6 +101,16 @@ public class Beneficiary {
             length = 11)
     private String ifscCode;
 
+    /*
+     * Present only for a BANK_ACCOUNT beneficiary whose destination was
+     * verified against an internal SafePay customer account.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(
+            name = "DESTINATION_ACCOUNT_ID",
+            updatable = false)
+    private Account destinationAccount;
+
     @Column(
             name = "UPI_ID",
             updatable = false,
@@ -187,6 +197,36 @@ public class Beneficiary {
         return beneficiary;
     }
 
+    public static Beneficiary createVerifiedBankAccountBeneficiary(
+            User owner,
+            String beneficiaryName,
+            String nickname,
+            String bankName,
+            String bankAccountNumber,
+            String ifscCode,
+            String relationshipLabel,
+            String purposeNote,
+            Account destinationAccount,
+            OffsetDateTime createdAt) {
+
+        Beneficiary beneficiary = createBankAccountBeneficiary(
+                owner,
+                beneficiaryName,
+                nickname,
+                bankName,
+                bankAccountNumber,
+                ifscCode,
+                relationshipLabel,
+                purposeNote,
+                createdAt);
+
+        beneficiary.destinationAccount = requirePersistedAccount(
+                destinationAccount,
+                "destinationAccount");
+
+        return beneficiary;
+    }
+
     public static Beneficiary createUpiBeneficiary(
             User owner,
             String beneficiaryName,
@@ -208,6 +248,7 @@ public class Beneficiary {
         beneficiary.bankName = null;
         beneficiary.bankAccountNumber = null;
         beneficiary.ifscCode = null;
+        beneficiary.destinationAccount = null;
         beneficiary.upiId = requireUpiId(upiId);
 
         return beneficiary;
@@ -308,6 +349,21 @@ public class Beneficiary {
             throw new IllegalArgumentException(
                     "owner must already be persisted");
         }
+    }
+
+    private static Account requirePersistedAccount(
+            Account account,
+            String fieldName) {
+
+        Objects.requireNonNull(account, fieldName + " is required");
+
+        if (account.getAccountId() == null
+                || account.getAccountId() <= 0L) {
+            throw new IllegalArgumentException(
+                    fieldName + " must already be persisted");
+        }
+
+        return account;
     }
 
     private static String requireText(
@@ -420,6 +476,10 @@ public class Beneficiary {
 
     public String getIfscCode() {
         return ifscCode;
+    }
+
+    public Account getDestinationAccount() {
+        return destinationAccount;
     }
 
     public String getUpiId() {

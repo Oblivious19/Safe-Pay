@@ -15,6 +15,7 @@
     <p class="profile-phone" data-bind="visible: phone, text: phone"></p>
     <span class="simulation-label" data-bind="visible: simulated">Simulated Environment</span>
   </article>
+  <article class="profile-account"><p class="dash-overline">SAFEPAY PIN</p><p>Forgot your SafePay PIN? Request a reset. A system administrator must approve it before you can set a new PIN.</p><button type="button" class="dashboard-secondary" data-bind="click:requestPinReset,disable:pinBusy"><span data-bind="text:pinBusy() ? 'Sending…' : 'Request PIN reset'"></span></button><p role="status" data-bind="visible:pinResetMessage,text:pinResetMessage"></p></article>
   <!-- ko if: account -->
   <article class="profile-account">
     <p class="dash-overline">LINKED ACCOUNT</p>

@@ -77,6 +77,19 @@ public class SettlementPostingFactory {
                 creditEntry);
     }
 
+    public SettlementPostingPair createToDestination(
+            TransactionDb transaction,
+            Account destinationAccount,
+            OffsetDateTime createdAt) {
+        LedgerPosting posting = LedgerPosting.createPaymentSettlement(transaction,
+                postingReference(transaction), idempotencyKey(transaction), createdAt);
+        LedgerEntry debitEntry = LedgerEntry.createPaymentSettlementDebit(posting,
+                transaction.getSourceAccount(), createdAt);
+        LedgerEntry creditEntry = LedgerEntry.createPaymentSettlementDestinationCredit(posting,
+                destinationAccount, createdAt);
+        return new SettlementPostingPair(posting, debitEntry, creditEntry);
+    }
+
     private static String postingReference(
             TransactionDb transaction) {
 

@@ -78,6 +78,17 @@ public class TransactionDb {
             updatable = false)
     private Beneficiary beneficiary;
 
+    /*
+     * Immutable internal recipient snapshot selected from the verified
+     * beneficiary at payment creation. Historical transactions can be null
+     * because they predate verified SafePay recipient support.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(
+            name = "DESTINATION_ACCOUNT_ID",
+            updatable = false)
+    private Account destinationAccount;
+
     @Column(
             name = "AMOUNT",
             nullable = false,
@@ -250,6 +261,31 @@ public class TransactionDb {
             Beneficiary beneficiary, BigDecimal amount, String purpose,
             String customerReference, OffsetDateTime createdAt, PaymentCategory category) {
 
+        return createPaymentInstruction(
+                transactionReference,
+                customer,
+                sourceAccount,
+                beneficiary,
+                null,
+                amount,
+                purpose,
+                customerReference,
+                createdAt,
+                category);
+    }
+
+    public static TransactionDb createPaymentInstruction(
+            String transactionReference,
+            User customer,
+            Account sourceAccount,
+            Beneficiary beneficiary,
+            Account destinationAccount,
+            BigDecimal amount,
+            String purpose,
+            String customerReference,
+            OffsetDateTime createdAt,
+            PaymentCategory category) {
+
         requirePersistedCustomer(customer);
         requireOwnedSourceAccount(customer, sourceAccount);
         requireOwnedBeneficiary(customer, beneficiary);
@@ -264,6 +300,9 @@ public class TransactionDb {
         transaction.customer = customer;
         transaction.sourceAccount = sourceAccount;
         transaction.beneficiary = beneficiary;
+        transaction.destinationAccount = destinationAccount == null
+                ? null
+                : requirePersistedDestinationAccount(destinationAccount);
         transaction.amount =
                 MoneyUtility.requireValidTransactionAmount(amount);
         transaction.currencyCode = CurrencyCode.INR;
@@ -682,6 +721,18 @@ public class TransactionDb {
         }
     }
 
+    private static Account requirePersistedDestinationAccount(
+            Account destinationAccount) {
+
+        if (destinationAccount.getAccountId() == null
+                || destinationAccount.getAccountId() <= 0L) {
+            throw new IllegalArgumentException(
+                    "destinationAccount must already be persisted");
+        }
+
+        return destinationAccount;
+    }
+
     private static String requireText(
             String value,
             String fieldName,
@@ -750,6 +801,10 @@ public class TransactionDb {
 
     public Beneficiary getBeneficiary() {
         return beneficiary;
+    }
+
+    public Account getDestinationAccount() {
+        return destinationAccount;
     }
 
     public BigDecimal getAmount() {

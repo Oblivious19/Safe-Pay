@@ -24,6 +24,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import com.ofss.beans.Account;
+import com.ofss.beans.AccountStatus;
 import com.ofss.beans.AuditOutcome;
 import com.ofss.beans.Beneficiary;
 import com.ofss.beans.BeneficiaryPaymentMethod;
@@ -48,6 +49,7 @@ class TransactionCreationServiceTest {
 
     private static final Long CUSTOMER_ID = 7L;
     private static final Long ACCOUNT_ID = 70L;
+    private static final Long DESTINATION_ACCOUNT_ID = 71L;
     private static final Long BENEFICIARY_ID = 700L;
     private static final OffsetDateTime NOW =
             OffsetDateTime.parse("2026-09-15T10:00:00.123456Z");
@@ -65,6 +67,7 @@ class TransactionCreationServiceTest {
     @Mock private EntityManager entityManager;
     @Mock private User customer;
     @Mock private Account sourceAccount;
+    @Mock private Account destinationAccount;
     @Mock private Beneficiary beneficiary;
 
     private TransactionService service;
@@ -120,6 +123,11 @@ class TransactionCreationServiceTest {
         assertThat(response.reservedAmount()).isEqualByComparingTo("0.00");
         assertThat(response.riskTier()).isNull();
         assertThat(response.createdAt()).isEqualTo(NOW);
+        org.mockito.ArgumentCaptor<TransactionDb> transactionCaptor =
+                org.mockito.ArgumentCaptor.forClass(TransactionDb.class);
+        verify(transactionDao).save(transactionCaptor.capture());
+        assertThat(transactionCaptor.getValue().getDestinationAccount())
+                .isSameAs(destinationAccount);
         verify(entityManager).flush();
         verify(evidenceService).appendUserEvent(
                 eq(TransactionLifecycleEvent.PAYMENT_CREATED),
@@ -133,7 +141,7 @@ class TransactionCreationServiceTest {
                 any(OperationContext.class),
                 eq("CREATE"),
                 eq(NOW));
-        verifyNoInteractions(amountRiskEngine, accountDao, riskFactorDao);
+        verifyNoInteractions(amountRiskEngine, riskFactorDao);
     }
 
     @Test
@@ -156,7 +164,9 @@ class TransactionCreationServiceTest {
                         BENEFICIARY_ID,
                         new BigDecimal("1.00"),
                         "   ",
-                        null));
+                        null,
+                        null,
+                        "123456"));
 
         assertThat(response.purpose()).isNull();
         assertThat(response.customerReference()).isNull();
@@ -228,6 +238,8 @@ class TransactionCreationServiceTest {
                 .thenReturn(customer);
         when(customer.getUserId()).thenReturn(CUSTOMER_ID);
         when(customer.getStatus()).thenReturn(UserStatus.ACTIVE);
+        when(customer.hasSafePayPin()).thenReturn(true);
+        when(customer.matchesSafePayPin(eq("123456"), any())).thenReturn(true);
 
         when(accountService.getRequiredActiveOwnedAccount(
                 CUSTOMER_ID,
@@ -250,8 +262,22 @@ class TransactionCreationServiceTest {
         when(beneficiary.getBeneficiaryName())
                 .thenReturn("Vendor One");
         when(beneficiary.getPaymentMethod())
-                .thenReturn(BeneficiaryPaymentMethod.UPI);
-        when(beneficiary.getUpiId()).thenReturn("vendor@upi");
+                .thenReturn(BeneficiaryPaymentMethod.BANK_ACCOUNT);
+        when(beneficiary.getBankAccountNumber())
+                .thenReturn("9876543210123456");
+        when(beneficiary.getDestinationAccount())
+                .thenReturn(destinationAccount);
+
+        when(accountDao.findById(DESTINATION_ACCOUNT_ID))
+                .thenReturn(java.util.Optional.of(destinationAccount));
+        when(destinationAccount.getAccountId())
+                .thenReturn(DESTINATION_ACCOUNT_ID);
+        when(destinationAccount.isCustomerOwnedAccount())
+                .thenReturn(true);
+        when(destinationAccount.getStatus())
+                .thenReturn(AccountStatus.ACTIVE);
+        when(destinationAccount.getCurrencyCode())
+                .thenReturn(CurrencyCode.INR);
     }
 
     private static CreateTransactionRequest request() {
@@ -260,6 +286,8 @@ class TransactionCreationServiceTest {
                 BENEFICIARY_ID,
                 new BigDecimal("2500.00"),
                 "Invoice payment",
-                "INV-100");
+                "INV-100",
+                null,
+                "123456");
     }
 }

@@ -376,6 +376,10 @@
 
 .recipient-form-card h2 { margin: 13px 0 8px; color: var(--sp-forest-deep, #0a2116); font-size: 30px; font-weight: 800; letter-spacing: -.06em; overflow-wrap: anywhere; }
 .recipient-form-card > p { margin: 0; color: var(--sp-muted, #66766c); font-size: 13px; line-height: 1.7; }
+.recipient-verification-error { display: flex; gap: 13px; margin: 22px 0 4px; padding: 18px; border: 2px solid #c65a50; border-radius: 16px; background: #fff1ee; color: #7f2f2a; box-shadow: 0 8px 22px rgb(166 69 64 / 12%); }
+.recipient-verification-error-icon { display: grid; flex: 0 0 28px; width: 28px; height: 28px; place-items: center; border-radius: 50%; background: #a64540; color: #fff; font-size: 18px; font-weight: 900; line-height: 1; }
+.recipient-verification-error h3 { margin: 0 0 6px; color: #7f2f2a; font-size: 16px; font-weight: 850; }
+.recipient-verification-error p { margin: 0; font-size: 13px; font-weight: 750; line-height: 1.55; overflow-wrap: anywhere; }
 .recipient-form-card label { display: block; margin: 21px 0 8px; color: var(--sp-forest, #173d2b); font-size: 12px; font-weight: 800; }
 
 .recipient-form-card input,

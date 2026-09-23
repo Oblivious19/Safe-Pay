@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -28,6 +29,9 @@ import org.springframework.dao.DataIntegrityViolationException;
 import com.ofss.beans.Beneficiary;
 import com.ofss.beans.BeneficiaryPaymentMethod;
 import com.ofss.beans.BeneficiaryStatus;
+import com.ofss.beans.Account;
+import com.ofss.beans.AccountStatus;
+import com.ofss.beans.AccountType;
 import com.ofss.beans.User;
 import com.ofss.dto.beneficiary.BeneficiaryResponse;
 import com.ofss.dto.beneficiary.CreateBeneficiaryRequest;
@@ -36,6 +40,7 @@ import com.ofss.excp.BusinessRuleException;
 import com.ofss.excp.DuplicateResourceExcp;
 import com.ofss.excp.ResourceNotFoundExcp;
 import com.ofss.repository.BeneficiaryDao;
+import com.ofss.repository.AccountDao;
 
 import jakarta.persistence.EntityManager;
 
@@ -56,6 +61,9 @@ class BeneficiaryServiceImplTest {
     private BeneficiaryDao beneficiaryDao;
 
     @Mock
+    private AccountDao accountDao;
+
+    @Mock
     private UserService userService;
 
     @Mock
@@ -64,15 +72,23 @@ class BeneficiaryServiceImplTest {
     @Mock
     private User owner;
 
+    @Mock
+    private Account destinationAccount;
+
+    @Mock
+    private User destinationOwner;
+
     private BeneficiaryService beneficiaryService;
 
     @BeforeEach
     void setUp() {
         beneficiaryService = new BeneficiaryServiceImpl(
                 beneficiaryDao,
+                accountDao,
                 userService,
                 entityManager,
                 FIXED_CLOCK);
+
     }
 
     @Test
@@ -106,6 +122,8 @@ class BeneficiaryServiceImplTest {
                 .isEqualTo("123456789012");
         assertThat(created.getIfscCode())
                 .isEqualTo("ABCD0123456");
+        assertThat(created.getDestinationAccount())
+                .isSameAs(destinationAccount);
         assertThat(created.getStatus())
                 .isEqualTo(BeneficiaryStatus.ACTIVE);
         assertThat(created.getCreatedAt())
@@ -170,6 +188,46 @@ class BeneficiaryServiceImplTest {
     }
 
     @Test
+    void rejectsBankBeneficiaryWhenAccountIsNotRegisteredWithSafePay() {
+        when(userService.getRequiredUser(OWNER_ID)).thenReturn(owner);
+        CreateBeneficiaryRequest request = bankRequest();
+
+        when(accountDao.findByAccountNumber("123456789012"))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> beneficiaryService
+                .createOwnedBeneficiary(OWNER_ID, request))
+                .isInstanceOf(BusinessRuleException.class)
+                .satisfies(exception -> {
+                    BusinessRuleException failure =
+                            (BusinessRuleException) exception;
+                    assertThat(failure.getErrorCode())
+                            .isEqualTo("SAFE_PAY_RECIPIENT_NOT_FOUND");
+                    assertThat(failure.getMessage()).isEqualTo(
+                            "This account is not registered with SafePay, or its details do not match.");
+                });
+
+        verify(beneficiaryDao, never()).save(any(Beneficiary.class));
+        verify(entityManager, never()).flush();
+    }
+
+    @Test
+    void rejectsBankBeneficiaryWhenRecipientNameDoesNotMatch() {
+        when(userService.getRequiredUser(OWNER_ID)).thenReturn(owner);
+        CreateBeneficiaryRequest request = bankRequest();
+        when(destinationOwner.getFullName()).thenReturn("Different User");
+
+        assertThatThrownBy(() -> beneficiaryService
+                .createOwnedBeneficiary(OWNER_ID, request))
+                .isInstanceOf(BusinessRuleException.class)
+                .hasMessage(
+                        "This account is not registered with SafePay, or its details do not match.");
+
+        verify(beneficiaryDao, never()).save(any(Beneficiary.class));
+        verify(entityManager, never()).flush();
+    }
+
+    @Test
     void rejectsExistingOwnedUpiBeneficiary() {
         preparePersistedOwner();
 
@@ -199,9 +257,9 @@ class BeneficiaryServiceImplTest {
                 new DataIntegrityViolationException(
                         "insert failed",
                         new RuntimeException(
-                                "ORA-00001: unique constraint "
-                                        + "(SAFEPAY_OWNER."
-                                        + "UK_BEN_OWNER_UPI) violated"));
+                                        "ORA-00001: unique constraint "
+                                                + "(SAFEPAY_OWNER."
+                                        + "UX_BEN_OWNER_UPI_DEST) violated"));
 
         doThrow(databaseFailure)
                 .when(entityManager)
@@ -517,7 +575,21 @@ class BeneficiaryServiceImplTest {
         when(owner.getUserId()).thenReturn(OWNER_ID);
     }
 
+    private void prepareVerifiedDestination() {
+        lenient().when(accountDao.findByAccountNumber("123456789012"))
+                .thenReturn(Optional.of(destinationAccount));
+        lenient().when(destinationAccount.getAccountId()).thenReturn(202L);
+        lenient().when(destinationAccount.getAccountType()).thenReturn(AccountType.SAVINGS);
+        lenient().when(destinationAccount.getStatus()).thenReturn(AccountStatus.ACTIVE);
+        lenient().when(destinationAccount.getOwner()).thenReturn(destinationOwner);
+        lenient().when(destinationAccount.getBankName()).thenReturn("SafePay Demo Bank");
+        lenient().when(destinationAccount.getIfscCode()).thenReturn("ABCD0123456");
+        lenient().when(destinationOwner.getFullName()).thenReturn("Demo Supplier");
+    }
+
     private CreateBeneficiaryRequest bankRequest() {
+        prepareVerifiedDestination();
+
         return new CreateBeneficiaryRequest(
                 "Demo Supplier",
                 "Office Vendor",

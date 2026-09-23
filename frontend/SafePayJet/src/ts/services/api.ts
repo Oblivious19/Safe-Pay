@@ -2,4 +2,5 @@
 export {request,query,API_ORIGIN} from './apiClient';
 export {accounts} from './accountService';
 export {transactions,perform} from './transactionService';
+export {safePayPin} from './safePayPinService';
 export * from './types';

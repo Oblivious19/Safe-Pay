@@ -14,6 +14,9 @@ import org.springframework.transaction.annotation.Transactional;
 import com.ofss.beans.Beneficiary;
 import com.ofss.beans.BeneficiaryPaymentMethod;
 import com.ofss.beans.BeneficiaryStatus;
+import com.ofss.beans.Account;
+import com.ofss.beans.AccountStatus;
+import com.ofss.beans.AccountType;
 import com.ofss.beans.User;
 import com.ofss.dto.beneficiary.BeneficiaryResponse;
 import com.ofss.dto.beneficiary.CreateBeneficiaryRequest;
@@ -22,6 +25,7 @@ import com.ofss.excp.BusinessRuleException;
 import com.ofss.excp.DuplicateResourceExcp;
 import com.ofss.excp.ResourceNotFoundExcp;
 import com.ofss.repository.BeneficiaryDao;
+import com.ofss.repository.AccountDao;
 
 import jakarta.persistence.EntityManager;
 
@@ -31,23 +35,26 @@ public class BeneficiaryServiceImpl
         implements BeneficiaryService {
 
     private static final String BANK_DUPLICATE_CONSTRAINT =
-            "UK_BEN_OWNER_BANK";
+            "UX_BEN_OWNER_BANK_DEST";
 
     private static final String UPI_DUPLICATE_CONSTRAINT =
-            "UK_BEN_OWNER_UPI";
+            "UX_BEN_OWNER_UPI_DEST";
 
     private final BeneficiaryDao beneficiaryDao;
+    private final AccountDao accountDao;
     private final UserService userService;
     private final EntityManager entityManager;
     private final Clock clock;
 
     public BeneficiaryServiceImpl(
             BeneficiaryDao beneficiaryDao,
+            AccountDao accountDao,
             UserService userService,
             EntityManager entityManager,
             Clock clock) {
 
         this.beneficiaryDao = beneficiaryDao;
+        this.accountDao = accountDao;
         this.userService = userService;
         this.entityManager = entityManager;
         this.clock = clock;
@@ -63,10 +70,12 @@ public class BeneficiaryServiceImpl
         validateCreateRequest(request);
 
         User owner = userService.getRequiredUser(ownerUserId);
+        Account destinationAccount = resolveVerifiedDestinationAccount(request);
 
         Beneficiary beneficiary = createBeneficiary(
                 owner,
                 request,
+                destinationAccount,
                 currentUtcTime());
 
         rejectExistingBeneficiary(
@@ -159,11 +168,12 @@ public class BeneficiaryServiceImpl
     private Beneficiary createBeneficiary(
             User owner,
             CreateBeneficiaryRequest request,
+            Account destinationAccount,
             OffsetDateTime createdAt) {
 
         return switch (request.paymentMethod()) {
             case BANK_ACCOUNT ->
-                    Beneficiary.createBankAccountBeneficiary(
+                    Beneficiary.createVerifiedBankAccountBeneficiary(
                             owner,
                             request.beneficiaryName(),
                             request.nickname(),
@@ -172,6 +182,7 @@ public class BeneficiaryServiceImpl
                             request.ifscCode(),
                             request.relationshipLabel(),
                             request.purposeNote(),
+                            destinationAccount,
                             createdAt);
 
             case UPI -> Beneficiary.createUpiBeneficiary(
@@ -183,6 +194,41 @@ public class BeneficiaryServiceImpl
                     request.purposeNote(),
                     createdAt);
         };
+    }
+
+    private Account resolveVerifiedDestinationAccount(
+            CreateBeneficiaryRequest request) {
+
+        if (request.paymentMethod() != BeneficiaryPaymentMethod.BANK_ACCOUNT) {
+            return null;
+        }
+
+        return accountDao.findByAccountNumber(request.bankAccountNumber())
+                .filter(account -> matchesVerifiedSafePayRecipient(account, request))
+                .orElseThrow(BeneficiaryServiceImpl::safePayRecipientNotFound);
+    }
+
+    private static boolean matchesVerifiedSafePayRecipient(
+            Account account,
+            CreateBeneficiaryRequest request) {
+
+        return account.getAccountType() != null
+                && (account.getAccountType() == AccountType.SAVINGS
+                        || account.getAccountType() == AccountType.CURRENT)
+                && account.getStatus() == AccountStatus.ACTIVE
+                && account.getOwner() != null
+                && account.getOwner().getFullName() != null
+                && normalizeForComparison(account.getOwner().getFullName())
+                        .equals(normalizeForComparison(request.beneficiaryName()))
+                && normalizeForComparison(account.getBankName())
+                        .equals(normalizeForComparison(request.bankName()))
+                && Objects.equals(account.getIfscCode(), request.ifscCode());
+    }
+
+    private static String normalizeForComparison(String value) {
+        return value == null
+                ? ""
+                : value.trim().replaceAll("\\s+", " ").toLowerCase(Locale.ROOT);
     }
 
     private void rejectExistingBeneficiary(
@@ -312,6 +358,12 @@ public class BeneficiaryServiceImpl
         return new ResourceNotFoundExcp(
                 "BENEFICIARY_NOT_FOUND",
                 "Beneficiary was not found");
+    }
+
+    private static BusinessRuleException safePayRecipientNotFound() {
+        return new BusinessRuleException(
+                "SAFE_PAY_RECIPIENT_NOT_FOUND",
+                "This account is not registered with SafePay, or its details do not match.");
     }
 
     private void requirePositiveId(

@@ -31,6 +31,8 @@ public interface TransactionDao
               join fetch payment.customer customer
               join fetch payment.sourceAccount sourceAccount
               join fetch payment.beneficiary beneficiary
+              left join payment.destinationAccount destinationAccount
+              left join destinationAccount.owner destinationOwner
              where (:customerId is null or customer.userId = :customerId)
                and (:state is null or payment.state = :state)
                and (:fromTime is null or payment.createdAt >= :fromTime)
@@ -64,7 +66,10 @@ public interface TransactionDao
               join fetch payment.customer customer
               join fetch payment.sourceAccount sourceAccount
               join fetch payment.beneficiary beneficiary
-             where customer.userId = :customerUserId
+              left join payment.destinationAccount destinationAccount
+              left join destinationAccount.owner destinationOwner
+             where (customer.userId = :customerUserId
+                or destinationOwner.userId = :customerUserId)
                and (:fromTime is null or payment.createdAt >= :fromTime)
                and (:toTime is null or payment.createdAt < :toTime)
                and (:state is null or payment.state = :state)
@@ -72,7 +77,10 @@ public interface TransactionDao
              order by payment.createdAt desc, payment.transactionId desc
             """, countQuery = """
             select count(payment) from TransactionDb payment
-             where payment.customer.userId = :customerUserId
+              left join payment.destinationAccount destinationAccount
+              left join destinationAccount.owner destinationOwner
+             where (payment.customer.userId = :customerUserId
+                or destinationOwner.userId = :customerUserId)
                and (:fromTime is null or payment.createdAt >= :fromTime)
                and (:toTime is null or payment.createdAt < :toTime)
                and (:state is null or payment.state = :state)
@@ -92,8 +100,11 @@ public interface TransactionDao
               left join fetch payment.riskPolicy riskPolicy
               left join fetch payment.riskPolicyBand riskPolicyBand
               left join fetch payment.protectionPolicy protectionPolicy
+              left join payment.destinationAccount destinationAccount
+              left join destinationAccount.owner destinationOwner
              where payment.transactionId = :transactionId
-               and customer.userId = :customerUserId
+               and (customer.userId = :customerUserId
+                    or destinationOwner.userId = :customerUserId)
             """)
     Optional<TransactionDb> findOwnedById(
             @Param("transactionId") Long transactionId,
@@ -106,14 +117,20 @@ public interface TransactionDao
                       join fetch payment.customer customer
                       join fetch payment.sourceAccount sourceAccount
                       join fetch payment.beneficiary beneficiary
+                      left join payment.destinationAccount destinationAccount
+                      left join destinationAccount.owner destinationOwner
                      where customer.userId = :customerUserId
+                        or destinationOwner.userId = :customerUserId
                      order by payment.createdAt desc,
                               payment.transactionId desc
                     """,
             countQuery = """
                     select count(payment)
                       from TransactionDb payment
+                      left join payment.destinationAccount destinationAccount
+                      left join destinationAccount.owner destinationOwner
                      where payment.customer.userId = :customerUserId
+                        or destinationOwner.userId = :customerUserId
                     """)
     Page<TransactionDb> findAllOwned(
             @Param("customerUserId") Long customerUserId,

@@ -7,6 +7,7 @@ import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
@@ -82,4 +83,28 @@ public interface AccountDao
             """)
     Optional<Account> findByIdForUpdate(
             @Param("accountId") Long accountId);
+
+    /**
+     * Applies the recipient-side of a settlement after that account row has
+     * already been locked by the settlement service.  This explicit database
+     * update keeps the account balance and the immutable credit ledger entry
+     * together even when Hibernate's dirty checking has no later reason to
+     * flush the recipient entity.
+     */
+    @Modifying(flushAutomatically = true)
+    @Query("""
+            update Account account
+               set account.currentBalance = account.currentBalance + :amount,
+                   account.updatedAt = :settledAt,
+                   account.versionNo = account.versionNo + 1
+             where account.accountId = :accountId
+               and account.status = com.ofss.beans.AccountStatus.ACTIVE
+               and account.accountType in (
+                    com.ofss.beans.AccountType.SAVINGS,
+                    com.ofss.beans.AccountType.CURRENT)
+            """)
+    int creditIncomingSettlementBalance(
+            @Param("accountId") Long accountId,
+            @Param("amount") BigDecimal amount,
+            @Param("settledAt") java.time.OffsetDateTime settledAt);
 }

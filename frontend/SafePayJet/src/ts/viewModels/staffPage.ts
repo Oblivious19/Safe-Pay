@@ -9,11 +9,13 @@ import {label} from '../utils/paymentState';
 import {session} from '../services/authService';
 import {refreshLoop} from '../services/refreshLoop';
 import {realtimeStatus} from '../services/realtimeService';
+import {adminSafePayPinResets,PinResetRequest} from '../services/adminSafePayPinResetService';
 type Field={label:string;value:string};
 type Group={title:string;fields:Field[]};
 export class StaffPage extends PageModel {
  area:string;tabs:StaffTab[];tab=ko.observable<StaffTab>();filters=ko.observableArray<any>([]);rows=ko.observableArray<Evidence>([]);result=ko.observable<Page<Evidence>|null>(null);page=ko.observable(0);loading=ko.observable(false);stale=ko.observable(false);detail=ko.observable<Evidence|null>(null);selectedId=ko.observable('');lookupId=ko.observable('');groups=ko.observableArray<Group>([]);statistics=ko.observableArray<Group>([]);timeline=ko.observableArray<Group>([]);timelinePage=ko.observable(0);timelineResult=ko.observable<Page<Evidence>|null>(null);timelineBusy=ko.observable(false);
  statusValue=ko.observable('ACTIVE');roleValue=ko.observable('CUSTOMER');roles=roles;reason=ko.observable('');note=ko.observable('');reviewPending=reviewPending;replayAvailable=ko.observable(false);pendingDescription=ko.observable('');adminUncertain=ko.observable(false);liveStatus=realtimeStatus;
+ pinResetRequests=ko.observableArray<PinResetRequest>([]);
  private epoch=0;private detailEpoch=0;private timelineEpoch=0;private stop?:()=>void;private activeFilters:Record<string,string|number>={};
  title=ko.pureComputed(()=>this.area==='admin'?'Administration':this.area==='risk'?'Risk review':'Audit & evidence');
  subtitle=ko.pureComputed(()=>this.area==='admin'?'Access, accounts and operational health.':this.area==='risk'?'Review the evidence. Make a considered decision.':'Trace every step, from payment instruction to ledger.');
@@ -59,7 +61,7 @@ export class StaffPage extends PageModel {
  load=async()=>{
   if(this.loading()||this.busy())return;
   const n=++this.epoch,tab=this.tab()!;this.loading(true);this.error('');
-  try{if(tab.stats){const data=await staff.get(tab.path);if(this.alive&&n===this.epoch)this.statistics(this.evidence(data,'At a glance'));}
+  try{if(this.area==='admin'){this.pinResetRequests(await adminSafePayPinResets.list());}if(tab.stats){const data=await staff.get(tab.path);if(this.alive&&n===this.epoch)this.statistics(this.evidence(data,'At a glance'));}
    else{const data=await staff.list(tab.path,{...this.activeFilters,page:this.page(),size:20});if(this.alive&&n===this.epoch){this.result(data);this.rows(data.items);}}}
   catch(e){if(this.alive&&n===this.epoch)this.error(errorText(e));}
   finally{if(this.alive&&n===this.epoch)this.loading(false);}
@@ -109,6 +111,7 @@ export class StaffPage extends PageModel {
   catch(e){if(e instanceof ApiError&&e.uncertain)this.adminUncertain(true);throw e;}
  });}
  changeStatus=()=>this.adminAction('status',this.statusValue());assignRole=()=>this.adminAction('assign',this.roleValue());removeRole=()=>this.adminAction('remove',this.roleValue());revokeSessions=()=>this.adminAction('revoke');
+ decidePinReset=async(row:PinResetRequest,approved:boolean)=>{if(this.busy())return;const action=approved?'Approve PIN reset':'Reject PIN reset';if(!await confirmAction(action+'?',row.fullName+' will '+(approved?'be allowed to set a new SafePay PIN.':'keep their existing SafePay PIN.'),action,!approved))return;this.busy(true);try{await (approved?adminSafePayPinResets.approve(row.userId):adminSafePayPinResets.reject(row.userId));this.message('PIN reset request updated.');this.pinResetRequests(await adminSafePayPinResets.list());}catch(e){this.error(errorText(e));}finally{if(this.alive)this.busy(false);}};
  acknowledgeAdmin=()=>this.run(async()=>{const d=await staff.get('/admin/users/'+validId(this.selectedId()));this.detail(d);this.groups(this.evidence(d,'Current user access'));if(await confirmAction('Access outcome reconciled?','Review the current status and roles. For session revocation, confirm the affected session now requires sign-in.','Outcome reconciled')){this.adminUncertain(false);this.stale(false);}});
  connected(){document.title=this.title()+' | SafePay';if(this.area==='risk')this.recovery();void this.search();this.stop=refreshLoop(async()=>{if(!this.busy()&&!this.detail())await this.load();},20000);}
  disconnected(){super.disconnected();this.epoch++;this.detailEpoch++;this.timelineEpoch++;this.stop?.();}

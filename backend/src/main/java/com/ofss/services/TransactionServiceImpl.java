@@ -12,10 +12,15 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import com.ofss.beans.Account;
 import com.ofss.beans.AuditOutcome;
 import com.ofss.beans.Beneficiary;
+import com.ofss.beans.BeneficiaryPaymentMethod;
+import com.ofss.beans.AccountStatus;
+import com.ofss.beans.CurrencyCode;
 import com.ofss.beans.OtpChallenge;
 import com.ofss.beans.ProtectionPolicy;
 import com.ofss.beans.ProtectionReleaseMode;
@@ -42,6 +47,7 @@ import com.ofss.repository.AccountDao;
 import com.ofss.repository.OtpChallengeDao;
 import com.ofss.repository.TransactionDao;
 import com.ofss.repository.TransactionRiskFactorDao;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import jakarta.persistence.EntityManager;
 
@@ -70,7 +76,9 @@ public class TransactionServiceImpl
     private final TransactionLifecycleEvidenceService evidenceService;
     private final EntityManager entityManager;
     private final Clock clock;
+    private final PasswordEncoder passwordEncoder;
 
+    @Autowired
     public TransactionServiceImpl(
             TransactionDao transactionDao,
             TransactionRiskFactorDao riskFactorDao,
@@ -84,7 +92,8 @@ public class TransactionServiceImpl
             RiskReviewService riskReviewService,
             TransactionLifecycleEvidenceService evidenceService,
             EntityManager entityManager,
-            Clock clock) {
+            Clock clock,
+            PasswordEncoder passwordEncoder) {
 
         this.transactionDao = transactionDao;
         this.riskFactorDao = riskFactorDao;
@@ -105,6 +114,28 @@ public class TransactionServiceImpl
                 "evidenceService is required");
         this.entityManager = entityManager;
         this.clock = clock;
+        this.passwordEncoder = Objects.requireNonNull(passwordEncoder, "passwordEncoder is required");
+    }
+
+    /** Compatibility constructor retained for existing focused service tests. */
+    public TransactionServiceImpl(
+            TransactionDao transactionDao,
+            TransactionRiskFactorDao riskFactorDao,
+            AccountDao accountDao,
+            OtpChallengeDao otpChallengeDao,
+            UserService userService,
+            AccountService accountService,
+            BeneficiaryService beneficiaryService,
+            AmountRiskEngine amountRiskEngine,
+            TransactionStateService stateService,
+            RiskReviewService riskReviewService,
+            TransactionLifecycleEvidenceService evidenceService,
+            EntityManager entityManager,
+            Clock clock) {
+        this(transactionDao, riskFactorDao, accountDao, otpChallengeDao, userService,
+                accountService, beneficiaryService, amountRiskEngine, stateService,
+                riskReviewService, evidenceService, entityManager, clock,
+                new BCryptPasswordEncoder());
     }
 
     @Override
@@ -139,6 +170,10 @@ public class TransactionServiceImpl
                 .getRequiredActiveOwnedBeneficiary(
                         customerUserId,
                         request.beneficiaryId());
+        Account destinationAccount = requireActiveVerifiedDestination(
+                beneficiary,
+                sourceAccount);
+        requireSafePayPin(customer, request.safePayPin());
 
         TransactionDb transaction =
                 TransactionDb.createPaymentInstruction(
@@ -146,6 +181,7 @@ public class TransactionServiceImpl
                         customer,
                         sourceAccount,
                         beneficiary,
+                        destinationAccount,
                         request.amount(),
                         request.purpose(),
                         request.customerReference(),
@@ -437,7 +473,7 @@ public class TransactionServiceImpl
                 transactionDao.findAllOwned(
                         customerUserId,
                         PageRequest.of(page, size)),
-                TransactionSummaryResponse::from);
+                transaction -> TransactionSummaryResponse.from(transaction, customerUserId));
     }
 
     @Override
@@ -459,7 +495,7 @@ public class TransactionServiceImpl
                 from == null ? null : from.withOffsetSameInstant(ZoneOffset.UTC),
                 to == null ? null : to.withOffsetSameInstant(ZoneOffset.UTC),
                 state, sourceAccountId, PageRequest.of(page, size)),
-                TransactionSummaryResponse::from);
+                transaction -> TransactionSummaryResponse.from(transaction, customerUserId));
     }
 
     @Override
@@ -648,6 +684,54 @@ public class TransactionServiceImpl
         }
     }
 
+    private void requireSafePayPin(User customer, String pin) {
+        if (!customer.hasSafePayPin()) {
+            throw new BusinessRuleException("SAFE_PAY_PIN_NOT_SET",
+                    "Set your SafePay PIN before making a payment.");
+        }
+        if (pin == null || !pin.matches("\\d{6}")
+                || !customer.matchesSafePayPin(pin, passwordEncoder)) {
+            throw new BusinessRuleException("SAFE_PAY_PIN_INVALID",
+                    "The SafePay PIN is incorrect. Please try again.");
+        }
+    }
+
+    private Account requireActiveVerifiedDestination(
+            Beneficiary beneficiary,
+            Account sourceAccount) {
+
+        if (beneficiary.getPaymentMethod()
+                != BeneficiaryPaymentMethod.BANK_ACCOUNT
+                || beneficiary.getDestinationAccount() == null
+                || beneficiary.getDestinationAccount().getAccountId() == null) {
+            throw verifiedBeneficiaryRequired();
+        }
+
+        Long destinationAccountId = beneficiary
+                .getDestinationAccount()
+                .getAccountId();
+
+        Account destinationAccount = accountDao
+                .findById(destinationAccountId)
+                .orElseThrow(TransactionServiceImpl::verifiedBeneficiaryRequired);
+
+        if (!destinationAccount.isCustomerOwnedAccount()
+                || destinationAccount.getStatus() != AccountStatus.ACTIVE
+                || destinationAccount.getCurrencyCode() != CurrencyCode.INR) {
+            throw verifiedBeneficiaryRequired();
+        }
+
+        if (Objects.equals(
+                sourceAccount.getAccountId(),
+                destinationAccount.getAccountId())) {
+            throw new BusinessRuleException(
+                    "SOURCE_AND_DESTINATION_SAME",
+                    "Choose a different beneficiary account.");
+        }
+
+        return destinationAccount;
+    }
+
     private TransactionDb getOwnedForUpdate(
             Long customerUserId,
             Long transactionId) {
@@ -686,6 +770,12 @@ public class TransactionServiceImpl
         return new ResourceNotFoundExcp(
                 "TRANSACTION_NOT_FOUND",
                 "Transaction was not found");
+    }
+
+    private static BusinessRuleException verifiedBeneficiaryRequired() {
+        return new BusinessRuleException(
+                "BENEFICIARY_NOT_VERIFIED",
+                "This beneficiary is not verified for SafePay payments.");
     }
 
     private static void requirePositiveId(

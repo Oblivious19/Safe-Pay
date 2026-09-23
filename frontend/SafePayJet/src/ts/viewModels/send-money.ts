@@ -2,6 +2,7 @@ import * as ko from 'knockout';
 import {accounts as accountApi} from '../services/accountService';
 import {beneficiaries as beneficiaryApi} from '../services/beneficiaryService';
 import {perform,recovery,transactions} from '../services/transactionService';
+import {safePayPin as safePayPinApi} from '../services/safePayPinService';
 import {Account,Balance,Beneficiary,Transaction} from '../services/types';
 import {CreatePaymentDraft,PaymentCategory} from '../services/pendingPayment';
 import {paymentAmount,minor,rupees} from '../utils/money';
@@ -16,12 +17,12 @@ import 'ojs/ojbutton';import 'ojs/ojavatar';import 'ojs/ojtrain';import 'ojs/ojm
 class SendMoney {
  step=ko.observable('beneficiary');accounts=ko.observableArray<Account>([]);account=ko.observable<Account|null>(null);selectedAccountId=ko.observable('');funds=ko.observable<Balance|null>(null);beneficiaries=ko.observableArray<Beneficiary>([]);selected=ko.observable<Beneficiary|null>(null);
  amount=ko.observable('');purpose=ko.observable('');customerReference=ko.observable('');category=ko.observable('');categories=categories;
- loading=ko.observable(false);busy=ko.observable(false);refreshing=ko.observable(false);error=ko.observable('');notice=ko.observable('');fundsError=ko.observable('');paymentError=ko.observable('');amountError=ko.observable('');purposeError=ko.observable('');attemptLocked=ko.observable(false);result=ko.observable<Transaction|null>(null);cancelOpen=ko.observable(false);stale=ko.observable(false);now=ko.observable(performance.now());processing=ko.observable(0);
+ loading=ko.observable(false);busy=ko.observable(false);refreshing=ko.observable(false);error=ko.observable('');notice=ko.observable('');fundsError=ko.observable('');paymentError=ko.observable('');amountError=ko.observable('');purposeError=ko.observable('');attemptLocked=ko.observable(false);result=ko.observable<Transaction|null>(null);cancelOpen=ko.observable(false);stale=ko.observable(false);now=ko.observable(performance.now());processing=ko.observable(0);pinOpen=ko.observable(false);pinConfigured=ko.observable(false);safePayPin=ko.observable('');safePayPinConfirmation=ko.observable('');pinError=ko.observable('');
  private alive=true;private epoch=0;private observed=0;private stop?:()=>void;private tick?:ReturnType<typeof setInterval>;private draft?:CreatePaymentDraft;
  private sheetSubscription:ko.Subscription;
  constructor(private context:any={}){this.sheetSubscription=this.step.subscribe(()=>requestAnimationFrame(()=>this.syncSheet()));}
  private syncSheet(){const sheet=document.getElementById('payment-sheet') as HTMLDialogElement|null;if(!sheet||typeof sheet.showModal!=='function')return;if(this.sheetOpen()){if(!sheet.open)sheet.showModal();(sheet.querySelector('input:not([disabled]),button:not([disabled])') as HTMLElement|null)?.focus();}else if(sheet.open)sheet.close();}
- cancelSheet=()=>{void this.back();return false;};
+ cancelSheet=()=>{void this.dismissSheet();return false;};
  accountOption=(a:Account)=>a.accountType+' '+a.maskedAccountNumber+' · '+a.status;mask=(v:string)=>v||'Unavailable';money=rupees;initials=(v:string)=>(v||'?')[0].toUpperCase();isNew=(v:string)=>Date.now()-Date.parse(v)<86400000;added=(v:string)=>'Added '+new Date(v).toLocaleDateString('en-IN');
  highValue=ko.pureComputed(()=>{try{return minor(paymentAmount(this.amount()))>10000000n;}catch{return false;}});
  remaining=ko.pureComputed(()=>this.result()?.state==='PROTECTED'&&typeof this.result()?.protectionRemainingMillis==='number'?Math.max(0,this.result()!.protectionRemainingMillis!-(this.now()-this.observed))/1000:NaN);
@@ -45,6 +46,7 @@ class SendMoney {
  pick=(b:Beneficiary)=>{if(this.busy()||this.attemptLocked()||this.step()!=='beneficiary')return;this.selected(b);void this.next();};useAmount=(v:string)=>{if(!this.busy()){this.amount(v);this.amountError('');}};
  private async go(step:string){this.step(step);if(this.context.router)await this.context.router.go({path:'send-money',params:{step}});}
  next=async()=>{if(this.canContinue())await this.go('details');};
+ dismissSheet=async()=>{if(this.busy()||this.attemptLocked()||this.pinOpen())return;if(this.result()){await this.leave();return;}this.draft=undefined;await this.go('beneficiary');};
  back=async()=>{if(this.busy()||this.attemptLocked())return;if(this.result()){await this.leave();return;}await this.go(this.step()==='review'?'details':'beneficiary');};
  continueDetails=async()=>{if(this.busy()||this.attemptLocked())return;this.busy(true);this.amountError('');this.purposeError('');try{
  const amount=paymentAmount(this.amount());if(!this.account()||!this.selected())throw Error('Select an account and beneficiary.');
@@ -54,7 +56,9 @@ class SendMoney {
  this.draft=Object.freeze({sourceAccountId:this.account()!.accountId,beneficiaryId:this.selected()!.beneficiaryId,amount,...(purpose?{purpose}:{}),...(this.customerReference().trim()?{customerReference:this.customerReference().trim()}:{}),...(category?{category:category as PaymentCategory}:{})});await this.go('review');
  }catch(e){this.amountError(errorText(e));}finally{if(this.alive)this.busy(false);}};
  private accept(tx:Transaction){if(!this.alive)return;this.observed=performance.now();this.now(this.observed);this.result(tx);this.stale(false);chimeForPayment(tx);}
- confirm=async()=>{if(this.busy()||!this.draft)return;this.busy(true);this.paymentError('');armAudio();try{const state=recovery();if(state.status!=='empty')throw Error('Recover the previous operation in Transactions before creating a payment.');const tx=await perform<Transaction>({operation:'CREATE',payload:this.draft});this.accept(tx);await this.go('result');history.replaceState(null,'',location.pathname+'?transactionId='+tx.transactionId);await this.refreshResult();}catch(e){if(this.alive)this.paymentError(errorText(e));}finally{this.syncRecovery();if(this.alive)this.busy(false);}};
+ confirm=async()=>{if(this.busy()||!this.draft)return;this.pinError('');this.safePayPin('');this.safePayPinConfirmation('');try{const status=await safePayPinApi.status();this.pinConfigured(status.configured&&status.resetStatus!=='APPROVED');this.pinOpen(true);}catch(e){this.paymentError(errorText(e));}};
+ closePin=()=>{if(!this.busy())this.pinOpen(false);};
+ confirmWithPin=async()=>{if(this.busy()||!this.draft)return;const pin=this.safePayPin();if(!/^\d{6}$/.test(pin)){this.pinError('Enter your 6-digit SafePay PIN.');return;}if(!this.pinConfigured()&&pin!==this.safePayPinConfirmation()){this.pinError('The SafePay PINs do not match.');return;}this.busy(true);this.pinError('');this.paymentError('');armAudio();try{if(!this.pinConfigured())await safePayPinApi.setup(pin,this.safePayPinConfirmation());const state=recovery();if(state.status!=='empty')throw Error('Recover the previous operation in Transactions before creating a payment.');const tx=await perform<Transaction>({operation:'CREATE',payload:this.draft},pin);this.pinOpen(false);this.safePayPin('');this.safePayPinConfirmation('');this.accept(tx);await this.go('result');history.replaceState(null,'',location.pathname+'?transactionId='+tx.transactionId);await this.refreshResult();}catch(e){if(this.alive)this.pinError(errorText(e));}finally{this.syncRecovery();if(this.alive)this.busy(false);}};
  authorize=async()=>{const id=this.result()?.transactionId;if(!this.canAuthorize()||!await confirmAction('Confirm and authorize?',this.money(this.result()!.amount)+' to '+this.result()!.beneficiaryName+'. SafePay will assess risk and may reserve funds.','Authorize payment'))return;if(this.alive&&this.result()?.transactionId===id)await this.mutate('AUTHORIZE');};
  cancelPayment=async()=>{const id=this.result()?.transactionId;if(!this.canCancel()||!await confirmAction('Cancel this payment?','The server checks the current state and deadline before releasing any reservation.','Cancel payment',true))return;if(this.alive&&this.result()?.transactionId===id)await this.mutate('CANCEL');};
  requestCancel=this.cancelPayment;closeCancel=()=>this.cancelOpen(false);confirmCancel=this.cancelPayment;

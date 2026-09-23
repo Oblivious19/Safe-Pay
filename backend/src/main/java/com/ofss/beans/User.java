@@ -59,6 +59,16 @@ public class User {
             length = 255)
     private String passwordHash;
 
+    @Column(name = "SAFE_PAY_PIN_HASH", length = 255)
+    private String safePayPinHash;
+
+    @Column(name = "SAFE_PAY_PIN_UPDATED_AT")
+    private OffsetDateTime safePayPinUpdatedAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "SAFE_PAY_PIN_RESET_STATUS", nullable = false, length = 20)
+    private SafePayPinResetStatus safePayPinResetStatus = SafePayPinResetStatus.NONE;
+
     @Enumerated(EnumType.STRING)
     @Column(
             name = "STATUS",
@@ -378,6 +388,47 @@ public class User {
 
     public String getPasswordHash() {
         return passwordHash;
+    }
+
+    public boolean hasSafePayPin() {
+        return safePayPinHash != null && !safePayPinHash.isBlank();
+    }
+
+    public boolean matchesSafePayPin(
+            String pin,
+            org.springframework.security.crypto.password.PasswordEncoder encoder) {
+        return hasSafePayPin() && pin != null && encoder.matches(pin, safePayPinHash);
+    }
+
+    public void setSafePayPin(
+            String encodedPin,
+            OffsetDateTime databaseTime) {
+        if (hasSafePayPin() && safePayPinResetStatus != SafePayPinResetStatus.APPROVED) {
+            throw new IllegalStateException("SafePay PIN is already configured");
+        }
+        safePayPinHash = requirePasswordHash(encodedPin);
+        safePayPinUpdatedAt = requireUtcTimestamp(databaseTime, "databaseTime");
+        safePayPinResetStatus = SafePayPinResetStatus.NONE;
+        updatedAt = safePayPinUpdatedAt;
+    }
+
+    public SafePayPinResetStatus getSafePayPinResetStatus() {
+        return safePayPinResetStatus == null ? SafePayPinResetStatus.NONE : safePayPinResetStatus;
+    }
+
+    public void requestSafePayPinReset(OffsetDateTime databaseTime) {
+        if (!hasSafePayPin()) throw new IllegalStateException("SafePay PIN is not configured");
+        if (getSafePayPinResetStatus() == SafePayPinResetStatus.PENDING) return;
+        safePayPinResetStatus = SafePayPinResetStatus.PENDING;
+        updatedAt = requireUtcTimestamp(databaseTime, "databaseTime");
+    }
+
+    public void decideSafePayPinReset(boolean approved, OffsetDateTime databaseTime) {
+        if (getSafePayPinResetStatus() != SafePayPinResetStatus.PENDING) {
+            throw new IllegalStateException("No pending SafePay PIN reset request");
+        }
+        safePayPinResetStatus = approved ? SafePayPinResetStatus.APPROVED : SafePayPinResetStatus.REJECTED;
+        updatedAt = requireUtcTimestamp(databaseTime, "databaseTime");
     }
 
     public UserStatus getStatus() {

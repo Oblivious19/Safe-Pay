@@ -25,7 +25,7 @@ export function recoveryStore(): PendingPaymentStore { return new PendingPayment
 export function recovery() { const user = session()?.userId; if (!user) throw new Error('Please sign in.'); return recoveryStore().read(user); }
 let sending = false;
 export function paymentBusy(): boolean { return sending; }
-export async function perform<T>(intent?: PendingIntent): Promise<T> {
+export async function perform<T>(intent?: PendingIntent, safePayPin?: string): Promise<T> {
   if (sending) throw new Error('A payment request is still running.');
   if (verificationPending()) throw new Error('Resolve the uncertain OTP verification before another payment operation.');
   const userId = session()?.userId; if (!userId) throw new Error('Please sign in.');
@@ -35,7 +35,7 @@ export async function perform<T>(intent?: PendingIntent): Promise<T> {
   else { const current = store.read(userId); if (current.status !== 'pending') throw new Error('This record cannot be replayed. Review payment history; do not submit a replacement.'); saved = current.attempt; }
   const op = saved.intent;
   let path = '/transactions'; let body: unknown;
-  if (op.operation === 'CREATE') body = {...op.payload, sourceAccountId: wireId(op.payload.sourceAccountId), beneficiaryId: wireId(op.payload.beneficiaryId), amount: wireAmount(op.payload.amount)};
+  if (op.operation === 'CREATE') body = {...op.payload, sourceAccountId: wireId(op.payload.sourceAccountId), beneficiaryId: wireId(op.payload.beneficiaryId), amount: wireAmount(op.payload.amount), ...(safePayPin ? {safePayPin} : {})};
   else { path += '/' + validId(op.transactionId) + ({AUTHORIZE: '/authorize', CANCEL: '/cancel', OTP_ISSUE: '/otp', OTP_RESEND: '/otp/resend'}[op.operation]); if (op.operation === 'AUTHORIZE') body = op.payload; }
   sending = true;
   try {

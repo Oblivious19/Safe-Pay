@@ -371,6 +371,19 @@ public void creditSettlementFunds(
     validateBalanceInvariant();
 }
 
+    /** Credits an active SafePay customer account when an inbound payment settles. */
+    public void creditIncomingSettlementFunds(
+            BigDecimal amount,
+            OffsetDateTime settledAt) {
+
+        requireActiveCustomerAccount();
+        BigDecimal normalizedAmount = requirePositiveMoney(amount, "amount");
+        OffsetDateTime timestamp = requireUtcTimestamp(settledAt, "settledAt");
+        currentBalance = requireMoney(currentBalance.add(normalizedAmount), "currentBalance");
+        updatedAt = timestamp;
+        validateBalanceInvariant();
+    }
+
 private void requireActiveCustomerAccount() {
     if (!isActive()) {
         throw new BusinessRuleException(

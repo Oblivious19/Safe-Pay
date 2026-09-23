@@ -14,6 +14,7 @@ import jakarta.persistence.LockModeType;
 import com.ofss.beans.User;
 import com.ofss.beans.RoleName;
 import com.ofss.beans.UserStatus;
+import com.ofss.beans.SafePayPinResetStatus;
 
 public interface UserDao extends Repository<User, Long> {
 
@@ -70,6 +71,8 @@ public interface UserDao extends Repository<User, Long> {
              where appUser.userId = :userId
             """)
     Optional<User> findByIdForUpdate(@Param("userId") Long userId);
+
+    java.util.List<User> findBySafePayPinResetStatus(SafePayPinResetStatus status);
 
     @Query(
             value = "SELECT SYSTIMESTAMP FROM DUAL",

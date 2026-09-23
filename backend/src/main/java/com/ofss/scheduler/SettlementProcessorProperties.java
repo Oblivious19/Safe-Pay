@@ -41,15 +41,7 @@ public record SettlementProcessorProperties(
                             + MAX_BATCH_SIZE);
         }
 
-        if (enabled
-                && (outboundClearingAccountId == null
-                        || outboundClearingAccountId <= 0L)) {
-            throw new IllegalArgumentException(
-                    "outboundClearingAccountId is required when enabled");
-        }
-
-        if (!enabled
-                && outboundClearingAccountId != null
+        if (outboundClearingAccountId != null
                 && outboundClearingAccountId <= 0L) {
             throw new IllegalArgumentException(
                     "outboundClearingAccountId must be positive");

@@ -50,12 +50,12 @@
         </section>
       </div>
       <section class="dashboard-recent" aria-labelledby="recent-title">
-        <div class="recent-heading"><div><p class="dash-overline">YOUR ACTIVITY</p><h2 id="recent-title">Recent outgoing payments</h2></div><a href="/transactions" class="dashboard-text-link">View all <span aria-hidden="true">↗</span></a></div>
+        <div class="recent-heading"><div><p class="dash-overline">YOUR ACTIVITY</p><h2 id="recent-title">Recent payments</h2></div><a href="/transactions" class="dashboard-text-link">View all <span aria-hidden="true">↗</span></a></div>
         <!-- ko if: transactionError --><div class="dashboard-state" role="status"><h3>Payments couldn’t be loaded</h3><p data-bind="text: transactionError"></p><button class="dashboard-secondary" data-bind="click: load">Try again</button></div><!-- /ko -->
         <!-- ko if: !transactionError() && !recent().length --><div class="dashboard-empty"><span class="state-symbol" aria-hidden="true">↗</span><h3>Your first payment starts here.</h3><p>Once you make a payment, you’ll see it here.<br>No transactions yet.</p></div><!-- /ko -->
         <!-- ko if: recent().length --><ul class="dashboard-transactions" data-bind="foreach: recent"><li data-bind="click:$parent.open,event:{keydown:$parent.openKey}" tabindex="0" role="button">
           <oj-avatar size="xs" data-bind="attr: {initials: $parent.initials(beneficiaryName)}"></oj-avatar>
-          <div class="payment-person"><strong data-bind="text: beneficiaryName || 'Payment'"></strong><time data-bind="text: $parent.formatDate(createdAt), attr: {datetime: createdAt}"></time></div>
+          <div class="payment-person"><strong data-bind="text: beneficiaryName || 'Payment'"></strong><small data-bind="text: direction === 'RECEIVED' ? 'Money received' : 'Payment sent'"></small><time data-bind="text: $parent.formatDate(createdAt), attr: {datetime: createdAt}"></time></div>
           <div class="payment-value"><strong data-bind="text: $parent.formatMoney(amount)"></strong><span class="payment-status" data-bind="text: $parent.statusLabel(state), css: $parent.riskClass($data)"></span></div>
         </li></ul><!-- /ko -->
       </section>

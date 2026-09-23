@@ -9,6 +9,6 @@ export function problem(status: number, body: unknown, trace: string): ApiError 
   return new ApiError(safe, status, typeof p.errorCode === 'string' ? p.errorCode : 'REQUEST_REJECTED', trace, fields, typeof p.remainingAttempts === 'number' ? p.remainingAttempts : undefined);
 }
 export function errorText(error: unknown): string {
-  if (error instanceof ApiError) return error.message + (error.fields.length ? ' ' + error.fields.map(f => f.field + ': ' + f.message).join(' ') : '') + (error.remainingAttempts !== undefined ? ' Remaining attempts: ' + error.remainingAttempts + '.' : '') + (error.trace ? ' Reference: ' + error.trace : '');
+  if (error instanceof ApiError) return error.message + (error.fields.length ? ' ' + error.fields.map(f => f.message).join(' ') : '') + (error.remainingAttempts !== undefined ? ' Remaining attempts: ' + error.remainingAttempts + '.' : '');
   return error instanceof Error ? error.message : 'Unable to complete this action.';
 }

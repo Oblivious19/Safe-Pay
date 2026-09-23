@@ -42,11 +42,19 @@ public record CreateTransactionRequest(
                 message = "customerReference must not exceed 100 characters")
         String customerReference,
 
-        PaymentCategory category) {
+        PaymentCategory category,
+
+        @Size(max = 6, message = "SafePay PIN is invalid")
+        String safePayPin) {
 
     public CreateTransactionRequest(Long sourceAccountId, Long beneficiaryId, BigDecimal amount,
             String purpose, String customerReference) {
-        this(sourceAccountId, beneficiaryId, amount, purpose, customerReference, null);
+        this(sourceAccountId, beneficiaryId, amount, purpose, customerReference, null, null);
+    }
+
+    public CreateTransactionRequest(Long sourceAccountId, Long beneficiaryId, BigDecimal amount,
+            String purpose, String customerReference, PaymentCategory category) {
+        this(sourceAccountId, beneficiaryId, amount, purpose, customerReference, category, null);
     }
 
     public CreateTransactionRequest {

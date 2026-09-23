@@ -96,26 +96,27 @@ public class SettlementServiceImpl implements SettlementService {
         Account sourceAccount = transaction.getSourceAccount();
         requirePersistedAccount(sourceAccount, "source account");
 
-        long clearingAccountId = properties.requireOutboundClearingAccountId();
-        if (sourceAccount.getAccountId().equals(clearingAccountId)) {
+        Account destinationAccount = transaction.getDestinationAccount();
+        requirePersistedAccount(destinationAccount, "destination account");
+        if (sourceAccount.getAccountId().equals(destinationAccount.getAccountId())) {
             throw new SettlementInvariantException(
-                    "CLEARING_ACCOUNT_COLLISION",
-                    "Source and clearing accounts must be different");
+                    "DESTINATION_ACCOUNT_COLLISION",
+                    "Source and destination accounts must be different");
         }
 
         Account[] lockedAccounts = lockAccountsInIdOrder(
                 sourceAccount.getAccountId(),
-                clearingAccountId);
+                destinationAccount.getAccountId());
         Account lockedSource = sourceAccount.getAccountId().equals(lockedAccounts[0].getAccountId())
                 ? lockedAccounts[0] : lockedAccounts[1];
-        Account lockedClearing = clearingAccountId == lockedAccounts[0].getAccountId()
+        Account lockedDestination = destinationAccount.getAccountId().equals(lockedAccounts[0].getAccountId())
                 ? lockedAccounts[0] : lockedAccounts[1];
 
-        validateSettlementState(transaction, lockedSource, lockedClearing);
+        validateSettlementState(transaction, lockedSource, lockedDestination);
 
-        SettlementPostingPair pair = postingFactory.create(
+        SettlementPostingPair pair = postingFactory.createToDestination(
                 transaction,
-                lockedClearing,
+                lockedDestination,
                 settlementTime);
 
         ledgerPostingDao.saveAndFlush(pair.posting());
@@ -123,7 +124,15 @@ public class SettlementServiceImpl implements SettlementService {
         entityManager.flush();
 
         lockedSource.consumeReservedFunds(transaction.getAmount(), settlementTime);
-        lockedClearing.creditSettlementFunds(transaction.getAmount(), settlementTime);
+        int creditedAccounts = accountDao.creditIncomingSettlementBalance(
+                lockedDestination.getAccountId(),
+                transaction.getAmount(),
+                settlementTime);
+        if (creditedAccounts != 1) {
+            throw new SettlementInvariantException(
+                    "DESTINATION_CREDIT_FAILED",
+                    "The destination account could not be credited");
+        }
         transaction.endReservation(settlementTime);
         stateService.transition(transaction, TransactionState.SETTLED, settlementTime);
 
@@ -173,7 +182,7 @@ public class SettlementServiceImpl implements SettlementService {
     private static void validateSettlementState(
             TransactionDb transaction,
             Account source,
-            Account clearing) {
+            Account destination) {
 
         if (!Objects.equals(transaction.getSourceAccount().getAccountId(), source.getAccountId())
                 || source.getOwner() == null
@@ -186,16 +195,15 @@ public class SettlementServiceImpl implements SettlementService {
         if (!source.isActive()) {
             throw new SettlementInvariantException("SOURCE_ACCOUNT_INACTIVE", "Source account is inactive");
         }
-        if (clearing.getAccountType() != AccountType.OUTBOUND_CLEARING
-                || clearing.getOwner() != null
-                || !clearing.isActive()
-                || clearing.getCurrencyCode() != CurrencyCode.INR) {
+        if (!destination.isCustomerOwnedAccount() || !destination.isActive()
+                || destination.getCurrencyCode() != CurrencyCode.INR
+                || !Objects.equals(transaction.getDestinationAccount().getAccountId(), destination.getAccountId())) {
             throw new SettlementInvariantException(
-                    "INVALID_OUTBOUND_CLEARING_ACCOUNT",
-                    "Configured clearing account is not an active ownerless INR outbound-clearing account");
+                    "INVALID_SETTLEMENT_DESTINATION",
+                    "Transaction destination must be an active INR SafePay customer account");
         }
         if (source.getCurrencyCode() != transaction.getCurrencyCode()
-                || source.getCurrencyCode() != clearing.getCurrencyCode()) {
+                || source.getCurrencyCode() != destination.getCurrencyCode()) {
             throw new SettlementInvariantException("SETTLEMENT_CURRENCY_MISMATCH", "Settlement accounts must use transaction currency");
         }
 

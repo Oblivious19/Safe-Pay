@@ -10,6 +10,7 @@ import com.ofss.beans.CurrencyCode;
 import com.ofss.beans.RiskTier;
 import com.ofss.beans.TransactionDb;
 import com.ofss.beans.TransactionState;
+import com.ofss.common.SensitiveDataMasker;
 
 public record TransactionSummaryResponse(
         String transactionId,
@@ -24,6 +25,7 @@ public record TransactionSummaryResponse(
         OffsetDateTime protectedUntil,
         OffsetDateTime createdAt,
         OffsetDateTime updatedAt,
+        String direction,
         @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) PaymentCategory category) {
 
     // Retain Java/cached-response compatibility; historical category may be null.
@@ -40,7 +42,7 @@ public record TransactionSummaryResponse(
         OffsetDateTime protectedUntil,
         OffsetDateTime createdAt,
         OffsetDateTime updatedAt) {
-        this(transactionId, transactionReference, beneficiaryId, beneficiaryName, maskedDestinationIdentifier, amount, currencyCode, state, riskTier, protectedUntil, createdAt, updatedAt, null);
+        this(transactionId, transactionReference, beneficiaryId, beneficiaryName, maskedDestinationIdentifier, amount, currencyCode, state, riskTier, protectedUntil, createdAt, updatedAt, "SENT", null);
     }
 
     @JsonAnyGetter
@@ -68,6 +70,24 @@ public record TransactionSummaryResponse(
                 detail.protectedUntil(),
                 detail.createdAt(),
                 detail.updatedAt(),
+                "SENT",
                 detail.category());
+    }
+
+    public static TransactionSummaryResponse from(TransactionDb transaction, Long viewerUserId) {
+        TransactionSummaryResponse summary = from(transaction);
+        boolean received = transaction.getDestinationAccount() != null
+                && transaction.getDestinationAccount().getOwner() != null
+                && java.util.Objects.equals(transaction.getDestinationAccount().getOwner().getUserId(), viewerUserId)
+                && !java.util.Objects.equals(transaction.getCustomer().getUserId(), viewerUserId);
+        return new TransactionSummaryResponse(summary.transactionId(), summary.transactionReference(),
+                summary.beneficiaryId(), received ? "Money received" : summary.beneficiaryName(),
+                received ? detailMaskedSource(transaction) : summary.maskedDestinationIdentifier(), summary.amount(),
+                summary.currencyCode(), summary.state(), summary.riskTier(), summary.protectedUntil(),
+                summary.createdAt(), summary.updatedAt(), received ? "RECEIVED" : "SENT", summary.category());
+    }
+
+    private static String detailMaskedSource(TransactionDb transaction) {
+        return SensitiveDataMasker.maskAccountNumber(transaction.getSourceAccount().getAccountNumber());
     }
 }

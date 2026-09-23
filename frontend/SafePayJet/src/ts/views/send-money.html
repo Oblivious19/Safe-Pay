@@ -36,7 +36,7 @@
 <button type="button" class="send-continue pay-cta" data-bind="click: next, disable: cannotContinue"><span class="spin" aria-hidden="true" data-bind="visible: busy"></span><span data-bind="text: busy() ? 'Opening…' : 'Continue'"></span></button>
 </div>
 <div class="pay-overlay" data-bind="css: {'is-open': sheetOpen}, attr: {'aria-hidden': !sheetOpen()}">
-  <button type="button" class="pay-backdrop" data-bind="click: back, disable: busy() || (attemptLocked() && !canLeave())" aria-label="Close payment sheet"></button>
+  <button type="button" class="pay-backdrop" data-bind="click: dismissSheet, disable: busy() || attemptLocked() || pinOpen()" aria-label="Close payment sheet"></button>
   <dialog id="payment-sheet" class="pay-sheet" aria-labelledby="pay-sheet-title" data-bind="event:{cancel:cancelSheet},css: {'is-review': step() === 'review', 'is-status': step() === 'result'}">
     <span class="pay-glow" aria-hidden="true"><span class="pay-orb"></span><span class="pay-orb pay-orb-two"></span></span>
     <div class="pay-sheet-toolbar">
@@ -96,7 +96,20 @@
     <oj-messages id="send-review-messages" messages="[[paymentMessages]]" display="general"></oj-messages>
     <p role="alert" class="recipient-error" data-bind="visible: paymentError, text: paymentError"></p>
     
-    <button type="button" class="send-continue pay-cta pay-shimmer" data-bind="click: function(){ attemptLocked() ? openPayment() : confirm(); }, disable: busy"><span class="spin" aria-hidden="true" data-bind="visible: busy"></span><span data-bind="text: busy() ? 'Processing…' : attemptLocked() ? 'Recover original request' : 'Save payment instruction'"></span></button>
+    <button type="button" class="send-continue pay-cta pay-shimmer" data-bind="click: function(){ attemptLocked() ? openPayment() : confirm(); }, disable: busy"><span class="spin" aria-hidden="true" data-bind="visible: busy"></span><span data-bind="text: busy() ? 'Processing…' : attemptLocked() ? 'Recover original request' : 'Enter SafePay PIN to pay'"></span></button>
+    <!-- ko if: pinOpen -->
+    <section class="pin-stage" role="dialog" aria-modal="true" aria-labelledby="safe-pay-pin-title">
+      <div class="pin-stage-card">
+        <h2 id="safe-pay-pin-title">Confirm payment</h2>
+        <!-- ko if: !pinConfigured() --><p>Set a 6-digit SafePay PIN. You will use this saved PIN to confirm future payments.</p><!-- /ko -->
+        <!-- ko if: pinConfigured --><p>Enter your 6-digit SafePay PIN to create this payment.</p><!-- /ko -->
+        <label class="sp-field">SafePay PIN<input type="password" inputmode="numeric" autocomplete="one-time-code" maxlength="6" data-bind="textInput:safePayPin,disable:busy"></label>
+        <!-- ko if: !pinConfigured() --><label class="sp-field">Confirm SafePay PIN<input type="password" inputmode="numeric" autocomplete="new-password" maxlength="6" data-bind="textInput:safePayPinConfirmation,disable:busy"></label><!-- /ko -->
+        <p class="recipient-error" role="alert" data-bind="visible:pinError,text:pinError"></p>
+        <div class="pin-stage-actions"><button type="button" class="pay-ghost" data-bind="click:closePin,disable:busy">Cancel</button><button type="button" class="send-continue pay-cta" data-bind="click:confirmWithPin,disable:busy"><span data-bind="text: pinConfigured() ? 'Confirm payment' : 'Save PIN and pay'"></span></button></div>
+      </div>
+    </section>
+    <!-- /ko -->
     
     
     <p class="send-subtitle" data-bind="visible: attemptLocked">Open Transactions to recover the original request. Do not start a replacement while its outcome is uncertain.</p>

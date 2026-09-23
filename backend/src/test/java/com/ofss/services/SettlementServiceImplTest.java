@@ -93,7 +93,10 @@ class SettlementServiceImplTest {
 
         assertThat(outcome).isEqualTo(SettlementAttemptOutcome.SETTLED);
         verify(source).consumeReservedFunds(new BigDecimal("125.00"), NOW);
-        verify(clearing).creditSettlementFunds(new BigDecimal("125.00"), NOW);
+        verify(accountDao).creditIncomingSettlementBalance(
+                CLEARING_ID,
+                new BigDecimal("125.00"),
+                NOW);
         verify(transaction).endReservation(NOW);
         verify(stateService).transition(transaction, TransactionState.SETTLED, NOW);
         verify(posting).markPosted(NOW);
@@ -170,7 +173,7 @@ class SettlementServiceImplTest {
         assertThatThrownBy(() -> service.settleIfReleased(TRANSACTION_ID, "CORR-101"))
                 .isInstanceOf(SettlementInvariantException.class)
                 .hasMessageContaining("complete source reservation");
-        verify(postingFactory, never()).create(transaction, clearing, NOW);
+        verify(postingFactory, never()).createToDestination(transaction, clearing, NOW);
     }
 
     private void validSettlement() {
@@ -178,6 +181,7 @@ class SettlementServiceImplTest {
         when(transaction.getState()).thenReturn(TransactionState.RELEASED);
         when(transaction.getTransactionId()).thenReturn(TRANSACTION_ID);
         when(transaction.getSourceAccount()).thenReturn(source);
+        when(transaction.getDestinationAccount()).thenReturn(clearing);
         when(transaction.getCustomer()).thenReturn(customer);
         when(transaction.getAmount()).thenReturn(new BigDecimal("125.00"));
         when(transaction.getReservedAmount()).thenReturn(new BigDecimal("125.00"));
@@ -194,7 +198,7 @@ class SettlementServiceImplTest {
         when(source.getCurrentBalance()).thenReturn(new BigDecimal("500.00"));
 
         when(clearing.getAccountId()).thenReturn(CLEARING_ID);
-        when(clearing.getAccountType()).thenReturn(AccountType.OUTBOUND_CLEARING);
+        when(clearing.isCustomerOwnedAccount()).thenReturn(true);
         when(clearing.isActive()).thenReturn(true);
         when(clearing.getCurrencyCode()).thenReturn(CurrencyCode.INR);
 
@@ -202,9 +206,13 @@ class SettlementServiceImplTest {
         when(transactionDao.currentDatabaseTime()).thenReturn(NOW);
         when(accountDao.findByIdForUpdate(SOURCE_ID)).thenReturn(Optional.of(source));
         when(accountDao.findByIdForUpdate(CLEARING_ID)).thenReturn(Optional.of(clearing));
+        when(accountDao.creditIncomingSettlementBalance(
+                CLEARING_ID,
+                new BigDecimal("125.00"),
+                NOW)).thenReturn(1);
         SettlementPostingPair pair = org.mockito.Mockito.mock(SettlementPostingPair.class);
         when(pair.posting()).thenReturn(posting);
         when(pair.entriesInPostingOrder()).thenReturn(List.of(debit, credit));
-        when(postingFactory.create(transaction, clearing, NOW)).thenReturn(pair);
+        when(postingFactory.createToDestination(transaction, clearing, NOW)).thenReturn(pair);
     }
 }

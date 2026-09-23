@@ -230,6 +230,24 @@ public class LedgerEntry {
                 createdAt);
     }
 
+    public static LedgerEntry createPaymentSettlementDestinationCredit(
+            LedgerPosting posting,
+            Account destinationAccount,
+            OffsetDateTime createdAt) {
+        requirePaymentSettlement(posting);
+        requirePersistedAccount(destinationAccount, "destinationAccount");
+        TransactionDb transaction = posting.getTransaction();
+        Account transactionDestination = Objects.requireNonNull(transaction.getDestinationAccount(), "transaction destinationAccount is required");
+        if (!Objects.equals(destinationAccount.getAccountId(), transactionDestination.getAccountId())
+                || !destinationAccount.isCustomerOwnedAccount() || !destinationAccount.isActive()
+                || destinationAccount.getCurrencyCode() != CurrencyCode.INR
+                || Objects.equals(destinationAccount.getAccountId(), transaction.getSourceAccount().getAccountId())) {
+            throw new IllegalArgumentException("destinationAccount must be the active INR SafePay recipient account");
+        }
+        return create(posting, destinationAccount, LedgerEntryType.CREDIT,
+                "Simulated payment settlement credit", createdAt);
+    }
+
     private static LedgerEntry create(
             LedgerPosting posting,
             Account account,

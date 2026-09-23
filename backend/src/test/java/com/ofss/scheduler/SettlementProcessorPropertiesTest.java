@@ -77,18 +77,14 @@ class SettlementProcessorPropertiesTest {
     }
 
     @Test
-    void requiresPositiveClearingIdWhenEnabled() {
-        assertThatThrownBy(() ->
-                properties(true, 25, null, approvedDelays()))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage(
-                        "outboundClearingAccountId is required when enabled");
-
+    void allowsEnabledDirectSettlementWithoutClearingId() {
+        SettlementProcessorProperties properties =
+                properties(true, 25, null, approvedDelays());
+        assertThat(properties.enabled()).isTrue();
         assertThatThrownBy(() ->
                 properties(true, 25, 0L, approvedDelays()))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage(
-                        "outboundClearingAccountId is required when enabled");
+                .hasMessage("outboundClearingAccountId must be positive");
     }
 
     @Test

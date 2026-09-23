@@ -156,6 +156,22 @@ class AccountFinancialStateTest {
     }
 
     @Test
+    void creditsCustomerAccountWhenAnIncomingPaymentSettles() {
+        Account recipient = customerAccount("1000.00");
+        OffsetDateTime settledAt = CREATED_AT.plusMinutes(1);
+
+        recipient.creditIncomingSettlementFunds(
+                new BigDecimal("500.00"),
+                settledAt);
+
+        assertThat(recipient.getCurrentBalance())
+                .isEqualByComparingTo("1500.00");
+        assertThat(recipient.getReservedAmount())
+                .isEqualByComparingTo("0.00");
+        assertThat(recipient.getUpdatedAt()).isEqualTo(settledAt);
+    }
+
+    @Test
     void rejectsFinancialOperationOnWrongAccountType() {
         Account customerAccount =
                 customerAccount("1000.00");
