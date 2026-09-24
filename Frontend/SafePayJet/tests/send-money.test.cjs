@@ -44,7 +44,7 @@ test('category and trimmed Others purpose survive the PIN step and an ambiguous 
   assert.equal(posts[0].body.category,'OTHERS');assert.equal(posts[0].body.purpose,'Tuition');f.model.disconnected();
 });
 const ojet = { 'ojs/ojprogress-circle': {}, 'ojs/ojdialog': {}, 'ojs/ojbutton': {}, 'ojs/ojtrain': {}, 'ojs/ojinputtext': {}, 'ojs/ojavatar': {}, 'ojs/ojmessages': {} };
-function fixture(list = async () => [recipient], step, transactions = {}, pin) {
+function fixture(list = async () => [recipient], step, transactions = {}, pin, timer = fn => {fn();return 1;}) {
   let fundsCall=async id=>({accountId:id,balance:450000,reservedBalance:0,minimumBalance:0,availableToTransfer:450000});
   const calls = [], redirects = [], routes = [], module = { exports: {} };
   const source = fs.readFileSync(path.join(__dirname, '../src/ts/viewModels/send-money.ts'), 'utf8');
@@ -79,7 +79,7 @@ function fixture(list = async () => [recipient], step, transactions = {}, pin) {
     '../services/transactionService': { transactionService: transactions, newIdempotencyKey: () => 'unique-key-' + routes.length } };
   vm.runInNewContext('(function(require,module,exports){' + code + '\n})', {
     TextEncoder, setInterval: () => 1, clearInterval: () => {},
-    setTimeout: (fn) => { fn(); return 1; }, clearTimeout: () => {},
+    setTimeout: timer, clearTimeout: () => {},
     document: { title: '', getElementById: () => ({ focus() {} }) },
     window: { location: { replace: url => redirects.push(url) } }
   })(p => imports[p], module, module.exports);
@@ -355,17 +355,45 @@ for(const value of ['', '12345', '1234567', 'abcdef', '１２３４５６', ' 12
  });
 }
 for(const [amount,state,riskTier] of [['50','SETTLED','LOW'],['15000','PROTECTED','MEDIUM'],['75000','PROTECTED','HIGH'],['150000','HARD_HOLD','VERY_HIGH']]) {
- test('correct six-digit input automatically submits for '+riskTier,async()=>{
+ test('correct six-digit input waits for explicit confirmation for '+riskTier,async()=>{
   const posts=[];const f=await review({create:async body=>{posts.push(body);return {...result,amount:Number(amount),state,riskTier};}});
   f.model.amount(amount);if(riskTier==='VERY_HIGH')f.model.category('MEDICAL');await f.model.confirm();
-  f.model.onPinInput(null,{target:{value:'000000'}});assert.equal(posts.length,0);assert.ok(f.model.pinError());
+  f.model.onPinInput(null,{target:{value:'000000'}});await f.model.submitPin();assert.equal(posts.length,0);assert.ok(f.model.pinError());
   f.model.onPinInput(null,{target:{value:'123456'}});await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(posts.length,0);assert.equal(f.model.pinOpen(),true);await f.model.submitPin();
   assert.equal(posts.length,1);assert.equal(f.model.sPin(),'');assert.equal(f.model.pinError(),'');
   assert.equal(f.model.pinOpen(),false);assert.equal(f.model.result().state,state);
   assert.deepEqual(Object.keys(posts[0]).sort(),riskTier==='VERY_HIGH'?['amount','beneficiaryId','category','fromAccountId','purpose']:['amount','beneficiaryId','fromAccountId','purpose']);
   assert.equal(posts[0].amount,amount);f.model.disconnected();
  });
 }
+test('explicit PIN confirmation waits only one second on the PIN card, prevents duplicates and cancels on leaving',async()=>{
+ for(const leave of [false,true]) {
+  const timers=[],posts=[];let controlled=false;
+  const f=fixture(undefined,undefined,{create:async body=>{posts.push(body);return result;}},undefined,(fn,ms)=>{
+   if(controlled)timers.push({fn,ms});else fn();return 1;
+  });
+  await f.model.load();f.model.choose(recipient);await f.model.next();f.model.amount('50');await f.model.continueDetails();await f.model.confirm();
+  f.model.onPinInput(null,{target:{value:'123456'}});assert.equal(posts.length,0);
+  controlled=true;const pending=f.model.submitPin();assert.equal(timers.length,1);assert.equal(timers[0].ms,1000);
+  assert.equal(f.model.busy(),true);assert.equal(posts.length,0);assert.equal(f.model.pinOpen(),true);
+  await f.model.submitPin();assert.equal(timers.length,1);
+  if(leave)f.model.disconnected();else timers[0].fn();
+  await pending;assert.equal(posts.length,leave?0:1);assert.equal(f.model.pinOpen(),false);
+  if(!leave)f.model.disconnected();
+ }
+});
+
+test('recipient, review and PIN navigation have no artificial timers or full-card loaders',async()=>{
+ const timers=[];const f=fixture(undefined,undefined,{},undefined,(fn,ms)=>{timers.push(ms);return 1;});
+ await f.model.load();f.model.choose(recipient);await f.model.next();assert.equal(f.model.step(),'details');
+ f.model.amount('50');await f.model.continueDetails();assert.equal(f.model.step(),'review');
+ await f.model.confirm();assert.equal(f.model.pinOpen(),true);assert.deepEqual(timers,[]);
+ const html=fs.readFileSync(path.join(__dirname,'../src/ts/views/send-money.html'),'utf8');
+ assert.doesNotMatch(html,/pay-stage-transition|transitionLabel|showProcessFlux|Preparing S PIN/);
+ assert.match(html,/Processing payment/);f.model.disconnected();
+});
+
 test('PIN cannot submit before confirmation and is cleared on navigation/disconnect',async()=>{
  let posts=0;const f=await review({create:async()=>{posts++;return result;}});
  f.model.sPin('123456');await f.model.submitPin();assert.equal(posts,0);

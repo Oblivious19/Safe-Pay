@@ -48,6 +48,17 @@ class SendMoneyViewModel {
   notice = ko.observable("");
   loading = ko.observable(false);
   busy = ko.observable(false);
+  private stageTimer?: ReturnType<typeof setTimeout>;
+  private cancelStage?: () => void;
+  private pauseBeforePayment(): Promise<boolean> {
+    return new Promise(resolve => {
+      this.cancelStage = () => resolve(false);
+      this.stageTimer = setTimeout(() => {
+        this.cancelStage = undefined; this.stageTimer = undefined;
+        resolve(this.alive);
+      }, 1000);
+    });
+  }
   paymentError = ko.observable("");
   pinOpen = ko.observable(false);
   sPin = ko.observable("");
@@ -107,7 +118,6 @@ class SendMoneyViewModel {
     && !(this.isSettled() && !(this.result()?.protectionSeconds || 0)));
   riskTone = ko.pureComputed(() => this.result() ? riskClass(this.result() as PaymentTransaction) : "risk-neutral");
   gauge = ko.pureComputed(() => paymentGauge(this.result(), this.now()));
-  showProcessFlux = ko.pureComputed(() => this.busy() && this.attemptLocked() && !this.result());
   private alive = true;
   private initialStep: string | undefined;
   canContinue = ko.pureComputed(() => !!this.selected() && this.account()?.status === "ACTIVE" && !this.loading() && !this.busy() && !this.error());
@@ -236,7 +246,9 @@ class SendMoneyViewModel {
   next = async (): Promise<void> => {
     if (!this.canContinue()) return;
     this.busy(true);
-    try { await this.context.router.go({ path: "send-money", params: { step: "details" } }); }
+    try {
+      await this.context.router.go({ path: "send-money", params: { step: "details" } });
+    }
     finally { if (this.alive) this.busy(false); }
   };
   back = async (): Promise<void> => {
@@ -335,7 +347,9 @@ class SendMoneyViewModel {
     if (!this.attempt) {
       this.busy(true);
       let refreshed: boolean;
-      try { refreshed = await this.refreshFunds(); }
+      try {
+        refreshed = await this.refreshFunds();
+      }
       finally { if (this.alive) this.busy(false); }
       if (!this.alive || this.step() !== "review") return;
       if (!refreshed) { this.paymentError(this.fundsError() || "Please retry the balance check before paying."); return; }
@@ -361,13 +375,13 @@ class SendMoneyViewModel {
   onPinInput = (_: unknown, event: Event): void => {
     if (!this.pinOpen() || this.busy()) return;
     this.sPin((event.target as HTMLInputElement).value); this.pinError("");
-    if (this.sPin().length >= 6) void this.submitPin();
+    // Typing never authorizes payment; the user must submit Continue & Pay.
   };
   submitPin = async (): Promise<void> => {
     if (!this.alive || !this.pinOpen() || this.busy() || this.loading() || !this.attempt || this.step() !== "review" || this.result()) return;
     if (!/^[0-9]{6}$/.test(this.sPin())) { this.pinError("Enter a six-digit S PIN."); return; }
     if (this.sPin() !== SIMULATED_S_PIN) { this.pinError("Incorrect S PIN. Please try again."); return; }
-    this.sPin(""); this.pinError(""); this.pinOpen(false);
+    this.sPin(""); this.pinError("");
     await this.submitPayment();
   };
   private async submitPayment(): Promise<void> {
@@ -375,13 +389,16 @@ class SendMoneyViewModel {
     this.busy(true); this.attemptLocked(true);
     armAudio();
     try {
+      if (!await this.pauseBeforePayment()) return;
       const response = await transactionService.create(this.attempt.body, this.attempt.key);
       if (!this.alive) return;
       this.acceptResult(response);
+      this.pinOpen(false);
       await this.context.router.go({ path: "send-money", params: { step: "result" } });
       this.startPolling();
     } catch (error) {
       if (this.alive) {
+        this.pinOpen(false);
         if (error instanceof ApiError && [400, 403, 404].includes(error.status)) {
           this.attempt = undefined; this.attemptLocked(false);
         }
@@ -445,6 +462,6 @@ class SendMoneyViewModel {
     this.parametersChanged({ step: this.initialStep });
     void this.load();
   }
-  disconnected(): void { this.alive = false; this.closePin(); this.amountSubscription.dispose(); this.category(undefined); this.categoryError(""); this.fundsGeneration++; if(this.balanceTimer)clearInterval(this.balanceTimer);window.removeEventListener?.("focus",this.onFocus); this.stopPolling(); this.result(null); this.attempt = undefined; this.selected(null); this.account(null); this.beneficiaries([]); this.amount(""); this.purpose("");  }
+  disconnected(): void { this.alive = false; if (this.stageTimer !== undefined) clearTimeout(this.stageTimer); this.cancelStage?.(); this.cancelStage = undefined; this.closePin(); this.amountSubscription.dispose(); this.category(undefined); this.categoryError(""); this.fundsGeneration++; if(this.balanceTimer)clearInterval(this.balanceTimer);window.removeEventListener?.("focus",this.onFocus); this.stopPolling(); this.result(null); this.attempt = undefined; this.selected(null); this.account(null); this.beneficiaries([]); this.amount(""); this.purpose("");  }
 }
 export = SendMoneyViewModel;

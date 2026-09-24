@@ -207,3 +207,12 @@ html[data-safepay-entry-loader="true"] .route-bar { display:none; }
   .admin-panel { padding:18px; }
 }
 @media(prefers-reduced-motion:reduce) { .pay-sheet, .profile-chevron { transition:none; } }
+
+/* High-contrast copy on receipt and transaction details surfaces. */
+body.customer-shell :is(.pay-sheet, .tx-drawer) .send-review-details { background:#faf9f2; color:#17382e; }
+body.customer-shell :is(.pay-sheet, .tx-drawer) .send-review-details dt { color:#405b4e !important; }
+body.customer-shell :is(.pay-sheet, .tx-drawer) .send-review-details dd { color:#17382e !important; overflow-wrap:anywhere; }
+body.customer-shell :is(.pay-sheet, .tx-drawer) :is(.protect-copy, .pay-from, .pay-note-line, .s-pin-help, .pay-person small) { color:#405b4e !important; }
+body.customer-shell .pay-sheet .send-amount-preview { color:#27523e !important; }
+body.customer-shell .tx-drawer-head h2 { color:#17382e !important; }
+body.customer-shell :is(.pay-sheet, .tx-drawer) .send-review-details a { color:#244c40 !important; text-decoration:underline; }

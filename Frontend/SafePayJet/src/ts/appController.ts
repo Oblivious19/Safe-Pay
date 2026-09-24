@@ -28,8 +28,7 @@ class RootViewModel {
   profileLoading = ko.observable(false);
   // Keep the thin bar for ordinary in-app navigation.
   routeBusy = ko.observable(true);
-  // The full SafePay scene is intentionally reserved for entering the landing
-  // page and the one-time successful customer-login handoff to the dashboard.
+  // Full-page landing/dashboard entry (including login handoff), not feature tabs.
   entryLoaderBusy = ko.observable(false);
   private profileGeneration = 0;
   private consumeDashboardEntryLoader = (): boolean => {
@@ -95,11 +94,23 @@ class RootViewModel {
     this.moduleAdapter = new ModuleRouterAdapter(router);
     this.selection = new KnockoutRouterAdapter(router);
     router.beforeStateChange.subscribe(() => this.routeBusy(true));
+    const entryStarted = Date.now();
+    let entryTimer: ReturnType<typeof setTimeout> | undefined;
     const stopEntryLoader = (): void => {
-      this.entryLoaderBusy(false);
-      document.documentElement?.removeAttribute("data-safepay-entry-loader");
+      const finish = (): void => {
+        this.entryLoaderBusy(false);
+        document.documentElement?.removeAttribute("data-safepay-entry-loader");
+      };
+      if (!this.entryLoaderBusy()) { finish(); return; }
+      if (entryTimer !== undefined) return;
+      const remaining = Math.max(0, 2500 - (Date.now() - entryStarted));
+      if (remaining) entryTimer = setTimeout(finish, remaining);
+      else finish();
     };
-    router.currentState.subscribe(() => {
+    router.currentState.subscribe(update => {
+      // JET BehaviorSubject immediately emits {complete} without a state.
+      // That is not a completed route: hiding bootstrap here caused the startup flash.
+      if (!update.state) return;
       this.routeBusy(false);
       stopEntryLoader();
     });
@@ -118,20 +129,21 @@ class RootViewModel {
     const path = window.location.pathname || "/login";
     const customerPage = this.navItems.some(item => path === "/" + item.path || path.startsWith("/" + item.path + "/"));
     const publicPage = path === "/" || path === "/home";
-    const dashboardEntry = path === "/dashboard" && this.consumeDashboardEntryLoader();
+    const dashboardEntry = path === "/dashboard" || path === "/dashboard/";
+    if (dashboardEntry) this.consumeDashboardEntryLoader();
     this.entryLoaderBusy(publicPage || dashboardEntry);
     if (publicPage) {
-      // Home has no private content, so do not make its introductory motion
-      // wait on a session request. Signed-in visitors are still redirected as
-      // soon as their session is known.
-      syncRoute();
+      // Resolve the first destination once, beneath the same entry scene.
+      // A full browser redirect here replayed bootstrap and the logo a second time.
       void checkSessionRoute().then(session => {
-        if (session.kind === "admin") { window.location.replace("/admin/dashboard"); return; }
         if (session.kind === "customer") {
           this.profile(session.profile);
-          window.location.replace("/dashboard");
+          window.history.replaceState(null, "", "/dashboard");
+        } else if (session.kind === "admin") {
+          window.history.replaceState(null, "", "/admin/dashboard");
         }
-      });
+        syncRoute();
+      }).catch(() => syncRoute());
     } else if (customerPage) {
       void checkSessionRoute().then(session => {
         if (session.kind === "admin") { window.location.replace("/admin/dashboard"); return; }

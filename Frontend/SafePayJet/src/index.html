@@ -19,10 +19,7 @@
        every completed or failed router sync. */
     (function () {
       var path = window.location.pathname;
-      var show = path === "/" || path === "/home";
-      if (!show && path === "/dashboard") {
-        try { show = window.sessionStorage && window.sessionStorage.getItem("safepay-dashboard-entry-loader") === "1"; } catch (error) { show = false; }
-      }
+      var show = path === "/" || path === "/home" || path === "/dashboard" || path === "/dashboard/";
       if (show) document.documentElement.setAttribute("data-safepay-entry-loader", "true");
     }());
   </script>
@@ -72,7 +69,7 @@
       <nav class="customer-nav" aria-label="Customer navigation"><div data-bind="foreach: navItems"><a data-bind="attr: {href: '/' + path, 'aria-current': $parent.selection.path() === path ? 'page' : null}"><span aria-hidden="true" data-bind="attr: {class: iconClass}"></span><span data-bind="text: label"></span></a></div></nav>
     </header>
     <p role="alert" class="login-message" data-bind="visible: logoutError, text: logoutError"></p>
-    <main id="main-content" tabindex="-1"><oj-module config="[[moduleAdapter.koObservableConfig]]"></oj-module></main>
+    <main id="main-content" tabindex="-1" data-bind="attr: {inert: entryLoaderBusy() ? '' : null, 'aria-busy': entryLoaderBusy}"><oj-module config="[[moduleAdapter.koObservableConfig]]"></oj-module></main>
     <footer class="customer-footer safepay-footer">
       <div class="footer-inner">
         <div class="footer-top">

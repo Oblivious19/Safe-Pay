@@ -99,15 +99,6 @@
     <!-- ko with: account -->
     <p class="pay-from">From <span data-bind="text: (accountType === 'SAVINGS' ? 'Savings' : 'Current') + ' ' + $parent.mask(accountNumber)"></span></p>
     <!-- /ko -->
-    <!-- ko if: showProcessFlux -->
-    <div class="protect-phone payment-progress gauge-waiting">
-      <div class="payment-gauge" role="img" aria-label="Checking payment">
-        <svg viewBox="0 0 200 120" aria-hidden="true"><path class="payment-arc-track" d="M18 105 A82 82 0 0 1 182 105"/><path class="payment-arc-value" d="M18 105 A82 82 0 0 1 182 105" pathLength="257.6" stroke-dasharray="257.6"/></svg>
-        <p class="payment-gauge-label">Checking</p>
-      </div>
-      <p class="protect-copy" role="status">Checking this payment before it can settle.</p>
-    </div>
-    <!-- /ko -->
     
     <p role="alert" class="recipient-error" data-bind="visible: paymentError, text: paymentError, reveal: paymentError"></p>
     
@@ -162,9 +153,9 @@
       <form class="s-pin-form" novalidate autocomplete="off" data-bind="submit: submitPin">
         <label for="payment-s-pin">Six-digit S PIN</label>
         <input id="payment-s-pin" type="password" inputmode="numeric" autocomplete="off" maxlength="6" pattern="[0-9]{6}" required aria-describedby="s-pin-simulation s-pin-help s-pin-error" data-bind="textInput: sPin, event: {input: onPinInput}, disable: busy, attr: {'aria-invalid': !!pinError()}">
-        <p id="s-pin-help" class="s-pin-help">Your payment continues when all six digits are correct.</p>
+        <p id="s-pin-help" class="s-pin-help">Enter your S PIN, then select Continue &amp; Pay to confirm this payment.</p>
         <p id="s-pin-error" class="recipient-field-error" role="alert" data-bind="visible: pinError, text: pinError"></p>
-        <button type="submit" class="send-continue pay-cta" data-bind="disable: busy">Continue</button>
+        <button type="submit" class="send-continue pay-cta" aria-live="polite" data-bind="disable: busy, text: busy() ? 'Processing payment…' : 'Continue & Pay'"></button>
         <button type="button" class="pay-ghost" data-bind="click: closePin, disable: busy">Back to review</button>
       </form>
     </div>
