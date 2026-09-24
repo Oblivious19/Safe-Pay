@@ -4,6 +4,7 @@ import * as AccUtils from "../accUtils";
 import { PaymentTransaction } from "../services/types";
 import { transactionService, newIdempotencyKey } from "../services/transactionService";
 import { ApiError } from "../services/apiError";
+import { categoryLabel } from "../constants/paymentCategories";
 import {
   canCancelPayment, explainReasons, formatCountdown, needsVerification, parseExpiry, progressValue,
   remainingFor, remainingSeconds, resultTitle, riskClass, statusLabel, tierLabel
@@ -15,6 +16,7 @@ import "ojs/ojavatar";
 import "ojs/ojdrawerpopup";
 
 class TransactionsViewModel {
+  categoryLabel = categoryLabel;
   signedInEmail = ko.pureComputed(() => app.profile()?.email || "");
   transactions = ko.observableArray<PaymentTransaction>([]);
   loading = ko.observable(false);

@@ -3,9 +3,11 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),ts=require('typescript'),ko=require('knockout');
 class ApiError extends Error {constructor(status,message){super(message);this.status=status;}}
 const summary={totalTransactions:2,settledTransactions:1,protectedTransactions:0,hardHolds:1,cancelledTransactions:0,rejectedTransactions:0,highRiskTransactions:1,totalAmount:450000,settledAmount:5000};
+const categoryModule={exports:{}};
+vm.runInNewContext('(function(module,exports){'+ts.transpileModule(fs.readFileSync(path.join(__dirname,'../src/ts/constants/paymentCategories.ts'),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText+'\n})')(categoryModule,categoryModule.exports);
 function fixture(service={},page='dashboard') {
   const calls=[],redirects=[],module={exports:{}};
-  const imports={'knockout':ko,'../services/apiError':{ApiError},
+  const imports={'knockout':ko,'../services/apiError':{ApiError},'../constants/paymentCategories':categoryModule.exports,
     '../services/authService':{authService:{logout:()=>Promise.resolve({message:'ok'})}},
     '../utils/protection':{statusLabel:s=>s,tierRisk:s=>s},
     '../services/adminHoldService':{adminHoldService:{list:()=>Promise.resolve(service.holds ? service.holds() : [])}},

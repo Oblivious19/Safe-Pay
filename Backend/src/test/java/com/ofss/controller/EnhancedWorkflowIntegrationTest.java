@@ -115,7 +115,7 @@ class EnhancedWorkflowIntegrationTest {
         assertEquals(1, auditCount(instantId, "TRANSACTION_INITIATED"));
 
         Map<String, Object> hardHoldPayment = Map.of("fromAccountId", accountId, "beneficiaryId", beneficiaryId,
-                "amount", "110000.00", "purpose", "Hard-hold verification");
+                "amount", "110000.00", "purpose", "Hard-hold verification", "category", "MEDICAL");
         String heldCreateKey = UUID.randomUUID().toString();
         JsonNode held = customer.call("POST", "/api/transactions", hardHoldPayment, 200, heldCreateKey, true);
         long heldId = held.path("transactionId").asLong();
@@ -165,7 +165,7 @@ class EnhancedWorkflowIntegrationTest {
         long highId = high.path("transactionId").asLong();
         assertEquals("HIGH", high.path("riskTier").asText());
         assertEquals("PROTECTED", high.path("state").asText());
-        assertEquals(60, high.path("protectionSeconds").asInt());
+        assertEquals(30, high.path("protectionSeconds").asInt());
         String highCancelKey = UUID.randomUUID().toString();
         assertEquals("CANCELLED", customer.call("POST", "/api/transactions/" + highId + "/cancel", null,
                 200, highCancelKey, true).path("state").asText());

@@ -1,6 +1,7 @@
 import { apiClient } from "./apiClient";
 import { ApiError, requireText, resourceId } from "./apiError";
 import { TransactionRequest, PaymentTransaction, TransactionState } from "./types";
+import { categoryProblem } from "../constants/paymentCategories";
 
 export function newIdempotencyKey(): string { return crypto.randomUUID(); }
 /** Anchor countdowns to the server duration, never interpret Oracle local timestamps as UTC. */
@@ -27,9 +28,16 @@ export const transactionService = {
     if (new TextEncoder().encode(input.purpose || "").length > 255 || new TextEncoder().encode(idempotencyKey).length > 100) {
       throw new ApiError(400, "Purpose or idempotency key is too long.", "validation");
     }
-    const { fromAccountId, beneficiaryId, amount, purpose } = input;
+    const { fromAccountId, beneficiaryId, amount, category } = input;
+    const problem = categoryProblem(amount, category);
+    if (problem) throw new ApiError(400, problem, "validation");
+    const purpose = category === "OTHERS" ? (input.purpose || "").trim() : input.purpose;
+    if (category === "OTHERS" && (!purpose || purpose.length > 140)) {
+      throw new ApiError(400, "Others requires a purpose of 1–140 characters.", "validation");
+    }
     return paymentRequest("/api/transactions", {
-      method: "POST", csrf: true, idempotencyKey, body: { fromAccountId, beneficiaryId, amount, purpose }
+      method: "POST", csrf: true, idempotencyKey,
+      body: { fromAccountId, beneficiaryId, amount, purpose, ...(category ? { category } : {}) }
     });
   },
   async cancel(id: number, idempotencyKey: string): Promise<PaymentTransaction> {

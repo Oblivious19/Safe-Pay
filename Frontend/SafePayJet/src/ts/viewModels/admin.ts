@@ -7,6 +7,7 @@ import { AdminUsersModel } from "./adminUsers";
 import { AdminHoldsModel } from "./adminHolds";
 import { DailyTransactionSummary, HeldPayment, TransactionSummary } from "../services/types";
 import { statusLabel, tierRisk } from "../utils/protection";
+import { categoryLabel, orderedPayments } from "../constants/paymentCategories";
 
 const isoDate = (date: Date): string => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 const daysAgo = (n: number): string => {
@@ -41,7 +42,8 @@ class AdminViewModel {
   shortDate = (value: string): string => new Intl.DateTimeFormat("en-IN", {
     day: "numeric", month: "short"
   }).format(new Date(value + "T00:00:00"));
-  pendingHolds = ko.pureComputed(() => this.holds().filter((row) => row.decision === "PENDING"));
+  categoryLabel = categoryLabel;
+  pendingHolds = ko.pureComputed(() => orderedPayments(this.holds().filter((row) => row.decision === "PENDING")));
   decidedHolds = ko.pureComputed(() => this.holds().filter((row) => row.decision !== "PENDING"));
   heldAmount = ko.pureComputed(() => this.pendingHolds().reduce((total, row) => total + (Number(row.amount) || 0), 0));
   settleRate = ko.pureComputed(() => this.share(this.summary()?.settledTransactions));
@@ -165,7 +167,7 @@ class AdminViewModel {
       this.updated(new Date().toLocaleTimeString("en-IN"));
       try {
         const holds = await adminHoldService.list();
-        if (generation === this.generation) this.holds(holds.slice().sort((a, b) => b.createdAt.localeCompare(a.createdAt)));
+        if (generation === this.generation) this.holds(holds);
       } catch { if (generation === this.generation) {this.holds([]);this.holdsError("Held payments could not be loaded. Refresh to retry.");} }
       try {
         const book = await adminReportService.book();

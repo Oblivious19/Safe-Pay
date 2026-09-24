@@ -95,6 +95,30 @@ body.customer-shell:has(.login-page) .customer-footer.safepay-footer { margin-to
 .admin-page .admin-daily-table :is(th,td):first-child { position:sticky; left:0; z-index:1; min-width:112px; white-space:nowrap; background:inherit; border-right:1px solid #dce4d8; }
 .admin-page .admin-daily-table thead th:first-child { z-index:3; background:#eaf0e3; }
 
+/* Frontend-only simulation inputs, scoped to their existing form cards. */
+.pay-sheet .s-pin-card { text-align:center; }
+.payment-category-field { margin:16px 0; }
+.payment-category-field label, .admin-category-filters label { display:grid; gap:8px; font-size:14px; font-weight:700; color:#193b2b; }
+.payment-category-field select, .admin-category-filters select { box-sizing:border-box; width:100%; min-height:48px; padding:12px 44px 12px 16px; border:1px solid #c6d4bd; border-radius:12px; background-color:#fff; color:#193b2b; font:inherit; appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' fill='none' stroke='%23193b2b' stroke-width='1.8'%3E%3Cpath d='m5 7 5 5 5-5'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 14px center; }
+.payment-category-field select:focus-visible, .admin-category-filters select:focus-visible { outline:3px solid #416b3c; outline-offset:2px; }
+.payment-category-field select[aria-invalid="true"] { border-color:#a6443e; }
+.admin-category-filters { display:flex; flex-wrap:wrap; gap:16px; margin:16px 0; }
+.admin-category-filters label { flex:1 1 200px; min-width:0; }
+.pay-sheet .s-pin-card h2 { margin:0 0 4px; font-size:24px; color:#193b2b; }
+.pay-sheet .s-pin-simulation { display:block; color:#526b5b; font-size:12px; line-height:1.5; }
+.pay-sheet .s-pin-card .send-review-amount { margin:20px 0 12px; font-size:30px; }
+.s-pin-recipient { display:grid; gap:4px; margin:0 0 12px; color:#193b2b; }
+.s-pin-recipient span { color:#526b5b; font-size:14px; }
+.s-pin-form { max-width:320px; margin:24px auto 0; }
+.s-pin-form label { display:block; margin-bottom:8px; color:#193b2b; font-size:14px; font-weight:700; }
+.pay-sheet .s-pin-form input { box-sizing:border-box; width:100%; min-height:60px; padding:12px 16px; border:1px solid #a8baa0; border-radius:14px; background:#fff; color:#193b2b; font-size:28px; text-align:center; letter-spacing:.45em; }
+.pay-sheet .s-pin-form input:focus-visible { outline:3px solid #416b3c; outline-offset:3px; }
+.pay-sheet .s-pin-form input[aria-invalid="true"] { border-color:#a6443e; }
+.pay-sheet .s-pin-help { margin:10px 0; color:#526b5b; font-size:12px; line-height:1.5; }
+.recipient-form-card #recipient-bank { box-sizing:border-box; width:100%; min-height:48px; padding:12px 44px 12px 16px; border:1px solid #c6d4bd; border-radius:12px; background-color:#fff; color:#193b2b; font:inherit; appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' fill='none' stroke='%23193b2b' stroke-width='1.8'%3E%3Cpath d='m5 7 5 5 5-5'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 14px center; }
+.recipient-form-card #recipient-bank:focus-visible { outline:3px solid #416b3c; outline-offset:2px; }
+.recipient-form-card #recipient-bank[aria-invalid="true"] { border-color:#a6443e; }
+
 /* Compact typography for the administrator's held-payment review. */
 .admin-page .admin-hold-review h2 { margin:0 0 8px; font-size:22px; line-height:1.3; letter-spacing:-.4px; overflow-wrap:anywhere; }
 .admin-page .admin-hold-review h3 { margin:20px 0 6px; font-size:15px; line-height:1.4; letter-spacing:0; font-weight:800; color:#193b2b; }

@@ -110,7 +110,7 @@ class AdminOperationsDatabaseTest {
         Beneficiary b=new Beneficiary(); b.setAccount(account); b.setBeneficiaryName("Reserved payment"); b.setBankAccountNumber("123456789");
         b.setIfsc("SBIN0001234"); b.setStatus("ACTIVE"); b.setCreatedAt(LocalDateTime.now()); b=beneficiaries.saveAndFlush(b);
         TransactionDb held=transactions.initiate(account.getAccountId(),b.getBeneficiaryId(),new BigDecimal("150000.00"),
-                "Reservation",UUID.randomUUID().toString(),customer.getUserId());
+                "Reservation",UUID.randomUUID().toString(),customer.getUserId(),PaymentCategory.MEDICAL);
         assertEquals(TransactionState.HARD_HOLD,held.getState());
         credit(UUID.randomUUID().toString(),"10000.00"); balance(account,"210000.00");
         assertEquals(0,new BigDecimal("150000.00").compareTo(transactionRows.pendingAmount(account.getAccountId(),

@@ -24,9 +24,9 @@ class RiskAssessmentEngineTest {
             "10000.01,MEDIUM,10,true,false",
             "49999.99,MEDIUM,10,true,false",
             "50000.00,MEDIUM,10,true,false",
-            "50000.01,HIGH,60,true,false",
-            "99999.99,HIGH,60,true,false",
-            "100000.00,HIGH,60,true,false",
+            "50000.01,HIGH,30,true,false",
+            "99999.99,HIGH,30,true,false",
+            "100000.00,HIGH,30,true,false",
             "100000.01,VERY_HIGH,0,true,true",
             "9999999999999999.99,VERY_HIGH,0,true,true"
     })

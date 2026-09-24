@@ -4,13 +4,16 @@ import {ApiError} from "../services/apiError";
 import {newIdempotencyKey} from "../services/transactionService";
 import {HeldPayment} from "../services/types";
 import {explainReasons} from "../utils/protection";
+import {PAYMENT_CATEGORIES, PaymentCategory, QueueOrder, categoryLabel, orderedPayments} from "../constants/paymentCategories";
 export class AdminHoldsModel {
  holds=ko.observableArray<HeldPayment>([]);selected=ko.observable<HeldPayment|null>(null);
  confirmed=ko.observable(false);loading=ko.observable(false);busy=ko.observable(false);forbidden=ko.observable(false);
  pendingDecision=ko.observable<"approve"|"decline"|null>(null);
  error=ko.observable("");notice=ko.observable("");updated=ko.observable("");
  private generation=0;private alive=true;private attempts=new Map<number,{action:"approve"|"decline";key:string}>();private poll?:ReturnType<typeof setInterval>;
- pending=ko.pureComputed(()=>this.holds());heldAmount=ko.pureComputed(()=>this.holds().reduce((sum,row)=>sum+row.amount,0));
+ categoryOptions=PAYMENT_CATEGORIES;categoryFilter=ko.observable<PaymentCategory|"">("");queueOrder=ko.observable<QueueOrder>("PRIORITY");categoryLabel=categoryLabel;
+ pending=ko.pureComputed(()=>orderedPayments(this.holds().filter(row=>!this.categoryFilter()||row.category===this.categoryFilter()),this.queueOrder()));
+ heldAmount=ko.pureComputed(()=>this.holds().reduce((sum,row)=>sum+row.amount,0));
  selectedReasons=ko.pureComputed(()=>explainReasons(this.selected()?.riskReason));
  money=(value:number):string=>new Intl.NumberFormat("en-IN",{style:"currency",currency:"INR"}).format(value);
  when=(value:string):string=>value?new Date(value).toLocaleString("en-IN"):"—";
@@ -18,7 +21,7 @@ export class AdminHoldsModel {
  load=async():Promise<void>=>{
   if(this.loading() || this.busy())return;const generation=++this.generation;this.loading(true);this.error("");
   try{const rows=await adminHoldService.list();if(!this.alive || generation!==this.generation)return;
-   this.holds(rows.slice().sort((a,b)=>b.createdAt.localeCompare(a.createdAt)));this.forbidden(false);this.updated(new Date().toLocaleTimeString("en-IN"));
+   this.holds(rows);this.forbidden(false);this.updated(new Date().toLocaleTimeString("en-IN"));
    if(this.selected()){const previous=this.selected()!;const current=rows.find(r=>r.transactionId===previous.transactionId)||null;this.selected(current);if(!current || current.amount!==previous.amount)this.confirmed(false);}
    if(!this.poll)this.poll=setInterval(()=>{if(!document.hidden)void this.load();},5000);
   }catch(e){if(this.alive && generation===this.generation){this.holds([]);this.selected(null);this.fail(e);}}

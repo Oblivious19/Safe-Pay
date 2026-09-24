@@ -34,7 +34,7 @@ class AmountRiskEngineTest {
     void amountFromFiftyThousandOneToOneLakhIsHighRisk() {
         RiskAssessment result = riskEngine.assess(new BigDecimal("50001"));
         assertEquals(RiskTier.HIGH, result.riskTier());
-        assertEquals(60, result.protectionSeconds());
+        assertEquals(30, result.protectionSeconds());
     }
 
     @Test

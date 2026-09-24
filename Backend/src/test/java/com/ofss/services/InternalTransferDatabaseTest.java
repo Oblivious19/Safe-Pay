@@ -63,7 +63,7 @@ class InternalTransferDatabaseTest {
         admin=new LoginPrincipal(actor.getUserId(),actor.getName(),actor.getEmail(),"ADMIN",UserStatus.ACTIVE);
     }
     TransactionDb create(String amount,String key) {
-        return service.initiate(sender.getAccountId(),payee.getBeneficiaryId(),new BigDecimal(amount),"Test payment",key,senderUser.getUserId());
+        return service.initiate(sender.getAccountId(),payee.getBeneficiaryId(),new BigDecimal(amount),"Test payment",key,senderUser.getUserId(),PaymentCategory.appliesTo(new BigDecimal(amount)) ? PaymentCategory.MEDICAL : null);
     }
     BigDecimal balance(Account a) {
         return jdbc.queryForObject("select balance from account where account_id=?",BigDecimal.class,a.getAccountId());
@@ -88,7 +88,7 @@ class InternalTransferDatabaseTest {
             String approval=UUID.randomUUID().toString();approvals.approve(tx.getTransactionId(),admin,approval);
             approvals.approve(tx.getTransactionId(),admin,approval);
         }
-        service.initiate(sender.getAccountId(),payee.getBeneficiaryId(),new BigDecimal(amount),"Test payment",key,senderUser.getUserId());
+        service.initiate(sender.getAccountId(),payee.getBeneficiaryId(),new BigDecimal(amount),"Test payment",key,senderUser.getUserId(),PaymentCategory.appliesTo(new BigDecimal(amount)) ? PaymentCategory.MEDICAL : null);
         balances(new BigDecimal("500000.00").subtract(new BigDecimal(amount)).toPlainString(),
                 new BigDecimal("10000.00").add(new BigDecimal(amount)).toPlainString());
         assertEquals(receiver.getAccountId(),transactions.findById(tx.getTransactionId()).orElseThrow().getToAccount().getAccountId());

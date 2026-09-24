@@ -48,6 +48,10 @@
       <label for="recipient-beneficiaryName">Beneficiary name</label>
       <input id="recipient-beneficiaryName" autocomplete="off" maxlength="100" required data-bind="textInput: beneficiaryName, disable: saving, attr: {'aria-invalid': !!fieldErrors().beneficiaryName}" aria-describedby="name-error">
       <p class="recipient-field-error" id="name-error" data-bind="text: fieldErrors().beneficiaryName"></p>
+      <label for="recipient-bank">Bank</label>
+      <select id="recipient-bank" required aria-describedby="bank-hint bank-error" data-bind="options: bankOptions, optionsText: 'label', optionsValue: 'value', optionsCaption: 'Choose bank', value: selectedBank, event: {change: clearBankError}, disable: saving, attr: {'aria-invalid': !!fieldErrors().bank}"></select>
+      <small id="bank-hint">For simulation only. Bank selection is not saved.</small>
+      <p class="recipient-field-error" id="bank-error" data-bind="text: fieldErrors().bank"></p>
       <label for="recipient-bankAccountNumber">Bank account number</label>
       <input id="recipient-bankAccountNumber" inputmode="numeric" autocomplete="off" maxlength="30" required data-bind="textInput: bankAccountNumber, disable: saving, attr: {'aria-invalid': !!fieldErrors().bankAccountNumber}" aria-describedby="account-error account-hint">
       <small id="account-hint">Enter the bank account number, not a SafePay internal account ID.</small>

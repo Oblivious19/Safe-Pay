@@ -5,7 +5,7 @@ class ApiError extends Error {constructor(status){super('SQL/CORS/security imple
 function load(relative,imports={},globals={}){
   const code=ts.transpileModule(fs.readFileSync(path.join(__dirname,'../src/ts',relative),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2021}}).outputText;
   const module={exports:{}};
-  vm.runInNewContext('(function(require,module,exports){'+code+'\n})',{Intl,Date,window:{},document:{title:''},setInterval:()=>1,clearInterval(){},...globals})(key=>imports[key]||{},module,module.exports);
+  vm.runInNewContext('(function(require,module,exports){'+code+'\n})',{Intl,Date,window:{},document:{title:''},setInterval:()=>1,clearInterval(){},...globals})(key=>imports[key]||(key==='../constants/paymentCategories' ? load('constants/paymentCategories.ts') : {}),module,module.exports);
   return module.exports;
 }
 const protection=load('utils/protection.ts');

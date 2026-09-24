@@ -1,6 +1,18 @@
 const {test}=require('node:test'),assert=require('node:assert/strict');
 const fs=require('fs'),path=require('path'),vm=require('vm'),ts=require('typescript'),ko=require('knockout');
 const root=path.join(__dirname,'../src/ts');
+test('admin queue uses category priority, FIFO, legacy-last and an independent category filter',()=>{
+ const f=fixture();const Model=f.load('viewModels/adminHolds').AdminHoldsModel,m=new Model();
+ const rows=[{transactionId:1,category:null,createdAt:'2026-01-01',amount:100001},
+ {transactionId:2,category:'OTHERS',createdAt:'2026-01-02',amount:100001},
+ {transactionId:4,category:'MEDICAL',createdAt:'2026-01-04',amount:100001},
+ {transactionId:3,category:'MEDICAL',createdAt:'2026-01-04',amount:100001},
+ {transactionId:5,category:'LOAN',createdAt:'2026-01-03',amount:100001}];
+ m.holds(rows);assert.equal(m.pending().map(r=>r.transactionId).join(','),'3,4,5,2,1');
+ assert.equal(rows[0].transactionId,1);m.queueOrder('OLDEST');assert.equal(m.pending().map(r=>r.transactionId).join(','),'1,2,5,3,4');
+ m.categoryFilter('MEDICAL');assert.equal(m.pending().map(r=>r.transactionId).join(','),'3,4');assert.equal(m.heldAmount(),500005);
+ m.categoryFilter('INVESTMENTS');assert.equal(m.pending().length,0);m.categoryFilter('');assert.equal(m.pending().length,5);m.disconnected();
+});
 const json=(body,status=200)=>new Response(JSON.stringify(body),{status,headers:{'Content-Type':'application/json','X-CSRF-TOKEN':'test-csrf'}});
 function fixture(overrides={},replies=[]){
  const cache=new Map(),calls=[],redirects=[],profile=ko.observable(null);let keys=0;

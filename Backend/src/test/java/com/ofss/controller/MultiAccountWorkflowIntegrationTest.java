@@ -150,7 +150,9 @@ class MultiAccountWorkflowIntegrationTest {
     }
 
     private Map<String, Object> payment(Long accountId, Long beneficiaryId, String amount) {
-        return Map.of("fromAccountId", accountId, "beneficiaryId", beneficiaryId, "amount", amount, "purpose", "Multi account test");
+        Map<String, Object> body = new java.util.HashMap<>(Map.of("fromAccountId", accountId, "beneficiaryId", beneficiaryId, "amount", amount, "purpose", "Multi account test"));
+        if (new BigDecimal(amount).compareTo(new BigDecimal("100000")) > 0) body.put("category", "MEDICAL");
+        return body;
     }
 
     private void assertBalance(Client client, Long accountId, String expected) throws Exception {

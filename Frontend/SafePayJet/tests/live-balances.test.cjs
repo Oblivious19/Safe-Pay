@@ -7,7 +7,7 @@ function load(file,imports={},scope={}) {
   const code=ts.transpileModule(fs.readFileSync(path.join(__dirname,'../src/ts',file),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2021}}).outputText;
   vm.runInNewContext('(function(require,module,exports){'+code+'\n})',{
     Intl,TextEncoder,document:{title:''},window:{location:{replace(){}}},setInterval(){return 1;},clearInterval(){},...scope
-  })(key=>imports[key]||{},m,m.exports);return m.exports;
+  })(key=>imports[key]||(key==='../constants/paymentCategories' ? load('constants/paymentCategories.ts') : {}),m,m.exports);return m.exports;
 }
 const protection=load('utils/protection.ts');
 const account={accountId:1,accountNumber:'500000000001',balance:500000,status:'ACTIVE',accountType:'SAVINGS'};

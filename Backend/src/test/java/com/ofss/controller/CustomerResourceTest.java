@@ -61,8 +61,8 @@ class CustomerResourceTest extends WebSecuritySliceSupport {
     @ParameterizedTest
     @org.junit.jupiter.params.provider.CsvSource({"0.01,LOW,SETTLED,0", "5000,LOW,SETTLED,0",
             "10000,LOW,SETTLED,0", "10000.01,MEDIUM,PROTECTED,10", "20000,MEDIUM,PROTECTED,10",
-            "50000,MEDIUM,PROTECTED,10", "50000.01,HIGH,PROTECTED,60", "60000,HIGH,PROTECTED,60",
-            "100000,HIGH,PROTECTED,60", "100000.01,VERY_HIGH,HARD_HOLD,0"})
+            "50000,MEDIUM,PROTECTED,10", "50000.01,HIGH,PROTECTED,30", "60000,HIGH,PROTECTED,30",
+            "100000,HIGH,PROTECTED,30", "100000.01,VERY_HIGH,HARD_HOLD,0"})
     void postUsesOnlyAmountRangesWithoutHistoryQueries(String amount, String tier, String state, int seconds) throws Exception {
         account.setBalance(new BigDecimal("200000"));
         when(beneficiaries.findByBeneficiaryIdAndAccountUserUserId(2001L, 103L)).thenReturn(Optional.of(beneficiary));
@@ -70,7 +70,7 @@ class CustomerResourceTest extends WebSecuritySliceSupport {
         when(transactions.save(any())).thenAnswer(call -> call.getArgument(0));
         mvc.perform(post("/api/transactions").session(session).header("X-CSRF-TOKEN", csrf())
                 .header("Idempotency-Key", "new-risk").contentType("application/json")
-                .content(BODY.replace("5000", amount)).param("riskTier", "LOW"))
+                .content(BODY.replace("5000", amount).replace("}", "VERY_HIGH".equals(tier) ? ",\"category\":\"MEDICAL\"}" : "}")).param("riskTier", "LOW"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.riskTier").value(tier))
                 .andExpect(jsonPath("$.state").value(state))
                 .andExpect(jsonPath("$.protectionSeconds").value(seconds))

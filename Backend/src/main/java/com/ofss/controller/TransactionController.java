@@ -48,7 +48,7 @@ public class TransactionController {
     public Map<String, Object> initiate(@RequestHeader("Idempotency-Key") String idempotencyKey,
             @Valid @RequestBody TransactionRequest input, @AuthenticationPrincipal LoginPrincipal caller) {
         return toResponse(transactionService.initiate(input.fromAccountId(), input.beneficiaryId(),
-                input.amount(), input.purpose(), idempotencyKey, caller.userId()), caller.userId());
+                input.amount(), input.purpose(), idempotencyKey, caller.userId(), input.category()), caller.userId());
     }
 
     @GetMapping("/{transactionId}")
@@ -131,6 +131,9 @@ public class TransactionController {
         response.put("transactionRef", transaction.getTransactionRef());
         response.put("amount", transaction.getAmount());
         response.put("purpose", transaction.getPurpose() == null ? "" : transaction.getPurpose());
+        if (com.ofss.beans.PaymentCategory.appliesTo(transaction.getAmount())) {
+            response.put("category", transaction.getCategory());
+        }
         response.put("fromAccountId", transaction.getFromAccount().getAccountId());
         response.put("beneficiaryId", transaction.getBeneficiary().getBeneficiaryId());
         response.put("beneficiaryName", transaction.getBeneficiary().getBeneficiaryName());

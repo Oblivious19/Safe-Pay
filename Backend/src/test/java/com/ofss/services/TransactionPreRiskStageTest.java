@@ -97,13 +97,14 @@ class TransactionPreRiskStageTest {
             "50001,HIGH,PROTECTED", "100001,VERY_HIGH,HARD_HOLD"})
     void successfulRequestUsesAmountRangesAndCorrectState(String value, RiskTier tier, TransactionState state) {
         BigDecimal amount = new BigDecimal(value);
-        TransactionDb result = service.initiate(1000001L, 2001L, amount, "Demo", "test-key", 103L);
+        TransactionDb result = service.initiate(1000001L, 2001L, amount, "Demo", "test-key", 103L,
+                PaymentCategory.appliesTo(amount) ? PaymentCategory.MEDICAL : null);
         assertEquals(tier, result.getRiskTier());
         assertEquals(state, result.getState());
         assertTrue(result.getTransactionRef().length() <= 50);
         assertNotNull(result.getRiskReason());
         assertEquals(tier == RiskTier.VERY_HIGH, result.isAuthenticationRequired());
-        int seconds = tier == RiskTier.MEDIUM ? 10 : tier == RiskTier.HIGH ? 60 : 0;
+        int seconds = tier == RiskTier.MEDIUM ? 10 : tier == RiskTier.HIGH ? 30 : 0;
         assertEquals(seconds, result.getProtectionSeconds());
         if (seconds == 0) assertNull(result.getProtectionExpiresAt());
         else assertEquals(result.getCreatedAt().plusSeconds(seconds), result.getProtectionExpiresAt());
@@ -115,6 +116,42 @@ class TransactionPreRiskStageTest {
         verify(transactions).pendingAmount(1000001L, List.of(TransactionState.PROTECTED, TransactionState.HARD_HOLD));
         assertEquals(tier == RiskTier.LOW ? new BigDecimal("200000.00").subtract(amount) : new BigDecimal("200000.00"),
                 account.getBalance());
+    }
+
+    @ParameterizedTest
+    @org.junit.jupiter.params.provider.EnumSource(PaymentCategory.class)
+    void everyCategoryIsSavedWithoutChangingTheRiskDecision(PaymentCategory category) {
+        var result = service.initiate(1000001L, 2001L, new BigDecimal("100000.01"), "  Medical supplies  ", "category-key", 103L, category);
+        assertEquals(category, result.getCategory());
+        assertEquals(TransactionState.HARD_HOLD, result.getState());
+        assertEquals(RiskTier.VERY_HIGH, result.getRiskTier());
+        assertEquals(category == PaymentCategory.OTHERS ? "Medical supplies" : "  Medical supplies  ", result.getPurpose());
+    }
+
+    @Test
+    void categoryValidationPrecedesRiskAndWrites() {
+        assertThrows(IllegalArgumentException.class, () -> service.initiate(1000001L, 2001L, new BigDecimal("100000.01"), "Demo", "a", 103L, null));
+        assertThrows(IllegalArgumentException.class, () -> service.initiate(1000001L, 2001L, new BigDecimal("100000"), "Demo", "b", 103L, PaymentCategory.MEDICAL));
+        for (String purpose : new String[]{null, "", "   ", "x".repeat(141)}) {
+            assertThrows(IllegalArgumentException.class, () -> service.initiate(1000001L, 2001L, new BigDecimal("100000.01"), purpose, "c", 103L, PaymentCategory.OTHERS));
+        }
+        verifyNoInteractions(risk, audits);
+        verify(transactions, never()).save(any());
+    }
+
+    @Test
+    void categoryIsPartOfTheImmutableRetryPayloadAndLegacyNullCanReplay() {
+        var amount = new BigDecimal("100000.01");
+        var original = service.initiate(1000001L, 2001L, amount, "Demo", "category-key", 103L, PaymentCategory.MEDICAL);
+        when(transactions.findByIdempotencyKey("category-key")).thenReturn(Optional.of(original));
+        clearInvocations(risk, audits, transactions);
+        assertSame(original, service.initiate(1000001L, 2001L, amount, "Demo", "category-key", 103L, PaymentCategory.MEDICAL));
+        var error = assertThrows(TransactionValidationException.class, () -> service.initiate(1000001L, 2001L, amount, "Demo", "category-key", 103L, PaymentCategory.LOAN));
+        assertEquals(409, error.getStatus());
+        original.setCategory(null); // Historical payment created before the category feature.
+        assertSame(original, service.initiate(1000001L, 2001L, amount, "Demo", "category-key", 103L, null));
+        verifyNoInteractions(risk, audits);
+        verify(transactions, never()).save(any());
     }
 
     @Test

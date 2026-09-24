@@ -37,6 +37,7 @@
           <div><dt>Reference</dt><dd data-bind="text: transactionRef"></dd></div>
           <div><dt>Status</dt><dd data-bind="text: $parent.statusLabel(state)"></dd></div>
           <div><dt>Note</dt><dd data-bind="text: purpose || 'No note added'"></dd></div>
+          <!-- ko if: amount > 100000 --><div><dt>Category</dt><dd data-bind="text: $parent.categoryLabel($data.category)"></dd></div><!-- /ko -->
           <div><dt>Created</dt><dd data-bind="text: $parent.formatDate(createdAt)"></dd></div>
           <div data-bind="visible: settledAt"><dt>Settled</dt><dd data-bind="text: $parent.formatDate(settledAt)"></dd></div>
           <div data-bind="visible: cancelledAt"><dt>Cancelled</dt><dd data-bind="text: $parent.formatDate(cancelledAt)"></dd></div>

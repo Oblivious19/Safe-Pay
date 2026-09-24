@@ -42,9 +42,9 @@
     <span class="pay-glow" aria-hidden="true"><span class="pay-orb"></span><span class="pay-orb pay-orb-two"></span></span>
     <div class="pay-sheet-toolbar">
     <header class="pay-sheet-head">
-      <button type="button" class="pay-sheet-back" data-bind="click: back, disable: busy() || attemptLocked(), visible: step() !== 'result'">Back</button>
+      <button type="button" class="pay-sheet-back" data-bind="click: back, disable: busy() || (attemptLocked() && !pinOpen()), visible: step() !== 'result'">Back</button>
       <strong id="pay-sheet-title">Send Money</strong>
-      <span data-bind="text: step() === 'result' ? 'Status' : step() === 'review' ? 'Review' : 'Amount'"></span>
+      <span data-bind="text: step() === 'result' ? 'Status' : pinOpen() ? 'S PIN' : step() === 'review' ? 'Review' : 'Amount'"></span>
     </header>
     <div class="pay-steps" aria-hidden="true" data-bind="foreach: payPips"><i data-bind="css: {on: $data}"></i></div>
     </div>
@@ -59,11 +59,25 @@
     <p id="amount-error" class="recipient-field-error pay-amount-error" data-bind="text: amountMessage"></p>
     <p id="amount-preview" class="send-amount-preview" data-bind="text: amountPreview"></p>
     <div class="pay-chips" role="group" aria-label="Suggested amounts"><!-- ko foreach: quickAmounts --><button type="button" class="pay-chip" data-bind="click: function(){ $parent.useAmount($data); }, text: '₹' + $data, css: {'is-on': $parent.amount() === $data}, disable: $parent.busy"></button><!-- /ko --></div>
+    <!-- ko if: highValue -->
+    <div class="payment-category-field">
+      <label for="payment-category">Payment category</label>
+      <select id="payment-category" required aria-describedby="payment-category-error" data-bind="options: categoryOptions, optionsText: 'label', optionsValue: 'value', optionsCaption: 'Choose category', value: category, event: {change: clearCategoryError}, disable: busy, attr: {'aria-invalid': !!categoryError()}"></select>
+      <p id="payment-category-error" class="recipient-field-error" role="alert" data-bind="visible: categoryError, text: categoryError"></p>
+    </div>
+    <!-- /ko -->
+    <!-- ko if: othersCategory -->
+    <label class="pay-note-label" for="payment-category-purpose">What’s it for? (required for Others)</label>
+    <input id="payment-category-purpose" class="send-note" maxlength="140" required aria-describedby="category-purpose-error" placeholder="Describe the payment in 1–140 characters" data-bind="textInput: purpose, disable: busy, attr: {'aria-invalid': !!purposeError()}">
+    <p id="category-purpose-error" class="recipient-field-error" role="alert" data-bind="text: purposeError"></p>
+    <!-- /ko -->
+    <!-- ko ifnot: othersCategory -->
     <details class="payment-more"><summary>Add a note (optional)</summary>
     <label class="pay-note-label" for="payment-purpose">What’s it for?</label>
     <input id="payment-purpose" class="send-note" maxlength="255" placeholder="Add a note" data-bind="textInput: purpose, disable: busy, attr: {'aria-invalid': !!purposeError()}">
     <p id="purpose-error" class="recipient-field-error" data-bind="text: purposeError"></p>
     </details>
+    <!-- /ko -->
     <!-- ko with: account --><p class="pay-from">From <span data-bind="text: (accountType === 'SAVINGS' ? 'Savings' : 'Current') + ' ' + $parent.mask(accountNumber)"></span> · <span data-bind="text: $parent.money(balance)"></span></p><!-- /ko -->
     <!-- ko with: funds --><p class="pay-from">Available for a new payment: <strong data-bind="text:$parent.money(availableToTransfer)"></strong> · Reserved: <span data-bind="text:$parent.money(reservedBalance)"></span></p><!-- /ko -->
     <button type="submit" class="send-continue pay-cta pay-shimmer" data-bind="disable: busy() || loading() || !account() || !!error() || !amountReady()"><span class="spin" aria-hidden="true" data-bind="visible: busy"></span><span data-bind="text: busy() ? 'Checking…' : 'Review payment'"></span></button>
@@ -72,13 +86,14 @@
     </form>
     </div>
     <!-- /ko -->
-    <!-- ko if: step() === 'review' -->
+    <!-- ko if: step() === 'review' && !pinOpen() -->
     <div class="pay-panel" data-bind="reveal: true">
     <!-- ko with: selected -->
     <div class="pay-person"><span class="pay-face" data-bind="text: $parent.initials(beneficiaryName)"></span><div><strong data-bind="text: beneficiaryName"></strong><small data-bind="text: $parent.mask(bankAccountNumber)"></small></div></div>
     <!-- /ko -->
     <p class="pay-pay-label">Paying</p>
     <p class="send-review-amount" data-bind="text: amountPreview"></p>
+    <!-- ko if: reviewCategory --><p class="pay-note-line" data-bind="text: 'Category: ' + categoryLabel(reviewCategory())"></p><!-- /ko -->
     <!-- ko if: purpose().trim() --><p class="pay-note-line" data-bind="text: purpose"></p><!-- /ko -->
     <!-- ko with: account -->
     <p class="pay-from">From <span data-bind="text: (accountType === 'SAVINGS' ? 'Savings' : 'Current') + ' ' + $parent.mask(accountNumber)"></span></p>
@@ -118,6 +133,7 @@
       <div class="pay-person"><div><strong data-bind="text: beneficiaryName"></strong><p data-bind="text: $parent.mask(beneficiaryBankAccountNumber || '')"></p></div></div>
       <details class="payment-more"><summary>Payment details</summary><dl class="send-review-details">
         <div><dt>Reference</dt><dd data-bind="text: transactionRef || transactionId"></dd></div>
+        <!-- ko if: amount > 100000 --><div><dt>Category</dt><dd data-bind="text: $parent.categoryLabel($data.category)"></dd></div><!-- /ko -->
         <div><dt>Status</dt><dd data-bind="text: $parent.statusText"></dd></div>
         <div><dt>Pause</dt><dd data-bind="text: $parent.pauseLabel"></dd></div>
       </dl></details>
@@ -132,6 +148,24 @@
 
       
     <p role="alert" class="recipient-error" data-bind="visible: paymentError, text: paymentError, reveal: paymentError"></p>
+    </div>
+    <!-- /ko -->
+    <!-- ko if: step() === 'review' && pinOpen() -->
+    <div class="pay-panel s-pin-card" data-bind="reveal: true">
+      <h2>Enter S PIN</h2>
+      <small class="s-pin-simulation" id="s-pin-simulation">Simulated S PIN</small>
+      <p class="send-review-amount" data-bind="text: pinAmount"></p>
+      <!-- ko if: reviewCategory --><p class="pay-note-line" data-bind="text: 'Category: ' + categoryLabel(reviewCategory())"></p><!-- /ko -->
+      <!-- ko with: selected --><p class="s-pin-recipient"><strong data-bind="text: beneficiaryName"></strong><span data-bind="text: $parent.mask(bankAccountNumber)"></span></p><!-- /ko -->
+      <!-- ko with: account --><p class="pay-from">From <span data-bind="text: (accountType === 'SAVINGS' ? 'Savings' : 'Current') + ' ' + $parent.mask(accountNumber)"></span></p><!-- /ko -->
+      <form class="s-pin-form" novalidate autocomplete="off" data-bind="submit: submitPin">
+        <label for="payment-s-pin">Six-digit S PIN</label>
+        <input id="payment-s-pin" type="password" inputmode="numeric" autocomplete="off" maxlength="6" pattern="[0-9]{6}" required aria-describedby="s-pin-simulation s-pin-help s-pin-error" data-bind="textInput: sPin, event: {input: onPinInput}, disable: busy, attr: {'aria-invalid': !!pinError()}">
+        <p id="s-pin-help" class="s-pin-help">Your payment continues when all six digits are correct.</p>
+        <p id="s-pin-error" class="recipient-field-error" role="alert" data-bind="visible: pinError, text: pinError"></p>
+        <button type="submit" class="send-continue pay-cta" data-bind="disable: busy">Continue</button>
+        <button type="button" class="pay-ghost" data-bind="click: closePin, disable: busy">Back to review</button>
+      </form>
     </div>
     <!-- /ko -->
     <!-- ko if: step() === 'result' && result() -->

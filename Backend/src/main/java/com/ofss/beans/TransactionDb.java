@@ -75,6 +75,10 @@ public class TransactionDb {
     private String purpose;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "payment_category", length = 20, updatable = false)
+    private PaymentCategory category;
+
+    @Enumerated(EnumType.STRING)
     private TransactionState state;
 
     @Enumerated(EnumType.STRING)
@@ -133,6 +137,8 @@ public class TransactionDb {
     public void setAmount(BigDecimal amount) { this.amount = amount; }
     public String getPurpose() { return purpose; }
     public void setPurpose(String purpose) { this.purpose = purpose; }
+    public PaymentCategory getCategory() { return category; }
+    public void setCategory(PaymentCategory category) { this.category = category; }
     public TransactionState getState() { return state; }
     public void setState(TransactionState state) { this.state = state; }
     public RiskTier getRiskTier() { return riskTier; }

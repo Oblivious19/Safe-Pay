@@ -186,6 +186,6 @@ export function progressKind(tx?: PaymentTransaction | null, checking = false): 
   if (tx.state === "CANCELLED" || tx.state === "REJECTED") return "cancelled";
   if (tx.state === "SETTLED") return "done";
   if (tx.state === "HARD_HOLD") return "hold";
-  if (tx.state === "PROTECTED") return (tx.protectionSeconds || 0) >= 60 ? "long" : "short";
+  if (tx.state === "PROTECTED") return tx.riskTier === "HIGH" || (tx.protectionSeconds || 0) >= 30 ? "long" : "short";
   return "check";
 }

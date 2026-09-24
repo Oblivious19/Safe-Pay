@@ -130,7 +130,7 @@ class TransactionTimeContractTest {
     @Test
     void createCancelAndVerificationResponsesUseTheSameAdditionalFields() {
         var pending = payment(1, 20, TransactionState.PROTECTED, databaseNow.plusSeconds(10));
-        when(service.initiate(20L, 501L, pending.getAmount(), "rent", "create-key", 103L)).thenReturn(pending);
+        when(service.initiate(20L, 501L, pending.getAmount(), "rent", "create-key", 103L, null)).thenReturn(pending);
         when(service.currentDatabaseTime(20L)).thenReturn(databaseNow);
         var created = controller.initiate("create-key", new TransactionRequest(20L, 501L, pending.getAmount(), "rent"), caller);
         assertEquals(10000L, created.get("protectionRemainingMillis"));

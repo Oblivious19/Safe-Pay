@@ -1,7 +1,8 @@
 import { apiClient } from "./apiClient";
 import { requireText, resourceId } from "./apiError";
 import { HeldPayment, PaymentTransaction } from "./types";
-interface Pending { transactionId:number; transactionRef:string; amount:string; userId:number; customerName:string; fromAccountId:number; sourceAccountNumber:string; beneficiaryName:string; beneficiaryBankAccountNumber:string; beneficiaryIfsc:string; purpose:string; riskReason:string; createdAt:string; }
+import { PaymentCategory } from "../constants/paymentCategories";
+interface Pending { transactionId:number; transactionRef:string; amount:string; userId:number; customerName:string; fromAccountId:number; sourceAccountNumber:string; beneficiaryName:string; beneficiaryBankAccountNumber:string; beneficiaryIfsc:string; purpose:string; riskReason:string; createdAt:string; category?:PaymentCategory|null; }
 export const adminHoldService = {
   async list(): Promise<HeldPayment[]> {
     apiClient.useAdminCsrf(true);

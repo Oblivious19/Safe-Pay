@@ -4,6 +4,7 @@ import { accountService, AccountFunds } from "../services/accountService";
 import { Account, PaymentTransaction, TransactionRequest } from "../services/types";
 import { transactionService, newIdempotencyKey } from "../services/transactionService";
 import { ApiError } from "../services/apiError";
+import { PAYMENT_CATEGORIES, PaymentCategory, categoryApplies, categoryLabel, categoryProblem } from "../constants/paymentCategories";
 import {
   canCancelPayment, explainReasons, formatCountdown, isInFlight, needsVerification,
   paymentGauge, progressValue, remainingFor, resultTitle, riskClass, statusLabel, tierLabel, tierRisk
@@ -17,6 +18,8 @@ import "ojs/ojavatar";
 import "ojs/ojmessages";
 
 interface FlowRouter { go(route: { path: string; params?: { step: string } }): Promise<unknown>; }
+// UI demonstration only. Never sent to the API or persisted; not payment security.
+const SIMULATED_S_PIN = "123456";
 class SendMoneyViewModel {
   step = ko.observable("beneficiary");
   beneficiaries = ko.observableArray<Beneficiary>([]);
@@ -31,6 +34,14 @@ class SendMoneyViewModel {
   private fundsGeneration = 0;
   amount = ko.observable("");
   purpose = ko.observable("");
+  readonly categoryOptions = PAYMENT_CATEGORIES;
+  category = ko.observable<PaymentCategory | undefined>();
+  categoryError = ko.observable("");
+  highValue = ko.pureComputed(() => categoryApplies(this.amount()));
+  othersCategory = ko.pureComputed(() => this.highValue() && this.category() === "OTHERS");
+  categoryLabel = categoryLabel;
+  reviewCategory = ko.pureComputed(() => this.pinOpen() || this.attemptLocked() ? this.attempt?.body.category : this.category());
+  private amountSubscription: ko.Subscription;
   amountError = ko.observable("");
   purposeError = ko.observable("");
   error = ko.observable("");
@@ -38,6 +49,10 @@ class SendMoneyViewModel {
   loading = ko.observable(false);
   busy = ko.observable(false);
   paymentError = ko.observable("");
+  pinOpen = ko.observable(false);
+  sPin = ko.observable("");
+  pinError = ko.observable("");
+  pinAmount = ko.pureComputed(() => this.pinOpen() ? this.money(Number(this.attempt?.body.amount || 0)) : "");
   result = ko.observable<PaymentTransaction | null>(null);
   attemptLocked = ko.observable(false);
   refreshing = ko.observable(false);
@@ -118,8 +133,17 @@ class SendMoneyViewModel {
   isNew = (date: string): boolean => { const age = Date.now() - new Date(date).getTime(); return age >= 0 && age < 86400000; };
   added = (date: string): string => Number.isNaN(new Date(date).getTime()) ? "Added date unavailable" : "Added " + new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", year: "numeric" }).format(new Date(date));
   initials = (name: string): string => (name || "?").slice(0, 1).toUpperCase();
-  constructor(private context: { router: FlowRouter; params?: { step?: string } }) { this.initialStep = context.params?.step; }
+  constructor(private context: { router: FlowRouter; params?: { step?: string } }) {
+    this.initialStep = context.params?.step;
+    this.amountSubscription = this.amount.subscribe(value => {
+      if (!this.attemptLocked() && !this.pinOpen() && !categoryApplies(value)) {
+        this.category(undefined); this.categoryError("");
+      }
+    });
+  }
+  clearCategoryError = (): void => { this.categoryError(""); this.purposeError(""); };
   parametersChanged(params: { step?: string }): void {
+    this.closePin();
     if (this.result()) {
       this.step("result");
       if (params.step !== "result") void this.context.router.go({ path: "send-money", params: { step: "result" } });
@@ -140,7 +164,7 @@ class SendMoneyViewModel {
     this.notice("");
   }
   load = async (): Promise<void> => {
-    if (this.loading() || this.attemptLocked() || this.result()) return;
+    if (this.loading() || this.attemptLocked() || this.result() || this.pinOpen()) return;
     this.loading(true); this.error(""); this.selected(null); this.beneficiaries([]); this.account(null);
     try {
       const [beneficiaries, account] = await Promise.all([beneficiaryService.list(), accountService.list()]);
@@ -158,7 +182,7 @@ class SendMoneyViewModel {
     } finally { if (this.alive) this.loading(false); }
   };
   selectAccount = (): void => {
-    if(this.attemptLocked() || this.result())return;
+    if(this.attemptLocked() || this.result() || this.pinOpen())return;
     const account=this.accounts().find(a=>a.accountId===this.selectedAccountId());
     this.account(account||null);this.selected(null);this.funds(null);void this.refreshFunds();
     this.beneficiaries(this.allBeneficiaries.filter(b=>b.accountId===account?.accountId && b.status==="ACTIVE"));
@@ -185,18 +209,18 @@ class SendMoneyViewModel {
       await this.refreshFunds();
     } catch(error) {
       if(this.alive){
-        if(error instanceof ApiError && error.status===401){this.stopPolling();window.location.replace("/login?reason=session-expired");}
+        if(error instanceof ApiError && error.status===401){this.closePin();this.stopPolling();window.location.replace("/login?reason=session-expired");}
         this.fundsError("Balances could not be refreshed. Please refresh before sending another payment.");
       }
     } finally {this.balancesRefreshing=false;}
   };
-  choose = (beneficiary: Beneficiary): void => { if (!this.loading() && !this.busy()) this.selected(beneficiary); };
+  choose = (beneficiary: Beneficiary): void => { if (!this.loading() && !this.busy() && !this.pinOpen() && !this.attemptLocked()) this.selected(beneficiary); };
   pick = (beneficiary: Beneficiary): void => {
     this.choose(beneficiary);
     void this.next();
   };
   useAmount = (value: string): void => {
-    if (this.busy()) return;
+    if (this.busy() || this.pinOpen() || this.attemptLocked()) return;
     this.amount(value);
     this.amountError("");
   };
@@ -207,6 +231,7 @@ class SendMoneyViewModel {
     finally { if (this.alive) this.busy(false); }
   };
   back = async (): Promise<void> => {
+    if (this.pinOpen() && !this.busy()) { this.closePin(); return; }
     if (this.canLeave()) { await this.leave(); return; }
     if (this.busy() || this.attemptLocked()) return;
     await this.context.router.go(this.step() === "review"
@@ -217,6 +242,7 @@ class SendMoneyViewModel {
   leave = async (): Promise<void> => {
     if (!this.canLeave()) return;
     this.stopPolling();
+    this.closePin();
     this.result(null);
     this.attempt = undefined;
     this.attemptLocked(false);
@@ -224,6 +250,7 @@ class SendMoneyViewModel {
     this.paymentError("");
     this.amount("");
     this.purpose("");
+    this.category(undefined); this.categoryError("");
     
     this.selected(null);
     await this.load();
@@ -244,8 +271,12 @@ class SendMoneyViewModel {
   }
   private validateDetails(): boolean {
     this.amountError(this.amountProblem()); this.purposeError("");
+    this.categoryError(categoryProblem(this.amount(), this.highValue() ? this.category() : undefined));
     if (this.purpose().length > 255) this.purposeError("Keep your note to 255 characters or fewer.");
-    return !this.amountError() && !this.purposeError();
+    if (this.othersCategory() && (!this.purpose().trim() || this.purpose().trim().length > 140)) {
+      this.purposeError("Others requires a purpose of 1–140 characters.");
+    }
+    return !this.amountError() && !this.purposeError() && !this.categoryError();
   }
   continueDetails = async (): Promise<void> => {
     if (this.busy() || this.loading()) return;
@@ -253,7 +284,7 @@ class SendMoneyViewModel {
     const valid = this.validateDetails();
     if (!this.selected()) { this.parametersChanged({ step: "beneficiary" }); return; }
     if (!valid) {
-      document.getElementById(this.amountError() ? "payment-amount" : "payment-purpose")?.focus(); return;
+      document.getElementById(this.amountError() ? "payment-amount" : this.categoryError() ? "payment-category" : this.othersCategory() ? "payment-category-purpose" : "payment-purpose")?.focus(); return;
     }
     if (!this.account() || this.error()) return;
     this.busy(true);
@@ -264,6 +295,7 @@ class SendMoneyViewModel {
   };
   private showPaymentError(error: unknown): void {
     if (error instanceof ApiError && error.status === 401) {
+      this.closePin();
       this.result(null); this.stopPolling();
       window.location.replace("/login?reason=session-expired");
     }
@@ -281,20 +313,42 @@ class SendMoneyViewModel {
     chimeForPayment(value);
   }
   confirm = async (): Promise<void> => {
-    if (this.busy() || this.loading() || this.result() || this.step() !== "review") return;
+    if (!this.alive || this.busy() || this.loading() || this.pinOpen() || this.result() || this.step() !== "review") return;
     this.paymentError("");
     if (!this.attempt) {
       if (!this.validateDetails() || !this.selected() || !this.account() || this.account()!.status !== "ACTIVE" || this.selected()!.accountId !== this.account()!.accountId) {
-        this.paymentError(this.amountError() || this.purposeError() || "Choose a beneficiary and source account before paying."); return;
+        this.paymentError(this.amountError() || this.categoryError() || this.purposeError() || "Choose a beneficiary and source account before paying."); return;
       }
       if (new TextEncoder().encode(this.purpose()).length > 255) {
         this.paymentError("Keep your note to 255 UTF-8 bytes or fewer."); return;
       }
       this.attempt = { key: newIdempotencyKey(), body: {
         fromAccountId: this.account()!.accountId, beneficiaryId: this.selected()!.beneficiaryId,
-        amount: this.amount().trim(), purpose: this.purpose()
+        amount: this.amount().trim(), purpose: this.othersCategory() ? this.purpose().trim() : this.purpose(),
+        ...(this.highValue() ? { category: this.category() } : {})
       } };
     }
+    this.sPin(""); this.pinError(""); this.pinOpen(true);
+  };
+  closePin = (): void => {
+    this.pinOpen(false); this.sPin(""); this.pinError("");
+    // An uncertain submitted payment must retain its original payload and retry key.
+    if (!this.attemptLocked()) this.attempt = undefined;
+  };
+  onPinInput = (_: unknown, event: Event): void => {
+    if (!this.pinOpen() || this.busy()) return;
+    this.sPin((event.target as HTMLInputElement).value); this.pinError("");
+    if (this.sPin().length >= 6) void this.submitPin();
+  };
+  submitPin = async (): Promise<void> => {
+    if (!this.alive || !this.pinOpen() || this.busy() || this.loading() || !this.attempt || this.step() !== "review" || this.result()) return;
+    if (!/^[0-9]{6}$/.test(this.sPin())) { this.pinError("Enter a six-digit S PIN."); return; }
+    if (this.sPin() !== SIMULATED_S_PIN) { this.pinError("Incorrect S PIN. Please try again."); return; }
+    this.sPin(""); this.pinError(""); this.pinOpen(false);
+    await this.submitPayment();
+  };
+  private async submitPayment(): Promise<void> {
+    if (!this.attempt || this.busy() || !this.alive) return;
     this.busy(true); this.attemptLocked(true);
     armAudio();
     try {
@@ -312,7 +366,7 @@ class SendMoneyViewModel {
       }
     }
     finally { if (this.alive) this.busy(false); }
-  };
+  }
   refreshResult = async (): Promise<void> => {
     const current = this.result();
     if (!current || this.refreshing() || this.busy()) return;
@@ -368,6 +422,6 @@ class SendMoneyViewModel {
     this.parametersChanged({ step: this.initialStep });
     void this.load();
   }
-  disconnected(): void { this.alive = false; this.fundsGeneration++; if(this.balanceTimer)clearInterval(this.balanceTimer);window.removeEventListener?.("focus",this.onFocus); this.stopPolling(); this.result(null); this.attempt = undefined; this.selected(null); this.account(null); this.beneficiaries([]); this.amount(""); this.purpose("");  }
+  disconnected(): void { this.alive = false; this.closePin(); this.amountSubscription.dispose(); this.category(undefined); this.categoryError(""); this.fundsGeneration++; if(this.balanceTimer)clearInterval(this.balanceTimer);window.removeEventListener?.("focus",this.onFocus); this.stopPolling(); this.result(null); this.attempt = undefined; this.selected(null); this.account(null); this.beneficiaries([]); this.amount(""); this.purpose("");  }
 }
 export = SendMoneyViewModel;

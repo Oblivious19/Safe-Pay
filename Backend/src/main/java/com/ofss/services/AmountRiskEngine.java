@@ -22,7 +22,7 @@ public class AmountRiskEngine {
             return new RiskAssessment(RiskTier.MEDIUM, 10, false, "Amount is within the Medium-risk range.");
         }
         if (amount.compareTo(HIGH_LIMIT) <= 0) {
-            return new RiskAssessment(RiskTier.HIGH, 60, false, "Amount is within the High-risk range.");
+            return new RiskAssessment(RiskTier.HIGH, 30, false, "Amount is within the High-risk range.");
         }
         return new RiskAssessment(RiskTier.HARD_HOLD, 0, true,
                 "Amount is above the High-risk limit and requires administrator approval.");

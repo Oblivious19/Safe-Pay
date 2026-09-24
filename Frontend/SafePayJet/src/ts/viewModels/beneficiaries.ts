@@ -3,6 +3,7 @@ import { beneficiaryService, Beneficiary, BeneficiaryInput, validateBeneficiary 
 import { accountService } from "../services/accountService";
 import { Account } from "../services/types";
 import { ApiError } from "../services/apiError";
+import { Bank, BANK_OPTIONS } from "../constants/banks";
 
 class BeneficiariesViewModel {
   accounts = ko.observableArray<Account>([]);
@@ -15,7 +16,14 @@ class BeneficiariesViewModel {
   beneficiaryName = ko.observable("");
   bankAccountNumber = ko.observable("");
   ifsc = ko.observable("");
-  fieldErrors = ko.observable<Partial<Record<keyof BeneficiaryInput, string>>>({});
+  readonly bankOptions = BANK_OPTIONS;
+  selectedBank = ko.observable<Bank | undefined>();
+  clearBankError = (): void => {
+    if (this.fieldErrors().bank && this.bankOptions.some(bank => bank.value === this.selectedBank())) {
+      const errors = { ...this.fieldErrors() }; delete errors.bank; this.fieldErrors(errors);
+    }
+  };
+  fieldErrors = ko.observable<Partial<Record<keyof BeneficiaryInput | "bank", string>>>({});
   loading = ko.observable(false);
   saving = ko.observable(false);
   error = ko.observable("");
@@ -34,7 +42,7 @@ class BeneficiariesViewModel {
   };
   private handle(error: unknown): void {
     if (error instanceof ApiError && error.status === 401) {
-      this.beneficiaries([]); this.selected(null);
+      this.beneficiaries([]); this.selected(null); this.selectedBank(undefined);
       window.location.replace("/login?reason=session-expired");
       this.error("Your session has expired. Please log in again.");
     } else if (error instanceof ApiError && [400, 403, 404, 409].includes(error.status)) {
@@ -61,18 +69,21 @@ class BeneficiariesViewModel {
     if (this.loading() || this.saving()) return;
     this.error(""); this.success(""); this.fieldErrors({});
     this.beneficiaryName(""); this.bankAccountNumber(""); this.ifsc("");
+    this.selectedBank(undefined);
     this.mode("add");
   };
   back = (): void => {
     if (this.saving() || this.loading()) return;
     this.mode("list"); this.selected(null); this.error(""); this.confirmDeactivate(false);
     this.beneficiaryName(""); this.bankAccountNumber(""); this.ifsc("");
+    this.selectedBank(undefined);
   };
   save = async (): Promise<void> => {
-    if (this.saving()) return;
+    if (this.saving() || this.loading()) return;
     if(!this.selectedAccountId()){this.error("Select an account first.");return;}
     const input = { accountId: this.selectedAccountId()!, beneficiaryName: this.beneficiaryName(), bankAccountNumber: this.bankAccountNumber(), ifsc: this.ifsc() };
-    const errors = validateBeneficiary(input);
+    const errors: Partial<Record<keyof BeneficiaryInput | "bank", string>> = validateBeneficiary(input);
+    if (!this.bankOptions.some(bank => bank.value === this.selectedBank())) errors.bank = "Choose a bank.";
     this.fieldErrors(errors); this.error(""); this.success("");
     if (Object.keys(errors).length) {
       document.getElementById("recipient-" + Object.keys(errors)[0])?.focus();
@@ -83,6 +94,7 @@ class BeneficiariesViewModel {
       await beneficiaryService.create(input);
       if (!this.alive) return;
       this.beneficiaryName(""); this.bankAccountNumber(""); this.ifsc("");
+      this.selectedBank(undefined);
       this.mode("list"); this.success("Beneficiary added successfully.");
       await this.load();
     } catch (error) { if (this.alive) this.handle(error); }
@@ -111,7 +123,7 @@ class BeneficiariesViewModel {
     } catch (error) { if (this.alive) this.handle(error); }
     finally { if (this.alive) this.saving(false); }
   };
-  changeAccount = (): void => {this.selected(null);this.mode("list");void this.load();};
+  changeAccount = (): void => {this.selectedBank(undefined);this.selected(null);this.mode("list");void this.load();};
   reactivate = async (): Promise<void> => {
     if(!this.selected() || this.saving())return;this.saving(true);this.error("");
     try{await beneficiaryService.reactivate(this.selected()!.beneficiaryId);if(this.alive){this.selected(null);this.mode("list");this.success("Beneficiary reactivated.");await this.load();}}
@@ -122,6 +134,6 @@ class BeneficiariesViewModel {
     if (new URLSearchParams(window.location.search).get("action") === "add") this.openAdd();
     void this.load();
   }
-  disconnected(): void { this.alive = false; this.generation++; this.selected(null); this.beneficiaries([]); }
+  disconnected(): void { this.alive = false; this.generation++; this.selectedBank(undefined); this.selected(null); this.beneficiaries([]); }
 }
 export = BeneficiariesViewModel;

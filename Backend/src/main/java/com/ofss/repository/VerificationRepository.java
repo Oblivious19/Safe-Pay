@@ -18,6 +18,20 @@ public interface VerificationRepository extends JpaRepository<TransactionDb, Lon
     @EntityGraph(attributePaths = {"fromAccount", "fromAccount.user", "beneficiary"})
     java.util.List<TransactionDb> findByStateOrderByCreatedAtAscTransactionIdAsc(com.ofss.beans.TransactionState state);
 
+    /** Aditya's category priority, adapted to the existing HARD_HOLD queue; legacy NULL is last. */
+    @EntityGraph(attributePaths = {"fromAccount", "fromAccount.user", "beneficiary"})
+    @Query("""
+            select t from TransactionDb t where t.state = com.ofss.beans.TransactionState.HARD_HOLD
+            order by case t.category
+                when com.ofss.beans.PaymentCategory.MEDICAL then 1
+                when com.ofss.beans.PaymentCategory.LOAN then 2
+                when com.ofss.beans.PaymentCategory.FRIENDS_FAMILY then 3
+                when com.ofss.beans.PaymentCategory.INVESTMENTS then 4
+                when com.ofss.beans.PaymentCategory.OTHERS then 5
+                else 6 end, t.createdAt asc, t.transactionId asc
+            """)
+    java.util.List<TransactionDb> findPendingByCategoryPriority();
+
     @Query("select t.fromAccount.accountId from TransactionDb t where t.transactionId = :id "
             + "and t.fromAccount.user.userId = :owner")
     Optional<Long> ownedAccountId(@Param("id") Long id, @Param("owner") Long owner);

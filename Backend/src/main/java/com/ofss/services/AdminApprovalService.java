@@ -37,7 +37,7 @@ public class AdminApprovalService {
     public List<AdminApprovalRequestView> pending(LoginPrincipal caller) {
         requireAdmin(caller);
         // The transaction is the durable notification; it survives logout and server restarts.
-        return verifications.findByStateOrderByCreatedAtAscTransactionIdAsc(TransactionState.HARD_HOLD)
+        return verifications.findPendingByCategoryPriority()
                 .stream().map(AdminApprovalRequestView::from).toList();
     }
 

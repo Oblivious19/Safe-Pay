@@ -35,6 +35,18 @@ const json = (body, status = 200, token) => new Response(JSON.stringify(body), {
   status, headers: { 'Content-Type': 'application/json', ...(token ? { 'X-CSRF-TOKEN': token } : {}) }
 });
 const payment = { fromAccountId: 1, beneficiaryId: 2, amount: '10.25', purpose: 'Demo' };
+test('category payload is persisted metadata only, with trimmed Others and no simulated PIN',async()=>{
+ const f=fixture([json({},200,'token'),json({transactionId:4,state:'HARD_HOLD',category:'OTHERS'})]);
+ await f.load('transactionService').transactionService.create({...payment,amount:'100000.01',category:'OTHERS',purpose:'  Tuition  ',sPin:'123456'},'category-key');
+ assert.deepEqual(JSON.parse(f.calls[1].body),{...payment,amount:'100000.01',category:'OTHERS',purpose:'Tuition'});
+});
+test('invalid category requests never reach transport',async()=>{
+ const f=fixture(),service=f.load('transactionService').transactionService;
+ for(const body of [{amount:'100000.01'},{amount:'100000',category:'MEDICAL'},{amount:'100001',category:'UNKNOWN'},{amount:'100001',category:'OTHERS',purpose:' '},{amount:'100001',category:'OTHERS',purpose:'x'.repeat(141)}]) {
+  await assert.rejects(service.create({...payment,...body},'bad-category'));
+ }
+ assert.equal(f.calls.length,0);
+});
 for (const status of [200,201]) test('payment response '+status+' uses one credentialed protected POST',async()=>{
  const row={transactionId:123,state:'SETTLED',amount:10.25};
  const f=fixture([json({},200,'token'),json(row,status)]);

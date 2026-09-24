@@ -23,7 +23,7 @@ class TransactionProtectionStateMachineTest {
     }
 
     private RuleBasedRiskResult risk(AssessmentRiskTier tier) {
-        int seconds = tier == AssessmentRiskTier.MEDIUM ? 10 : tier == AssessmentRiskTier.HIGH ? 60 : 0;
+        int seconds = tier == AssessmentRiskTier.MEDIUM ? 10 : tier == AssessmentRiskTier.HIGH ? 30 : 0;
         return new RuleBasedRiskResult(tier, tier != AssessmentRiskTier.LOW, seconds, "Test reason",
                 tier == AssessmentRiskTier.VERY_HIGH);
     }
@@ -46,7 +46,7 @@ class TransactionProtectionStateMachineTest {
             }
             case MEDIUM, HIGH -> {
                 assertEquals(ProtectionState.PROTECTED, result.state());
-                assertEquals(NOW.plusSeconds(tier == AssessmentRiskTier.MEDIUM ? 10 : 60), result.expiresAt());
+                assertEquals(NOW.plusSeconds(tier == AssessmentRiskTier.MEDIUM ? 10 : 30), result.expiresAt());
                 assertEquals(ProtectionState.SETTLED, machine.settle(machine.release(result, result.expiresAt())).state());
             }
             case VERY_HIGH -> {

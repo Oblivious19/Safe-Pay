@@ -6,14 +6,15 @@ const vm = require('node:vm');
 const ts = require('typescript');
 const ko = require('knockout');
 
-function loadProtection() {
-  const source = fs.readFileSync(path.join(__dirname, '../src/ts/utils/protection.ts'), 'utf8');
+function loadProtection(file = 'utils/protection.ts') {
+  const source = fs.readFileSync(path.join(__dirname, '../src/ts/', file), 'utf8');
   const code = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2021 } }).outputText;
   const module = { exports: {} };
   vm.runInNewContext('(function(require,module,exports){' + code + '\n})')(() => ({}), module, module.exports);
   return module.exports;
 }
 const p = loadProtection();
+const categories = loadProtection('constants/paymentCategories.ts');
 
 test('status and tier labels stay human', () => {
   assert.equal(p.statusLabel('PROTECTED'), 'Protected — you can still cancel');
@@ -127,7 +128,7 @@ test('transactions show session email without using it as caller identity', asyn
   const code = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2021 } }).outputText;
   const imports = {
     knockout: ko, '../appController': { default: { profile } }, '../accUtils': { announce() {} },
-    '../services/types': {}, '../utils/protection': p, '../services/apiError': {},
+    '../constants/paymentCategories': categories, '../services/types': {}, '../utils/protection': p, '../services/apiError': {},
     '../utils/chime': { armAudio() {}, chimeForPayment() {}, chimeIfSettled() {}, rememberSettled() {}, playChime() {}, startRing() {}, stopRing() {} },
     '../services/transactionService': { transactionService: { list: async (...args) => { calls.push(args); return []; } }, newIdempotencyKey: () => 'k' },
     './verifyCall': { VerifyCallModel: class { open = ko.observable(false); ring() {} dispose() {} } },
@@ -156,7 +157,7 @@ test('a loaded list is kept even if receipt bookkeeping throws', async () => {
   const row = { transactionId: 1, state: 'SETTLED', amount: 111111, beneficiaryName: 'Rohan Gupta', createdAt: '2026-09-16T19:10:22.000Z', riskTier: 'VERY_HIGH' };
   const imports = {
     knockout: ko, '../appController': { default: { profile } }, '../accUtils': { announce() {} },
-    '../services/types': {}, '../utils/protection': p, '../services/apiError': {},
+    '../constants/paymentCategories': categories, '../services/types': {}, '../utils/protection': p, '../services/apiError': {},
     '../utils/chime': { armAudio() {}, chimeForPayment() {}, chimeIfSettled() {}, rememberSettled() { throw new Error('chime'); }, playChime() {}, startRing() {}, stopRing() {} },
     '../services/transactionService': { transactionService: { list: async () => [row] }, newIdempotencyKey: () => 'k' },
     './verifyCall': { VerifyCallModel: class { open = ko.observable(false); ring() {} dispose() {} } },
@@ -183,7 +184,7 @@ test('cancelling a protected payment plays the cancel chime', async () => {
   const cancelled = { ...protectedRow, state: 'CANCELLED', cancelledAt: new Date().toISOString() };
   const imports = {
     knockout: ko, '../appController': { default: { profile } }, '../accUtils': { announce() {} },
-    '../services/types': {}, '../utils/protection': p, '../services/apiError': {},
+    '../constants/paymentCategories': categories, '../services/types': {}, '../utils/protection': p, '../services/apiError': {},
     '../utils/chime': {
       armAudio() { heard.push('arm'); },
       chimeForPayment(tx) { if (tx && tx.state === 'CANCELLED') heard.push('off'); },

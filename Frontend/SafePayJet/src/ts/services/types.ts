@@ -1,3 +1,4 @@
+import { PaymentCategory } from "../constants/paymentCategories";
 export type UserRole = "CUSTOMER" | "ADMIN";
 export type UserStatus = "ACTIVE" | "LOCKED" | "SUSPENDED" | "INACTIVE";
 export type AccountStatus = "ACTIVE" | "BLOCKED" | "CLOSED";
@@ -20,6 +21,7 @@ export interface TransactionRequest {
   fromAccountId: number; beneficiaryId: number;
   /** Decimal text is sent unchanged to Jackson BigDecimal; do not do money arithmetic in JS. */
   amount: string; purpose?: string | null;
+  category?: PaymentCategory;
 }
 export interface PaymentTransaction {
   /** Optional explicit ledger direction. Legacy transfer rows are outgoing. */
@@ -29,6 +31,7 @@ export interface PaymentTransaction {
   counterpartyName?: string;
   counterpartyAccountNumber?: string;
   transactionId: number; transactionRef: string; amount: number; purpose: string;
+  category?: PaymentCategory | null;
   fromAccountId: number; beneficiaryId: number; beneficiaryName: string;
   beneficiaryBankAccountNumber: string; beneficiaryIfsc: string;
   state: TransactionState; riskTier: RiskTier; riskReason: string;
@@ -41,6 +44,7 @@ export interface PaymentTransaction {
 export interface HeldPayment {
   transactionId: number; transactionRef: string; customerName: string; customerEmail: string;
   amount: number; purpose: string; beneficiaryName: string; beneficiaryBankAccountNumber: string;
+  category?: PaymentCategory | null;
   riskTier: RiskTier; riskReason: string; createdAt: string;
   decision: HoldDecision;
 }

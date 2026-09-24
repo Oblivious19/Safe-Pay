@@ -97,7 +97,7 @@ class TransactionDatabaseTest {
 
     @Test void realRiskEngineHardHoldRequiresAdminAndReplayDoesNotDebitAgain() {
         TransactionDb t = service.initiate(account.getAccountId(), beneficiary.getBeneficiaryId(),
-                new BigDecimal("110000.00"), "Verification test", UUID.randomUUID().toString(), account.getUserId());
+                new BigDecimal("110000.00"), "Verification test", UUID.randomUUID().toString(), account.getUserId(), PaymentCategory.MEDICAL);
         assertEquals(TransactionState.HARD_HOLD, t.getState());
         assertEquals(RiskTier.VERY_HIGH, t.getRiskTier());
         assertTrue(t.isAuthenticationRequired());
@@ -122,7 +122,7 @@ class TransactionDatabaseTest {
 
     @Test void concurrentAdminApprovalsDebitOnceAndNotifyFromDatabase() throws Exception {
         TransactionDb t = service.initiate(account.getAccountId(), beneficiary.getBeneficiaryId(),
-                new BigDecimal("120000.00"), "Concurrent approval", UUID.randomUUID().toString(), account.getUserId());
+                new BigDecimal("120000.00"), "Concurrent approval", UUID.randomUUID().toString(), account.getUserId(), PaymentCategory.MEDICAL);
         assertTrue(approvals.pending(admin).stream().anyMatch(row -> row.transactionId().equals(t.getTransactionId())));
         String key = UUID.randomUUID().toString();
         ExecutorService pool = Executors.newFixedThreadPool(2);
@@ -142,7 +142,7 @@ class TransactionDatabaseTest {
 
     @Test void competingAdminsWithDifferentKeysCannotDebitTwice() throws Exception {
         TransactionDb t = service.initiate(account.getAccountId(), beneficiary.getBeneficiaryId(),
-                new BigDecimal("120000.00"), "Competing admins", UUID.randomUUID().toString(), account.getUserId());
+                new BigDecimal("120000.00"), "Competing admins", UUID.randomUUID().toString(), account.getUserId(), PaymentCategory.MEDICAL);
         LoginPrincipal firstAdmin = admin; administrator(); LoginPrincipal secondAdmin = admin;
         ExecutorService pool = Executors.newFixedThreadPool(2);
         java.util.concurrent.Callable<Boolean> first = () -> {
@@ -163,7 +163,7 @@ class TransactionDatabaseTest {
 
     @Test void failedAuditRollsBackApprovalAndDebit() {
         TransactionDb t = service.initiate(account.getAccountId(), beneficiary.getBeneficiaryId(),
-                new BigDecimal("120000.00"), "Rollback approval", UUID.randomUUID().toString(), account.getUserId());
+                new BigDecimal("120000.00"), "Rollback approval", UUID.randomUUID().toString(), account.getUserId(), PaymentCategory.MEDICAL);
         jdbc.execute("alter table audit_log add constraint approval_audit_failure check (transaction_id <> "
                 + t.getTransactionId() + " or action <> 'ADMIN_APPROVED_SETTLED')");
         try {
@@ -200,8 +200,8 @@ class TransactionDatabaseTest {
         "10000.00,LOW,SETTLED,0,false",
         "10000.01,MEDIUM,PROTECTED,10,false",
         "50000.00,MEDIUM,PROTECTED,10,false",
-        "50000.01,HIGH,PROTECTED,60,false",
-        "100000.00,HIGH,PROTECTED,60,false",
+        "50000.01,HIGH,PROTECTED,30,false",
+        "100000.00,HIGH,PROTECTED,30,false",
         "100000.01,VERY_HIGH,HARD_HOLD,0,true"
     })
     void realDatabaseUsesExactAmountBoundariesWithoutHistorySignals(String value, RiskTier tier,
@@ -211,7 +211,8 @@ class TransactionDatabaseTest {
         new TransactionTemplate(manager).executeWithoutResult(status -> {
             BigDecimal amount = new BigDecimal(value);
             TransactionDb payment = service.initiate(account.getAccountId(), beneficiary.getBeneficiaryId(),
-                    amount, "Amount boundary", UUID.randomUUID().toString(), account.getUserId());
+                    amount, "Amount boundary", UUID.randomUUID().toString(), account.getUserId(),
+                    PaymentCategory.appliesTo(amount) ? PaymentCategory.MEDICAL : null);
             transactions.flush();
             assertEquals(tier, payment.getRiskTier());
             assertEquals(state, payment.getState());
@@ -233,9 +234,34 @@ class TransactionDatabaseTest {
         });
     }
 
+    @Test void categoryPersistsAndPendingQueueUsesPriorityThenFifoIncludingLegacyRows() {
+        account.setBalance(new BigDecimal("2000000.00")); accounts.saveAndFlush(account);
+        var ids = new java.util.ArrayList<Long>();
+        var categories = new PaymentCategory[]{PaymentCategory.OTHERS, PaymentCategory.INVESTMENTS,
+                PaymentCategory.FRIENDS_FAMILY, PaymentCategory.LOAN, PaymentCategory.MEDICAL, PaymentCategory.MEDICAL, PaymentCategory.LOAN};
+        for (var category : categories) {
+            var row = service.initiate(account.getAccountId(), beneficiary.getBeneficiaryId(), new BigDecimal("100001.00"),
+                    "Test category", UUID.randomUUID().toString(), account.getUserId(), category);
+            ids.add(row.getTransactionId());
+            assertEquals(category.name(), jdbc.queryForObject("select payment_category from transaction_db where transaction_id=?", String.class, row.getTransactionId()));
+            jdbc.update("update transaction_db set created_at=? where transaction_id=?", LocalDateTime.of(2026, 1, 1, 12, 0), row.getTransactionId());
+        }
+        // A legacy row has no category; it remains reviewable and follows named categories.
+        jdbc.update("update transaction_db set payment_category=null where transaction_id=?", ids.get(6));
+        var queue = approvals.pending(admin).stream().filter(row -> ids.contains(row.transactionId())).toList();
+        assertEquals(java.util.List.of(ids.get(4), ids.get(5), ids.get(3), ids.get(2), ids.get(1), ids.get(0), ids.get(6)),
+                queue.stream().map(AdminApprovalRequestView::transactionId).toList());
+        assertEquals(PaymentCategory.MEDICAL, queue.get(0).category());
+        assertNull(queue.get(6).category());
+        // Earlier creation wins even when its transaction ID is larger.
+        jdbc.update("update transaction_db set created_at=? where transaction_id=?", LocalDateTime.of(2025, 12, 31, 12, 0), ids.get(5));
+        assertEquals(ids.get(5), approvals.pending(admin).stream().filter(row -> ids.contains(row.transactionId())).findFirst().orElseThrow().transactionId());
+        assertNull(approvals.approve(ids.get(6), admin, UUID.randomUUID().toString()).category());
+    }
+
     TransactionDb hardHold(String amount) {
         return service.initiate(account.getAccountId(), beneficiary.getBeneficiaryId(), new BigDecimal(amount),
-                "medical", UUID.randomUUID().toString(), account.getUserId());
+                "medical", UUID.randomUUID().toString(), account.getUserId(), PaymentCategory.MEDICAL);
     }
     @Autowired AccountFundsRepository funds;
     @Test void multipleHardHoldsAreAllowedAndDeclineFreesOnlyItsReservation() {

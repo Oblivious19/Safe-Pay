@@ -15,14 +15,15 @@ function load(file, imports, globals = {}) {
   return module.exports;
 }
 const validation = load('services/beneficiaryService', { './apiClient': {}, './apiError': { ApiError } }).validateBeneficiary;
+const banks = load('constants/banks', {});
 function fixture(overrides = {}) {
   const calls = [], redirects = [];
   const defaults = { list: async () => [row], create: async () => row, get: async () => row, deactivate: async () => undefined };
   const service = Object.fromEntries(Object.keys(defaults).map(key => [key, (...args) => { calls.push([key, ...args]); return (overrides[key] || defaults[key])(...args); }]));
-  const Model = load('viewModels/beneficiaries', { knockout: ko, '../services/accountService': {accountService:{list:async()=>[{accountId:1,status:'ACTIVE'}]}}, '../services/apiError': { ApiError }, '../services/beneficiaryService': { beneficiaryService: service, validateBeneficiary: validation } }, { document: { getElementById: () => ({ focus() {} }) }, window: { location: { replace: url => redirects.push(url) } } });
+  const Model = load('viewModels/beneficiaries', { knockout: ko, '../constants/banks': banks, '../services/accountService': {accountService:{list:async()=>[{accountId:1,status:'ACTIVE'}]}}, '../services/apiError': { ApiError }, '../services/beneficiaryService': { beneficiaryService: service, validateBeneficiary: validation } }, { document: { getElementById: () => ({ focus() {} }) }, window: { location: { replace: url => redirects.push(url) } } });
   const model=new Model(); model.selectedAccountId(1);return { model, calls, redirects };
 }
-function fill(model) { model.beneficiaryName('Recipient'); model.bankAccountNumber('0012345678'); model.ifsc('HDFC0001234'); }
+function fill(model) { model.beneficiaryName('Recipient'); model.bankAccountNumber('0012345678'); model.ifsc('HDFC0001234'); model.selectedBank(banks.Bank.HDFC); }
 test('list loads only session-owned API data', async () => { const f = fixture(); await f.model.load(); assert.equal(f.model.beneficiaries()[0], row); assert.deepEqual(f.calls, [['list',1,false]]); });
 test('empty list is distinct from error', async () => { const f = fixture({ list: async () => [] }); await f.model.load(); assert.equal(f.model.beneficiaries().length, 0); assert.equal(f.model.error(), ''); });
 test('valid add returns to list, preserves success and refreshes exactly once', async () => {
@@ -31,7 +32,7 @@ test('valid add returns to list, preserves success and refreshes exactly once', 
   assert.deepEqual(f.calls.map(c => c[0]), ['create', 'list']); assert.equal(f.model.bankAccountNumber(), '');
 });
 test('invalid local form makes no request', async () => {
-  const f = fixture(); await f.model.save(); assert.equal(Object.keys(f.model.fieldErrors()).length, 3); assert.equal(f.calls.length, 0);
+  const f = fixture(); await f.model.save(); assert.equal(Object.keys(f.model.fieldErrors()).length, 4); assert.equal(f.calls.length, 0);
   fill(f.model); f.model.ifsc('TOO-LONG-INVALID'); await f.model.save(); assert.equal(f.calls.length, 0);
 });
 test('validation matches lengths, digits and IFSC; preserves leading zeros', () => {
@@ -66,4 +67,29 @@ test('display masks account and new badge is age-only', () => {
   assert.equal(model.isNew(new Date().toISOString()), true); assert.equal(model.isNew('2000-01-01'), false);
   const html = fs.readFileSync(path.join(__dirname, '../src/ts/views/beneficiaries.html'), 'utf8');
   assert.doesNotMatch(html, /userId|userEmail|beneficiaryId|localStorage/);
+});
+
+test('bank options match the fifteen requested banks in order with unique enum IDs',()=>{
+ assert.deepEqual(Array.from(banks.BANK_OPTIONS,b=>b.label),['Axis Bank','Bank of Baroda','Bank of India','Canara Bank','Central Bank of India','HDFC Bank','ICICI Bank','IDFC FIRST Bank','Indian Bank','IndusInd Bank','Kotak Mahindra Bank','Punjab National Bank','State Bank of India','Union Bank of India','Yes Bank']);
+ assert.equal(new Set(banks.BANK_OPTIONS.map(b=>b.value)).size,15);
+ assert.equal(Object.keys(banks.Bank).length,15);
+});
+for(const value of [undefined,'','UNKNOWN'])test('missing/unknown bank blocks submission: '+value,async()=>{
+ const f=fixture();fill(f.model);f.model.selectedBank(value);await f.model.save();
+ assert.equal(f.calls.length,0);assert.equal(f.model.fieldErrors().bank,'Choose a bank.');
+});
+test('bank is form-only: payload and IFSC are unchanged, selection clears after save',async()=>{
+ const f=fixture();fill(f.model);f.model.selectedBank(banks.Bank.AXIS);await f.model.save();
+ assert.deepEqual(JSON.parse(JSON.stringify(f.calls[0][1])),{accountId:1,beneficiaryName:'Recipient',bankAccountNumber:'0012345678',ifsc:'HDFC0001234'});
+ assert.equal(f.model.selectedBank(),undefined);
+});
+test('bank selection resets when form closes or page disconnects',()=>{
+ const f=fixture();fill(f.model);f.model.back();assert.equal(f.model.selectedBank(),undefined);
+ fill(f.model);f.model.openAdd();assert.equal(f.model.selectedBank(),undefined);
+ fill(f.model);f.model.disconnected();assert.equal(f.model.selectedBank(),undefined);
+});
+test('selecting a valid bank clears only its validation error',async()=>{
+ const f=fixture();await f.model.save();assert.ok(f.model.fieldErrors().bank);
+ f.model.selectedBank(banks.Bank.HDFC);f.model.clearBankError();
+ assert.equal(f.model.fieldErrors().bank,undefined);assert.ok(f.model.fieldErrors().ifsc);
 });

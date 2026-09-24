@@ -21,6 +21,7 @@ import com.ofss.beans.AssessmentRiskTier;
 import com.ofss.beans.RiskTier;
 import com.ofss.beans.TransactionDb;
 import com.ofss.beans.TransactionState;
+import com.ofss.beans.PaymentCategory;
 import com.ofss.excp.TransactionValidationException;
 import com.ofss.excp.InvalidStateTransitionException;
 import com.ofss.excp.ResourceNotFoundExcp;
@@ -57,10 +58,20 @@ public class TransactionServiceImpl implements TransactionService {
         this.settlements = settlements;
     }
 
+    /** Keep existing internal callers inside the same transactional boundary. */
     @Override
     @Transactional
     public TransactionDb initiate(Long accountId, Long beneficiaryId, BigDecimal amount, String purpose,
             String idempotencyKey, Long callerId) {
+        return initiate(accountId, beneficiaryId, amount, purpose, idempotencyKey, callerId, null);
+    }
+
+    @Override
+    @Transactional
+    public TransactionDb initiate(Long accountId, Long beneficiaryId, BigDecimal amount, String purpose,
+            String idempotencyKey, Long callerId, PaymentCategory category) {
+        // Normalize only the new category-specific note, not historical uncategorized requests.
+        if (category == PaymentCategory.OTHERS && purpose != null) purpose = purpose.trim();
         validator.validateRequest(accountId, beneficiaryId, amount, purpose, idempotencyKey);
         validator.requireCustomer(callerId);
         Long receiverId = accountDao.findRecipientId(beneficiaryId, accountId, callerId).orElse(null);
@@ -72,12 +83,15 @@ public class TransactionServiceImpl implements TransactionService {
             }
             if (!Objects.equals(existing.getFromAccount().getAccountId(), accountId)
                     || !Objects.equals(existing.getBeneficiary().getBeneficiaryId(), beneficiaryId)
-                    || existing.getAmount().compareTo(amount) != 0 || !Objects.equals(existing.getPurpose(), purpose)) {
+                    || existing.getAmount().compareTo(amount) != 0 || !Objects.equals(existing.getPurpose(), purpose)
+                    || existing.getCategory() != category) {
                 throw new TransactionValidationException(409, "Idempotency-Key was already used for a different request");
             }
             // Replay has no new debit: do not apply today's balance/eligibility to a past transaction.
             return existing;
         }
+        // Historical idempotency replays above remain valid without invented metadata.
+        PaymentCategory.requireForNewPayment(amount, category, purpose);
         Beneficiary beneficiary = validator.validateNewTransfer(account, beneficiaryId, callerId, amount);
         Account receiver = receiverId == null ? null : TransferBalances.lock(accountDao, receiverId);
         TransferBalances.validateReceiver(account, receiver, amount);
@@ -95,6 +109,7 @@ public class TransactionServiceImpl implements TransactionService {
         transaction.setBeneficiary(beneficiary);
         transaction.setAmount(amount);
         transaction.setPurpose(purpose);
+        transaction.setCategory(category);
         transaction.setCreatedAt(now);
         transaction.setState(TransactionState.CREATED);
 
