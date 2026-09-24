@@ -12,9 +12,9 @@
   <div class="dash-skeleton" role="status" aria-label="Loading your payments" data-bind="visible: loading"><span class="sk sk-line"></span><span class="sk sk-line"></span><span class="sk sk-line"></span></div>
   <ul class="tx-list" data-bind="foreach: displayedTransactions, reveal: pageReveal">
     <li class="tx-row">
-      <button type="button" class="tx-open" data-bind="click: $parent.openDetail, attr: {'aria-label': 'View payment: ' + (beneficiaryName || transactionRef) + ', ' + $parent.formatMoney(amount) + ', ' + $parent.directionLabel($data) + ', ' + $parent.statusLabel(state)}">
+      <button type="button" class="tx-open" data-bind="click: $parent.openDetail, attr: {'aria-label': 'View payment: ' + $parent.displayName($data) + ', ' + $parent.formatMoney(amount) + ', ' + $parent.directionLabel($data) + ', ' + $parent.statusLabel(state)}">
         <span class="money-direction" aria-hidden="true" data-bind="text: $parent.directionArrow($data), css: $parent.directionClass($data)"></span>
-        <span class="tx-copy"><strong data-bind="text: beneficiaryName || transactionRef"></strong><span data-bind="text: $parent.directionLabel($data)"></span><small data-bind="text: $parent.formatDate(createdAt)"></small><small data-bind="visible: $parent.countdownText($data), text: $parent.countdownText($data)"></small></span>
+        <span class="tx-copy"><strong data-bind="text: $parent.displayName($data)"></strong><span data-bind="text: $parent.directionLabel($data)"></span><small data-bind="text: $parent.formatDate(createdAt)"></small><small data-bind="visible: $parent.countdownText($data), text: $parent.countdownText($data)"></small></span>
         <span class="tx-meta"><b data-bind="text: $parent.signedAmount($data)"></b><span class="payment-status" data-bind="text: $parent.statusLabel(state), css: $parent.riskClass($data)"></span></span>
       </button>
       <!-- ko if: $parent.canCancel($data) --><button class="tx-row-action" data-bind="click: $parent.requestCancel">Cancel</button><!-- /ko -->
@@ -26,14 +26,14 @@
     <div class="tx-drawer-body">
       <header class="tx-drawer-head"><h2 data-bind="text: selectedTitle"></h2><oj-button chroming="borderless" on-oj-action="[[closeDetail]]">Close</oj-button></header>
       <div class="tx-detail-content">
-        <div class="ui-error" role="alert" data-bind="visible: detailError, reveal: detailError"><p data-bind="text: detailError"></p><button class="recipient-secondary" data-bind="click: refreshDetail, disable: busy">Refresh status</button></div>
+        <div class="ui-error" role="alert" data-bind="visible: detailError, reveal: detailError"><p data-bind="text: detailError"></p></div>
         <!-- ko with: selected -->
         <p class="send-review-amount" data-bind="text: $parent.signedAmount($data)"></p>
         <p class="protect-copy" data-bind="text: $parent.directionLabel($data)"></p>
         <p class="protect-copy" data-bind="visible: $parent.selectedCountdown, text: $parent.selectedCountdown"></p>
         <dl class="send-review-details">
-          <div><dt>Recipient / counterparty</dt><dd data-bind="text: beneficiaryName || 'Not provided'"></dd></div>
-          <div><dt>Bank account</dt><dd data-bind="text: $parent.maskAccountNumber(beneficiaryBankAccountNumber)"></dd></div>
+          <div><dt>Recipient / counterparty</dt><dd data-bind="text: $parent.displayName($data) || 'Not provided'"></dd></div>
+          <div><dt>Bank account</dt><dd data-bind="text: $parent.maskAccountNumber($data.counterpartyAccountNumber || beneficiaryBankAccountNumber)"></dd></div>
           <div><dt>Reference</dt><dd data-bind="text: transactionRef"></dd></div>
           <div><dt>Status</dt><dd data-bind="text: $parent.statusLabel(state)"></dd></div>
           <div><dt>Note</dt><dd data-bind="text: purpose || 'No note added'"></dd></div>
@@ -41,15 +41,15 @@
           <div data-bind="visible: settledAt"><dt>Settled</dt><dd data-bind="text: $parent.formatDate(settledAt)"></dd></div>
           <div data-bind="visible: cancelledAt"><dt>Cancelled</dt><dd data-bind="text: $parent.formatDate(cancelledAt)"></dd></div>
         </dl>
-        <!-- ko if: state === 'HARD_HOLD' --><p class="protect-copy">Awaiting administrator approval. This payment will stay on hold until it is reviewed.</p><!-- /ko -->
+        <!-- ko if: state === 'HARD_HOLD' --><p class="protect-copy">Awaiting administrator approval. You can cancel before approval to keep the amount in your account. Status updates automatically.</p><!-- /ko -->
         <!-- /ko -->
         <!-- ko if: selectedReasons().length --><section class="protect-why"><h3>Payment assessment</h3><ul data-bind="foreach: selectedReasons"><li data-bind="text: $data"></li></ul></section><!-- /ko -->
       </div>
       <!-- ko if: selected() && canCancel(selected()) --><footer class="tx-detail-actions"><button class="protect-cancel" data-bind="click: function() { requestCancel(selected()); }, disable: busy">Cancel this payment</button></footer><!-- /ko -->
     </div>
   </oj-drawer-popup>
-  <oj-dialog id="tx-cancel-dialog" class="protect-dialog" dialog-title="Cancel this payment?" cancel-behavior="icon" opened="{{cancelOpen}}">
+  <oj-dialog id="tx-cancel-dialog" class="protect-dialog" dialog-title="Cancel this payment?" cancel-behavior="icon" data-bind="dialogOpen: cancelOpen" on-oj-close="[[closeCancel]]">
     <div slot="body"><p>This payment has not settled yet. Cancelling keeps the amount in your account.</p></div>
-    <div slot="footer"><oj-button chroming="outlined" on-oj-action="[[closeCancel]]">Keep waiting</oj-button><oj-button chroming="solid" on-oj-action="[[confirmCancel]]">Cancel payment</oj-button></div>
+    <div slot="footer"><button type="button" class="recipient-secondary" data-bind="click: closeCancel">Keep waiting</button><button type="button" class="protect-cancel" data-bind="click: confirmCancel, disable: busy">Cancel payment</button></div>
   </oj-dialog>
 </section>

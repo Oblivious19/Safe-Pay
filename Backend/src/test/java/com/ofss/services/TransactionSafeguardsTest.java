@@ -58,6 +58,28 @@ class TransactionSafeguardsTest {
         verifyNoInteractions(audits);
     }
 
+    @Test void hardHoldCancellationAuditsTheActualStateWithoutRequiringATimer() {
+        payment.setState(TransactionState.HARD_HOLD); payment.setProtectionExpiresAt(null);
+        TransactionDb saved = new TransactionDb(); saved.setTransactionId(3L); saved.setFromAccount(account);
+        saved.setState(TransactionState.CANCELLED); saved.setCancelIdempotencyKey("cancel-hold"); saved.setCancelledAt(now);
+        when(transactions.findByTransactionIdAndFromAccountUserEmail(3L, "owner@example.com"))
+                .thenReturn(Optional.of(payment), Optional.of(saved));
+        when(transactions.cancelHeld(3L, 0L, "cancel-hold")).thenReturn(1);
+        assertSame(saved, service.cancel(3L, "cancel-hold", "owner@example.com"));
+        verify(transactions, never()).currentDatabaseTime(anyLong());
+        verify(transactions, never()).cancelProtected(anyLong(), anyLong(), anyString());
+        verify(accounts, never()).save(any());
+        verify(audits).save(argThat(a -> "HARD_HOLD".equals(a.getOldState())
+                && "CANCELLED".equals(a.getNewState()) && Long.valueOf(1).equals(a.getUserId())));
+    }
+
+    @Test void racingHardHoldUpdateCannotWriteACancellationAudit() {
+        payment.setState(TransactionState.HARD_HOLD);
+        when(transactions.cancelHeld(3L, 0L, "cancel-hold")).thenReturn(0);
+        assertThrows(InvalidStateTransitionException.class, () -> service.cancel(3L, "cancel-hold", "owner@example.com"));
+        verifyNoInteractions(audits);
+    }
+
     @Test void keyReusedForDifferentCancellationIsConflict() {
         TransactionDb other = new TransactionDb(); other.setTransactionId(99L);
         when(transactions.findByCancelIdempotencyKey("cancel-1")).thenReturn(Optional.of(other));

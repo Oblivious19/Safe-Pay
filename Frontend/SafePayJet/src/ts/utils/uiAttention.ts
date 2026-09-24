@@ -1,4 +1,29 @@
 import * as ko from "knockout";
+import Context = require("ojs/ojcontext");
+import type { ojDialog } from "ojs/ojdialog";
+
+/** oj-dialog exposes open()/close(), not the drawer's `opened` property. */
+ko.bindingHandlers.dialogOpen = {
+  init(element: ojDialog, valueAccessor: () => ko.Observable<boolean>) {
+    let ready = false;
+    let disposed = false;
+    const sync = () => {
+      const shouldOpen = ko.unwrap(valueAccessor());
+      if (!ready || disposed) return;
+      if (shouldOpen && !element.isOpen()) element.open();
+      else if (!shouldOpen && element.isOpen()) element.close();
+    };
+    const watch = ko.computed(sync);
+    void Context.getContext(element).getBusyContext().whenReady().then(() => {
+      if (!disposed) { ready = true; sync(); }
+    });
+    const closed = () => { if (!disposed) valueAccessor()(false); };
+    element.addEventListener('ojClose', closed);
+    ko.utils.domNodeDisposal.addDisposeCallback(element, () => {
+      disposed = true; watch.dispose(); element.removeEventListener('ojClose', closed);
+    });
+  }
+};
 
 /** Reveal newly opened content once; polling/countdown updates do not move focus. */
 ko.bindingHandlers.reveal = {

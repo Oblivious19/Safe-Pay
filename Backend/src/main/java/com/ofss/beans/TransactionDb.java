@@ -59,6 +59,12 @@ public class TransactionDb {
     @JsonIgnore
     private Account fromAccount;
 
+    /** The internal destination, resolved by the server, never supplied by a caller. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "to_account_id")
+    @JsonIgnore
+    private Account toAccount;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "beneficiary_id", nullable = false)
     @JsonIgnore
@@ -119,6 +125,8 @@ public class TransactionDb {
     public void setReleasedAt(LocalDateTime time) { this.releasedAt = time; }
     public Account getFromAccount() { return fromAccount; }
     public void setFromAccount(Account fromAccount) { this.fromAccount = fromAccount; }
+    public Account getToAccount() { return toAccount; }
+    public void setToAccount(Account toAccount) { this.toAccount = toAccount; }
     public Beneficiary getBeneficiary() { return beneficiary; }
     public void setBeneficiary(Beneficiary beneficiary) { this.beneficiary = beneficiary; }
     public BigDecimal getAmount() { return amount; }

@@ -35,6 +35,23 @@ class ProfileViewModel {
     style: "currency", currency: "INR", minimumFractionDigits: 2, maximumFractionDigits: 2
   }).format(value);
   private alive = true;
+  private poll?: ReturnType<typeof setInterval>;
+  private refreshing=false;
+  private onFocus=():void=>{void this.refreshBalances();};
+  refreshBalances=async():Promise<void>=>{
+    if(!this.alive || this.loading() || this.refreshing || document.visibilityState==="hidden")return;
+    this.refreshing=true;
+    try {
+      const accounts=await accountService.list();if(!this.alive)return;
+      this.accounts(accounts);this.account(accounts.find(a=>a.accountId===this.selectedAccountId()) || null);
+      await this.loadFunds();
+    } catch(error) {
+      if(this.alive){
+        this.fundsError("Live balance updates are unavailable. Please try again.");
+        if(error instanceof ApiError && error.status===401)window.location.replace("/login?reason=session-expired");
+      }
+    } finally {this.refreshing=false;}
+  };
   load = async (): Promise<void> => {
     this.loading(true); this.error(""); this.account(null);
     try {
@@ -58,11 +75,15 @@ class ProfileViewModel {
     const id = this.account()?.accountId, revision = ++this.fundsRevision;
     if(!id){this.fundsLoading(false);return;}
     this.fundsLoading(true);this.fundsError("");
-    try { const funds=await accountService.funds(id);if(this.alive && revision===this.fundsRevision)this.funds(funds); }
+    try { const funds=await accountService.funds(id);if(this.alive && revision===this.fundsRevision){
+      this.funds(funds);
+      const updated={...this.account()!,balance:funds.balance};this.account(updated);
+      this.accounts(this.accounts().map(a=>a.accountId===id?updated:a));
+    } }
     catch { if(this.alive && revision===this.fundsRevision)this.fundsError("Available balance is temporarily unavailable."); }
     finally { if(this.alive && revision===this.fundsRevision)this.fundsLoading(false); }
   };
-  connected(): void { this.alive=true; document.title = "Profile | SafePay"; void this.load(); }
-  disconnected(): void { this.alive = false; this.fundsRevision++; }
+  connected(): void { this.alive=true; document.title = "Profile | SafePay"; window.addEventListener?.("focus",this.onFocus); this.poll=setInterval(()=>void this.refreshBalances(),3000); void this.load(); }
+  disconnected(): void { this.alive = false; this.fundsRevision++; if(this.poll)clearInterval(this.poll); window.removeEventListener?.("focus",this.onFocus); }
 }
 export = ProfileViewModel;

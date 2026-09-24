@@ -63,7 +63,8 @@ public class TransactionServiceImpl implements TransactionService {
             String idempotencyKey, Long callerId) {
         validator.validateRequest(accountId, beneficiaryId, amount, purpose, idempotencyKey);
         validator.requireCustomer(callerId);
-        Account account = validator.requireOwnedAccount(accountId, callerId);
+        Long receiverId = accountDao.findRecipientId(beneficiaryId, accountId, callerId).orElse(null);
+        Account account = validator.requireOwnedAccount(accountId, callerId, receiverId);
         TransactionDb existing = transactionDao.findByIdempotencyKey(idempotencyKey).orElse(null);
         if (existing != null) {
             if (!existing.getFromAccount().getUserId().equals(callerId)) {
@@ -78,6 +79,8 @@ public class TransactionServiceImpl implements TransactionService {
             return existing;
         }
         Beneficiary beneficiary = validator.validateNewTransfer(account, beneficiaryId, callerId, amount);
+        Account receiver = receiverId == null ? null : TransferBalances.lock(accountDao, receiverId);
+        TransferBalances.validateReceiver(account, receiver, amount);
 
         // The approved policy classifies only the validated amount. Context/history
         // must neither raise the tier nor prevent an otherwise valid assessment.
@@ -88,6 +91,7 @@ public class TransactionServiceImpl implements TransactionService {
         transaction.setTransactionRef("TXN-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
         transaction.setIdempotencyKey(idempotencyKey);
         transaction.setFromAccount(account);
+        transaction.setToAccount(receiver);
         transaction.setBeneficiary(beneficiary);
         transaction.setAmount(amount);
         transaction.setPurpose(purpose);
@@ -106,8 +110,7 @@ public class TransactionServiceImpl implements TransactionService {
             transition(transaction, TransactionState.SETTLED);
             transaction.setSettledAt(now);
             transaction.setReleasedAt(now);
-            account.setBalance(account.getBalance().subtract(amount));
-            accountDao.save(account);
+            TransferBalances.move(accountDao, account, receiver, amount, now);
         } else if (assessment.authenticationRequired()) {
             transition(transaction, TransactionState.HARD_HOLD);
         } else {
@@ -124,6 +127,7 @@ public class TransactionServiceImpl implements TransactionService {
     @Transactional(readOnly = true)
     public TransactionDb getTransaction(Long transactionId, String email) {
         return transactionDao.findByTransactionIdAndFromAccountUserEmail(transactionId, email)
+                .or(() -> transactionDao.findReceivedTransaction(transactionId, email))
                 .orElseThrow(() -> new ResourceNotFoundExcp("Transaction not found"));
     }
 
@@ -131,9 +135,13 @@ public class TransactionServiceImpl implements TransactionService {
     @Transactional(readOnly = true)
     public List<TransactionDb> getTransactions(String state, String email) {
         if (state == null || state.isBlank()) {
-            return transactionDao.findByFromAccountUserEmail(email);
+            return java.util.stream.Stream.concat(transactionDao.findByFromAccountUserEmail(email).stream(),
+                    transactionDao.findReceivedTransactions(email).stream()).distinct().toList();
         }
-        return transactionDao.findByFromAccountUserEmailAndState(email, TransactionState.valueOf(state));
+        TransactionState selected = TransactionState.valueOf(state);
+        return java.util.stream.Stream.concat(transactionDao.findByFromAccountUserEmailAndState(email, selected).stream(),
+                selected == TransactionState.SETTLED ? transactionDao.findReceivedTransactions(email).stream()
+                        : java.util.stream.Stream.empty()).distinct().toList();
     }
 
     @Override
@@ -155,19 +163,27 @@ public class TransactionServiceImpl implements TransactionService {
         if (transaction.getState() == TransactionState.CANCELLED) {
             return transaction;
         }
-        LocalDateTime now = Objects.requireNonNull(transactionDao.currentDatabaseTime(accountId),
-                "Database time is unavailable");
-        if (transaction.getState() != TransactionState.PROTECTED || transaction.getProtectionExpiresAt() == null
-                || !now.isBefore(transaction.getProtectionExpiresAt())) {
-            throw new InvalidStateTransitionException("Only an active protected transaction can be cancelled");
+        TransactionState previousState = transaction.getState();
+        int changed;
+        if (previousState == TransactionState.HARD_HOLD) {
+            // The source-account lock is shared with admin approval. Only one decision can win.
+            changed = transactionDao.cancelHeld(transactionId, transaction.getVersion(), idempotencyKey);
+        } else if (previousState == TransactionState.PROTECTED) {
+            LocalDateTime now = Objects.requireNonNull(transactionDao.currentDatabaseTime(accountId),
+                    "Database time is unavailable");
+            if (transaction.getProtectionExpiresAt() == null || !now.isBefore(transaction.getProtectionExpiresAt())) {
+                throw new InvalidStateTransitionException("The protection window has ended. This payment can no longer be cancelled");
+            }
+            changed = transactionDao.cancelProtected(transactionId, transaction.getVersion(), idempotencyKey);
+        } else {
+            throw new InvalidStateTransitionException("Only a payment still in protection or awaiting administrator approval can be cancelled");
         }
-        int changed = transactionDao.cancelProtected(transactionId, transaction.getVersion(), idempotencyKey);
         if (changed == 0) {
             throw new InvalidStateTransitionException("Transaction was already changed by another request");
         }
         TransactionDb saved = getTransaction(transactionId, email);
         writeAudit(saved, saved.getFromAccount().getUserId(), "TRANSACTION_CANCELLED",
-                TransactionState.PROTECTED.name(), TransactionState.CANCELLED.name());
+                previousState.name(), TransactionState.CANCELLED.name());
         return saved;
     }
 

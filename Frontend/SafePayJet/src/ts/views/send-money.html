@@ -132,26 +132,25 @@
 
       
     <p role="alert" class="recipient-error" data-bind="visible: paymentError, text: paymentError, reveal: paymentError"></p>
-    <button type="button" class="pay-ghost" data-bind="click: refreshResult, disable: refreshing() || busy()"><span class="spin" aria-hidden="true" data-bind="visible: refreshing"></span><span data-bind="text: refreshing() ? 'Checking…' : 'Refresh status'"></span></button>
     </div>
     <!-- /ko -->
     <!-- ko if: step() === 'result' && result() -->
     <footer class="pay-action-bar">
-      <!-- ko if: isProtected() && !isSettling() -->
+      <!-- ko if: (isProtected() && !isSettling()) || isHold() -->
       <button type="button" class="pay-cta protect-cancel" data-bind="click: cancelPayment, disable: !canCancel()"><span data-bind="text: busy() ? 'Cancelling…' : 'Cancel this payment'"></span></button>
       <!-- /ko -->
-      <!-- ko if: isHold() --><p class="hold-action-note">Awaiting administrator review. You can close this receipt and check Transactions for updates.</p><!-- /ko -->
+      <!-- ko if: isHold() --><p class="hold-action-note">Awaiting administrator review. Cancel before approval to keep the amount in your account. Status updates automatically.</p><!-- /ko -->
       <div class="pay-action-links"><a class="recipient-link" href="/transactions">View transactions</a><button type="button" class="recipient-secondary" data-bind="click: leave, disable: !canLeave(), text: isProtected() || isHold() ? 'Close receipt' : 'Done'"></button></div>
     </footer>
     <!-- /ko -->
   </div>
 </div>
 
-<oj-dialog id="send-cancel-dialog" class="protect-dialog" dialog-title="Cancel this payment?" cancel-behavior="icon" opened="{{cancelOpen}}">
+<oj-dialog id="send-cancel-dialog" class="protect-dialog" dialog-title="Cancel this payment?" cancel-behavior="icon" data-bind="dialogOpen: cancelOpen" on-oj-close="[[closeCancel]]">
   <div slot="body"><p>This payment has not settled yet. Cancelling keeps the amount in your account.</p></div>
   <div slot="footer">
-    <oj-button chroming="outlined" on-oj-action="[[closeCancel]]">Keep waiting</oj-button>
-    <oj-button chroming="solid" on-oj-action="[[confirmCancel]]">Cancel payment</oj-button>
+    <button type="button" class="recipient-secondary" data-bind="click: closeCancel">Keep waiting</button>
+    <button type="button" class="protect-cancel" data-bind="click: confirmCancel, disable: busy">Cancel payment</button>
   </div>
 </oj-dialog>
 <p class="recipient-footnote">◇ Simulated Environment</p>

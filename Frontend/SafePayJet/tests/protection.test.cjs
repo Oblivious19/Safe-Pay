@@ -54,6 +54,24 @@ test('progress kind follows state and pause length', () => {
   assert.equal(p.progressKind({ state: 'CANCELLED' }), 'cancelled');
 });
 
+test('hard holds can be cancelled without a timer only with server permission', () => {
+  const tx = {state:'HARD_HOLD',canCancel:true,protectionSeconds:0};
+  assert.equal(p.canCancelPayment(tx,Date.now()),true);
+  assert.equal(p.canCancelPayment(tx,Date.now()+86400000),true);
+  for (const canCancel of [false,undefined]) assert.equal(p.canCancelPayment({...tx,canCancel},Date.now()),false);
+  for (const state of ['SETTLED','CANCELLED','CREATED']) assert.equal(p.canCancelPayment({...tx,state},Date.now()),false);
+  assert.equal(p.canCancelPayment({...tx,direction:'CREDIT'},Date.now()),false);
+});
+
+test('payment cards have no manual Refresh status action', () => {
+  for(const name of ['send-money','transactions','dashboard']) {
+    const html=fs.readFileSync(path.join(__dirname,'../src/ts/views',name+'.html'),'utf8');
+    assert.doesNotMatch(html,/Refresh status|click:\s*(?:refreshResult|refreshDetail)/i);
+  }
+  const html=fs.readFileSync(path.join(__dirname,'../src/ts/views/send-money.html'),'utf8');
+  assert.match(html,/isProtected\(\).*\|\| isHold\(\)/);
+});
+
 test('medium and high risk share the same gauge with their actual remaining time',()=>{
   const now=100000;
   for(const [riskTier,protectionSeconds,remaining] of [['MEDIUM',10,5],['HIGH',60,30]]) {

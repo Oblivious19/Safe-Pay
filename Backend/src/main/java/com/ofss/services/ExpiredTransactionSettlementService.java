@@ -30,9 +30,12 @@ public class ExpiredTransactionSettlementService {
     public boolean settle(Long id) {
         Long accountId = transactions.findAccountId(id).orElse(null);
         if (accountId == null) return false;
-        Account account = accounts.findForSettlement(accountId).orElseThrow();
+        Long receiverId = accounts.findPaymentRecipientId(id).orElse(null);
+        Account account = TransferBalances.lockPair(accounts, accountId, receiverId);
         TransactionDb transaction = transactions.findById(id).orElseThrow();
         if (transaction.getState() != TransactionState.PROTECTED) return false;
+        if (account.getStatus() != AccountStatus.ACTIVE)
+            throw new InvalidStateTransitionException("Source account must be ACTIVE");
         LocalDateTime now = Objects.requireNonNull(transactions.currentDatabaseTime(accountId));
         if (transaction.getProtectionExpiresAt() == null) {
             throw new InvalidStateTransitionException("Protected transaction has no expiry");
@@ -53,8 +56,13 @@ public class ExpiredTransactionSettlementService {
         if (transactions.settleProtected(id, transaction.getVersion()) != 1) return false;
         // The bulk update cleared managed entities; reload under the same database lock.
         Account savedAccount = accounts.findForSettlement(accountId).orElseThrow();
-        savedAccount.setBalance(savedAccount.getBalance().subtract(amount));
-        accounts.save(savedAccount);
+        Account receiver = receiverId == null ? null : TransferBalances.lock(accounts, receiverId);
+        TransferBalances.move(accounts, savedAccount, receiver, amount, now);
+        if (receiver != null) {
+            TransactionDb settled = transactions.findById(id).orElseThrow();
+            settled.setToAccount(receiver);
+            transactions.save(settled);
+        }
         AuditLog audit = new AuditLog();
         audit.setTransactionId(id);
         audit.setUserId(ownerId);

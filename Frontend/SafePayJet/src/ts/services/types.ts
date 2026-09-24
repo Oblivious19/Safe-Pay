@@ -24,6 +24,10 @@ export interface TransactionRequest {
 export interface PaymentTransaction {
   /** Optional explicit ledger direction. Legacy transfer rows are outgoing. */
   direction?: "CREDIT" | "DEBIT";
+  toAccountId?: number | null;
+  senderName?: string;
+  counterpartyName?: string;
+  counterpartyAccountNumber?: string;
   transactionId: number; transactionRef: string; amount: number; purpose: string;
   fromAccountId: number; beneficiaryId: number; beneficiaryName: string;
   beneficiaryBankAccountNumber: string; beneficiaryIfsc: string;

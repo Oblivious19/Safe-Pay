@@ -198,6 +198,38 @@ test('server settled state and ambiguous expiry prevent cancellation',async()=>{
  await f.model.confirm();await f.model.cancelPayment();assert.equal(posts,0);assert.equal(f.model.result().state,'SETTLED');
  f.model.result({...result,state:'PROTECTED',protectionExpiresAt:'2026-09-15T15:00:00'});assert.equal(f.model.canCancel(),false);
 });
+
+test('hard hold cancellation rereads state and retries with the same key',async()=>{
+ const held={...result,state:'HARD_HOLD',riskTier:'VERY_HIGH',canCancel:true};const calls=[];
+ const f=await review({create:async()=>held,get:async()=>held,cancel:async(id,key)=>{calls.push([id,key]);if(calls.length===1)throw new ApiError(0);return {...held,state:'CANCELLED',canCancel:false};}});
+ await f.model.confirm();assert.equal(f.model.canCancel(),true);
+ await f.model.cancelPayment();assert.ok(f.model.paymentError());
+ await f.model.cancelPayment();assert.deepEqual(calls[0],calls[1]);assert.ok(calls[0][1]);
+ assert.equal(f.model.result().state,'CANCELLED');assert.equal(f.model.canCancel(),false);
+ f.model.disconnected();
+});
+
+test('admin approval before hard hold cancellation prevents the cancel POST',async()=>{
+ let posts=0;const f=await review({create:async()=>({...result,state:'HARD_HOLD',canCancel:true}),get:async()=>result,cancel:async()=>{posts++;return result;}});
+ await f.model.confirm();await f.model.cancelPayment();assert.equal(posts,0);assert.equal(f.model.result().state,'SETTLED');
+ f.model.disconnected();
+});
+
+test('receipt polling survives temporary failures and clears the error on recovery',async()=>{
+ let gets=0;const held={...result,state:'HARD_HOLD',canCancel:true};
+ const f=await review({create:async()=>held,get:async()=>{if(!gets++)throw new ApiError(0);return {...result,canCancel:false};}});
+ await f.model.confirm();assert.ok(f.model.timer);
+ await f.model.refreshResult();assert.ok(f.model.timer);assert.match(f.model.paymentError(),/retry automatically/);
+ assert.equal(f.model.result().state,'HARD_HOLD');
+ await f.model.refreshResult();assert.equal(f.model.paymentError(),'');assert.equal(f.model.result().state,'SETTLED');assert.equal(f.model.timer,undefined);
+ f.model.disconnected();
+});
+
+test('receipt polling stops on session expiry',async()=>{
+ const f=await review({create:async()=>({...result,state:'HARD_HOLD',canCancel:true}),get:async()=>{throw new ApiError(401);}});
+ await f.model.confirm();await f.model.refreshResult();assert.equal(f.model.timer,undefined);assert.equal(f.model.result(),null);
+ assert.deepEqual(f.redirects,['/login?reason=session-expired']);f.model.disconnected();
+});
 test('elapsed countdown never settles payment locally',async()=>{
  const f=await review({create:async()=>({...result,state:'PROTECTED',protectionSeconds:10,canCancel:false,protectionDeadline:Date.now()-1000,protectionExpiresAt:new Date(Date.now()-1000).toISOString()})});
  await f.model.confirm();assert.equal(f.model.remaining(),0);assert.equal(f.model.result().state,'PROTECTED');assert.equal(f.model.canCancel(),false);

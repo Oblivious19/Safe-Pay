@@ -15,8 +15,20 @@ import com.ofss.beans.Account;
 import com.ofss.beans.AccountStatus;
 
 public interface AccountDao extends JpaRepository<Account, Long> {
+    // Account numbers are unique inside this simulated bank. Beneficiary.account is
+    // the sender's address-book owner, NOT the account to credit.
+    @Query("select a.accountId from Account a, Beneficiary b where b.beneficiaryId = :beneficiary "
+            + "and b.account.accountId = :source and b.account.user.userId = :owner "
+            + "and a.accountNumber = b.bankAccountNumber")
+    Optional<Long> findRecipientId(@Param("beneficiary") Long beneficiary, @Param("source") Long source,
+            @Param("owner") Long owner);
+
+    @Query("select a.accountId from Account a, TransactionDb t where t.transactionId = :id "
+            + "and (t.toAccount = a or (t.toAccount is null and a.accountNumber = t.beneficiary.bankAccountNumber))")
+    Optional<Long> findPaymentRecipientId(@Param("id") Long id);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("select a from Account a join fetch a.user where a.accountId = :id")
+    @Query("select a from Account a where a.accountId = :id")
     Optional<Account> findForSettlement(@Param("id") Long id);
     Optional<Account> findFirstByUserUserIdOrderByAccountId(Long userId);
     List<Account> findByUserUserIdOrderByAccountId(Long userId);

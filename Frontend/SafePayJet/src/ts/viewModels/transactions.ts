@@ -30,7 +30,7 @@ class TransactionsViewModel {
     return this.transactions().filter(tx => {
       const state = this.filter();
       const matches = state === "all" || (state === "pending" ? ["PROTECTED", "HARD_HOLD", "CREATED", "AUTHORIZED", "RISK_ASSESSED"].includes(tx.state) : state === "cancelled" ? ["CANCELLED", "REJECTED"].includes(tx.state) : tx.state === "SETTLED");
-      return matches && (!query || [tx.beneficiaryName, tx.transactionRef, tx.purpose, String(tx.amount)].some(value => (value || "").toLowerCase().includes(query)));
+      return matches && (!query || [tx.counterpartyName, tx.beneficiaryName, tx.transactionRef, tx.purpose, String(tx.amount)].some(value => (value || "").toLowerCase().includes(query)));
     }).slice().sort((a,b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
   });
   pageCount = ko.pureComputed(() => Math.max(1, Math.ceil(this.filtered().length / this.pageSize)));
@@ -47,6 +47,7 @@ class TransactionsViewModel {
   cancelTarget = ko.observable<PaymentTransaction | null>(null);
   busy = ko.observable(false);
   private alive=true;private revision=0;private polling=false;
+  private sessionEnded=false;
   private tick?: ReturnType<typeof setInterval>;
   private poll?: ReturnType<typeof setInterval>;
   private cancelKeys = new Map<number, string>();
@@ -82,11 +83,11 @@ class TransactionsViewModel {
   };
 
   private message(error: unknown, action = "load"): string {
-    if(error instanceof ApiError && error.status===401){this.stopLive();this.transactions([]);this.selected(null);this.detailOpen(false);window.location.replace("/login?reason=session-expired");return "Your session has ended. Please sign in again to see your payments.";}
+    if(error instanceof ApiError && error.status===401){this.sessionEnded=true;this.stopLive();this.transactions([]);this.selected(null);this.detailOpen(false);window.location.replace("/login?reason=session-expired");return "Your session has ended. Please sign in again to see your payments.";}
     if (error instanceof ApiError && error.status === 403) return "We couldn’t access this payment. Refresh your session or contact your bank if this continues.";
     if (error instanceof ApiError && error.status === 404) return "This payment is no longer available. Refresh your history to see the latest records.";
-    if (error instanceof ApiError && error.status === 409) return "The payment status has changed. Refresh its details to see whether it settled or was cancelled.";
-    return action === "cancel" ? "We couldn’t confirm the cancellation. Refresh the payment status before trying again; it may already have settled." : "Your payment history is temporarily unavailable. Check your connection and try again. Your existing payments are unchanged.";
+    if (error instanceof ApiError && error.status === 409) return "The payment status has changed. It will update automatically to show whether it settled or was cancelled.";
+    return action === "cancel" ? "We couldn’t confirm the cancellation. We’ll check the status automatically; the payment may already have settled." : "Your payment history is temporarily unavailable. Check your connection; we’ll try again automatically. Your existing payments are unchanged.";
   }
 
   private stopLive(): void {
@@ -97,22 +98,21 @@ class TransactionsViewModel {
 
   private startLive(): void {
     this.stopLive();
+    if(this.sessionEnded || !this.alive)return;
     this.now(Date.now());
-    if (!this.pendingCount()) return;
     this.tick = setInterval(() => this.now(Date.now()), 1000);
     this.poll = setInterval(() => void this.refresh(), 3000);
   }
 
   private async refresh(): Promise<void> {
-    if(this.polling || this.loading() || this.busy())return;const revision=this.revision;this.polling=true;
+    if(!this.alive || this.polling || this.loading() || this.busy() || document.visibilityState === "hidden")return;const revision=this.revision;this.polling=true;
     try {
       const list = await transactionService.list();
       if (!this.alive || revision!==this.revision || !Array.isArray(list)) return;
-      this.transactions(list); this.error("");
+      this.transactions(list); this.error(""); this.detailError("");
       for (const row of list) chimeIfSettled(row);
       const selected = this.selected();
       if (selected) this.selected(list.find((row) => row.transactionId === selected.transactionId) || selected);
-      if (!this.pendingCount()) this.stopLive();
     } catch(e) {if(this.alive && revision===this.revision){const message=this.message(e);if(this.detailOpen())this.detailError(message);else this.error(message);}}
     finally{this.polling=false;}
   }
@@ -161,11 +161,11 @@ class TransactionsViewModel {
     if (this.selected()?.transactionId === row.transactionId) this.selected(row);
     if (row.state === "CANCELLED" || row.state === "REJECTED") chimeForPayment(row);
     else chimeIfSettled(row);
-    if (!this.pendingCount()) this.stopLive();
   }
 
   canCancel = (transaction: PaymentTransaction): boolean => canCancelPayment(transaction, this.now()) && !this.busy();
   isCredit = (tx: PaymentTransaction): boolean => tx.direction === "CREDIT";
+  displayName = (tx: PaymentTransaction): string => tx.counterpartyName || tx.beneficiaryName || tx.transactionRef;
   directionLabel = (tx: PaymentTransaction): string => this.isCredit(tx) ? "Incoming · credit" : "Outgoing · debit";
   directionClass = (tx: PaymentTransaction): string => this.isCredit(tx) ? "money-in" : "money-out";
   directionArrow = (tx: PaymentTransaction): string => this.isCredit(tx) ? "↙" : "↗";

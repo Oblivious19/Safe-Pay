@@ -28,17 +28,25 @@ class DashboardViewModel {
   busy = ko.observable(false);
   now = ko.observable(Date.now());
   private generation = 0;
+  private refreshing = false;
+  private alive = true;
+  private onFocus = (): void => { void this.refreshPending(); };
   private tick?: ReturnType<typeof setInterval>;
   private poll?: ReturnType<typeof setInterval>;
   private cancelKeys = new Map<number, string>();
-  recent = ko.pureComputed(() => [...this.transactions()].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 5));
+  recent = ko.pureComputed(() => this.transactions().filter(t => !this.selectedAccountId() || !t.fromAccountId
+    || t.fromAccountId === this.selectedAccountId() || t.toAccountId === this.selectedAccountId())
+    .slice().sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 5));
   pending = ko.pureComputed(() => this.transactions().filter(t => t.state === "PROTECTED" || t.state === "HARD_HOLD"));
   canSend = ko.pureComputed(() => !this.loading() && !this.sessionExpired() && this.account()?.status === "ACTIVE" && !this.transactionError());
   formatMoney = (amount: number): string => new Intl.NumberFormat("en-IN", {
     style: "currency", currency: "INR", minimumFractionDigits: 2, maximumFractionDigits: 2
   }).format(amount);
   // The legacy endpoint lists outgoing payments; only explicit CREDIT records are incoming.
-  isCredit = (tx: PaymentTransaction): boolean => tx.direction === "CREDIT";
+  isCredit = (tx: PaymentTransaction): boolean => tx.direction === "CREDIT"
+    || (!!tx.toAccountId && tx.toAccountId === this.selectedAccountId() && tx.fromAccountId !== this.selectedAccountId());
+  displayName = (tx: PaymentTransaction): string => this.isCredit(tx)
+    ? tx.senderName || tx.counterpartyName || tx.beneficiaryName : tx.counterpartyName || tx.beneficiaryName;
   signedAmount = (tx: PaymentTransaction): string =>
     (tx.state === "SETTLED" ? (this.isCredit(tx) ? "+ " : "− ") : "") + this.formatMoney(tx.amount);
   amountClass = (tx: PaymentTransaction): string => tx.state !== "SETTLED" ? "" : this.isCredit(tx) ? "amount-credit" : "amount-debit";
@@ -80,19 +88,25 @@ class DashboardViewModel {
     this.stopLive();
     this.now(Date.now());
     this.tick = setInterval(() => this.now(Date.now()), 1000);
-    this.poll = setInterval(() => { if (this.pending().length) void this.refreshPending(); }, 3000);
+    this.poll = setInterval(() => void this.refreshPending(), 3000);
   }
   private async refreshPending(): Promise<void> {
+    if (!this.alive || this.refreshing || this.loading() || this.busy() || this.sessionExpired() || document.visibilityState === "hidden") return;
     const generation = this.generation;
+    this.refreshing = true;
     try {
-      const list = await transactionService.list();
+      const [list, accounts] = await Promise.all([transactionService.list(), accountService.list()]);
       if (generation !== this.generation || !Array.isArray(list)) return;
       this.transactions(list);
-      const accounts=await accountService.list();
-      if(generation!==this.generation)return;
       this.accounts(accounts);this.selectAccount();
-      if (!this.pending().length) this.stopLive();
-    } catch { /* Keep the last good pending list; the next tick retries. */ }
+      this.accountError(""); this.transactionError("");
+    } catch (error) {
+      if (generation !== this.generation) return;
+      if (error instanceof ApiError && error.status === 401) {
+        this.sessionExpired(true); this.stopLive(); this.account(null); this.accounts([]); this.transactions([]);
+        window.location.replace("/login?reason=session-expired");
+      } else this.transactionError("Live updates are temporarily unavailable. Showing the last loaded balances and payments; retrying automatically.");
+    } finally { this.refreshing = false; }
   }
   load = async (): Promise<void> => {
     const generation = ++this.generation;
@@ -111,7 +125,7 @@ class DashboardViewModel {
       else this.transactionError(this.message(transactions.status === "rejected" ? transactions.reason : null, "transactions"));
     }
     this.loading(false);
-    if (this.pending().length) this.startLive();
+    if (!this.sessionExpired()) this.startLive();
     AccUtils.announce(this.sessionExpired() ? "Please sign in to view your dashboard." : "Dashboard updated.");
   };
   requestCancel = (tx: PaymentTransaction): void => {
@@ -142,10 +156,9 @@ class DashboardViewModel {
   };
   private replaceRow(row: PaymentTransaction): void {
     this.transactions(this.transactions().map((item) => item.transactionId === row.transactionId ? row : item));
-    if (!this.pending().length) this.stopLive();
   }
   selectAccount = (): void => {this.account(this.accounts().find(a=>a.accountId===this.selectedAccountId()) || null);};
-  connected(): void { document.title = "Dashboard | SafePay"; void this.load(); }
-  disconnected(): void { this.generation++; this.stopLive(); }
+  connected(): void { this.alive=true; document.title = "Dashboard | SafePay"; window.addEventListener?.("focus",this.onFocus); void this.load(); }
+  disconnected(): void { this.alive=false; this.generation++; this.stopLive(); window.removeEventListener?.("focus",this.onFocus); }
 }
 export = DashboardViewModel;

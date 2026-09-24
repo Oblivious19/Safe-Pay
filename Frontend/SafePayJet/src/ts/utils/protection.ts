@@ -36,8 +36,9 @@ export function remainingFor(tx: PaymentTransaction | null | undefined, now: num
   return typeof tx?.protectionDeadline === "number" ? Math.max(0,Math.ceil((tx.protectionDeadline-now)/1000)) : NaN;
 }
 export function canCancelPayment(tx: PaymentTransaction | null | undefined, now: number): boolean {
-  if (!tx || tx.state !== "PROTECTED") return false;
-  return tx.canCancel === true && remainingFor(tx,now) > 0;
+  if (!tx || tx.canCancel !== true || tx.direction === "CREDIT") return false;
+  if (tx.state === "HARD_HOLD") return true;
+  return tx.state === "PROTECTED" && remainingFor(tx,now) > 0;
 }
 
 export function statusLabel(state: string): string {
@@ -159,7 +160,7 @@ export function paymentGauge(tx: PaymentTransaction | null | undefined, now: num
   };
   if (tx?.state === "HARD_HOLD") return {
     mode: "waiting", label: "Awaiting review", offset: FLUX_ARC,
-    caption: "Awaiting administrator approval. There is no countdown or automatic release. The status updates automatically."
+    caption: "Awaiting administrator approval. You can cancel before approval. There is no countdown or automatic release. The status updates automatically."
   };
   if (tx?.state === "PROTECTED") {
     const remaining = remainingFor(tx, now);

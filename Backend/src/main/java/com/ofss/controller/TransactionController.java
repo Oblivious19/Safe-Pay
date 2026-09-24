@@ -48,13 +48,13 @@ public class TransactionController {
     public Map<String, Object> initiate(@RequestHeader("Idempotency-Key") String idempotencyKey,
             @Valid @RequestBody TransactionRequest input, @AuthenticationPrincipal LoginPrincipal caller) {
         return toResponse(transactionService.initiate(input.fromAccountId(), input.beneficiaryId(),
-                input.amount(), input.purpose(), idempotencyKey, caller.userId()));
+                input.amount(), input.purpose(), idempotencyKey, caller.userId()), caller.userId());
     }
 
     @GetMapping("/{transactionId}")
     public Map<String, Object> getTransaction(@PathVariable Long transactionId,
             @AuthenticationPrincipal LoginPrincipal caller) {
-        return toResponse(transactionService.getTransaction(transactionId, currentEmail(caller)));
+        return toResponse(transactionService.getTransaction(transactionId, currentEmail(caller)), caller.userId());
     }
 
     @GetMapping
@@ -64,14 +64,14 @@ public class TransactionController {
         // One database clock read for the whole list; never infer a timezone from the JVM.
         LocalDateTime now = transactions.stream().filter(this::needsProtectionClock).findFirst()
                 .map(this::databaseTime).orElse(null);
-        return transactions.stream().map(transaction -> toResponse(transaction, now)).toList();
+        return transactions.stream().map(transaction -> toResponse(transaction, now, caller.userId())).toList();
     }
 
     @PostMapping("/{transactionId}/cancel")
     public Map<String, Object> cancel(@PathVariable Long transactionId,
             @RequestHeader("Idempotency-Key") String idempotencyKey,
             @AuthenticationPrincipal LoginPrincipal caller) {
-        return toResponse(transactionService.cancel(transactionId, idempotencyKey, currentEmail(caller)));
+        return toResponse(transactionService.cancel(transactionId, idempotencyKey, currentEmail(caller)), caller.userId());
     }
 
     // Resolve current identity by stable session ID, never by a client parameter.
@@ -103,8 +103,8 @@ public class TransactionController {
         return ResponseEntity.badRequest().body(Map.of("message", "Idempotency-Key header is required"));
     }
 
-    private Map<String, Object> toResponse(TransactionDb transaction) {
-        return toResponse(transaction, needsProtectionClock(transaction) ? databaseTime(transaction) : null);
+    private Map<String, Object> toResponse(TransactionDb transaction, Long viewerId) {
+        return toResponse(transaction, needsProtectionClock(transaction) ? databaseTime(transaction) : null, viewerId);
     }
 
     private boolean needsProtectionClock(TransactionDb transaction) {
@@ -116,8 +116,17 @@ public class TransactionController {
                 "Database time is unavailable");
     }
 
-    private Map<String, Object> toResponse(TransactionDb transaction, LocalDateTime now) {
+    private Map<String, Object> toResponse(TransactionDb transaction, LocalDateTime now, Long viewerId) {
         Map<String, Object> response = new LinkedHashMap<>();
+        boolean incoming = !Objects.equals(transaction.getFromAccount().getUserId(), viewerId)
+                && transaction.getToAccount() != null && Objects.equals(transaction.getToAccount().getUserId(), viewerId);
+        response.put("direction", incoming ? "CREDIT" : "DEBIT");
+        response.put("toAccountId", transaction.getToAccount() == null ? null : transaction.getToAccount().getAccountId());
+        response.put("senderName", transaction.getFromAccount().getUser() == null ? "" : transaction.getFromAccount().getUser().getName());
+        response.put("counterpartyName", incoming ? transaction.getFromAccount().getUser().getName()
+                : transaction.getBeneficiary().getBeneficiaryName());
+        response.put("counterpartyAccountNumber", incoming ? transaction.getFromAccount().getAccountNumber()
+                : transaction.getBeneficiary().getBankAccountNumber());
         response.put("transactionId", transaction.getTransactionId());
         response.put("transactionRef", transaction.getTransactionRef());
         response.put("amount", transaction.getAmount());
@@ -139,7 +148,8 @@ public class TransactionController {
         boolean protectedWithClock = needsProtectionClock(transaction) && now != null;
         response.put("protectionRemainingMillis", protectedWithClock
                 ? Math.max(0L, Duration.between(now, transaction.getProtectionExpiresAt()).toMillis()) : null);
-        response.put("canCancel", protectedWithClock && now.isBefore(transaction.getProtectionExpiresAt()));
+        response.put("canCancel", !incoming && (transaction.getState() == TransactionState.HARD_HOLD
+                || (protectedWithClock && now.isBefore(transaction.getProtectionExpiresAt()))));
         response.put("createdAt", transaction.getCreatedAt() == null ? "" : transaction.getCreatedAt().toString());
         response.put("settledAt", transaction.getSettledAt() == null ? "" : transaction.getSettledAt().toString());
         response.put("cancelledAt", transaction.getCancelledAt() == null ? "" : transaction.getCancelledAt().toString());

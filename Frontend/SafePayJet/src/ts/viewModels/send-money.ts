@@ -59,6 +59,9 @@ class SendMoneyViewModel {
   private attempt?: { key: string; body: TransactionRequest };
   private cancelKey?: string;
   private timer?: ReturnType<typeof setInterval>;
+  private balanceTimer?: ReturnType<typeof setInterval>;
+  private balancesRefreshing = false;
+  private onFocus = (): void => { void this.refreshBalances(); };
   private lastPoll = 0;
 
 
@@ -163,8 +166,29 @@ class SendMoneyViewModel {
   refreshFunds = async (): Promise<void> => {
     const id=this.account()?.accountId;const generation=++this.fundsGeneration;this.fundsError("");
     if(!id){this.funds(null);return;}
-    try{const funds=await accountService.funds(id);if(this.alive && generation===this.fundsGeneration && this.account()?.accountId===id)this.funds(funds);}
+    try{const funds=await accountService.funds(id);if(this.alive && generation===this.fundsGeneration && this.account()?.accountId===id){
+      this.funds(funds);
+      if(this.account()!.balance!==funds.balance){
+        const updated={...this.account()!,balance:funds.balance};this.account(updated);
+        this.accounts(this.accounts().map(a=>a.accountId===id?updated:a));
+      }
+    }}
     catch(error){if(this.alive && generation===this.fundsGeneration){this.funds(null);this.fundsError("Available funds could not be refreshed. The server will check your balance when you confirm.");}}
+  };
+  refreshBalances = async (): Promise<void> => {
+    if(!this.alive || this.balancesRefreshing || this.loading() || document.visibilityState === "hidden")return;
+    this.balancesRefreshing=true;
+    try {
+      const accounts=await accountService.list();if(!this.alive)return;
+      this.accounts(accounts);
+      this.account(accounts.find(a=>a.accountId===this.selectedAccountId()) || null);
+      await this.refreshFunds();
+    } catch(error) {
+      if(this.alive){
+        if(error instanceof ApiError && error.status===401){this.stopPolling();window.location.replace("/login?reason=session-expired");}
+        this.fundsError("Balances could not be refreshed. Please refresh before sending another payment.");
+      }
+    } finally {this.balancesRefreshing=false;}
   };
   choose = (beneficiary: Beneficiary): void => { if (!this.loading() && !this.busy()) this.selected(beneficiary); };
   pick = (beneficiary: Beneficiary): void => {
@@ -250,7 +274,9 @@ class SendMoneyViewModel {
     if (!value || !Number.isSafeInteger(value.transactionId) || value.transactionId <= 0 || typeof value.state !== "string" || !Number.isFinite(value.amount)) {
       throw new ApiError(200, "Invalid payment response", "response");
     }
+    const changed=this.result()?.state!==value.state || this.result()?.transactionId!==value.transactionId;
     this.result(value); this.now(Date.now());
+    if(changed)void this.refreshBalances();
     if (!isInFlight(value.state)) this.stopPolling();
     chimeForPayment(value);
   }
@@ -294,7 +320,13 @@ class SendMoneyViewModel {
     try {
       const response = await transactionService.get(current.transactionId);
       if (this.alive) { this.acceptResult(response); this.paymentError(""); if (!this.timer) this.startPolling(); }
-    } catch (error) { if (this.alive) { this.stopPolling(); this.showPaymentError(error); } }
+    } catch (error) {
+      if (this.alive) {
+        // A temporary network failure must not leave the receipt stuck without a refresh button.
+        if (error instanceof ApiError && error.status === 401) this.showPaymentError(error);
+        else this.paymentError("We couldn’t update this payment just now. We’ll retry automatically; its last confirmed status is shown.");
+      }
+    }
     finally { if (this.alive) this.refreshing(false); }
   };
   requestCancel = (): void => { if (this.canCancel()) { armAudio(); this.cancelOpen(true); } };
@@ -329,10 +361,13 @@ class SendMoneyViewModel {
   }
   private stopPolling(): void { if (this.timer) clearInterval(this.timer); this.timer = undefined; }
   connected(): void {
+    this.alive=true;
+    window.addEventListener?.("focus",this.onFocus);
+    this.balanceTimer=setInterval(()=>void this.refreshBalances(),3000);
     document.title = "Send Money | SafePay";
     this.parametersChanged({ step: this.initialStep });
     void this.load();
   }
-  disconnected(): void { this.alive = false;    this.stopPolling(); this.result(null); this.attempt = undefined; this.selected(null); this.account(null); this.beneficiaries([]); this.amount(""); this.purpose("");  }
+  disconnected(): void { this.alive = false; this.fundsGeneration++; if(this.balanceTimer)clearInterval(this.balanceTimer);window.removeEventListener?.("focus",this.onFocus); this.stopPolling(); this.result(null); this.attempt = undefined; this.selected(null); this.account(null); this.beneficiaries([]); this.amount(""); this.purpose("");  }
 }
 export = SendMoneyViewModel;

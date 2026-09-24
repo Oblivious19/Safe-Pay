@@ -83,7 +83,7 @@ class TransactionTimeContractTest {
     }
 
     @ParameterizedTest
-    @EnumSource(value = TransactionState.class, names = {"CREATED", "AUTHORIZED", "RISK_ASSESSED", "SETTLED", "CANCELLED", "HARD_HOLD"})
+    @EnumSource(value = TransactionState.class, names = {"CREATED", "AUTHORIZED", "RISK_ASSESSED", "SETTLED", "CANCELLED"})
     void otherStatesNeverGetATimerOrCancellationEvenWithHistoricalExpiry(TransactionState state) {
         when(service.getTransaction(1L, caller.email())).thenReturn(payment(1, 20, state, databaseNow.plusDays(1)));
         var response = controller.getTransaction(1L, caller);
@@ -98,6 +98,17 @@ class TransactionTimeContractTest {
         var response = controller.getTransaction(1L, caller);
         assertNull(response.get("protectionRemainingMillis"));
         assertEquals(false, response.get("canCancel"));
+        verify(service, never()).currentDatabaseTime(anyLong());
+    }
+
+    @Test
+    void hardHoldAllowsCancellationWithoutAClockOrCountdown() {
+        for (LocalDateTime expiry : new LocalDateTime[] {null, databaseNow.minusDays(1)}) {
+            when(service.getTransaction(1L, caller.email())).thenReturn(payment(1, 20, TransactionState.HARD_HOLD, expiry));
+            var response = controller.getTransaction(1L, caller);
+            assertEquals(true, response.get("canCancel"));
+            assertNull(response.get("protectionRemainingMillis"));
+        }
         verify(service, never()).currentDatabaseTime(anyLong());
     }
 

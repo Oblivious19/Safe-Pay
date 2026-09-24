@@ -5,7 +5,7 @@ class ApiError extends Error {constructor(status){super('SQL/CORS/security imple
 function load(relative,imports={},globals={}){
   const code=ts.transpileModule(fs.readFileSync(path.join(__dirname,'../src/ts',relative),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2021}}).outputText;
   const module={exports:{}};
-  vm.runInNewContext('(function(require,module,exports){'+code+'\n})',{Intl,Date,setInterval:()=>1,clearInterval(){},...globals})(key=>imports[key]||{},module,module.exports);
+  vm.runInNewContext('(function(require,module,exports){'+code+'\n})',{Intl,Date,window:{},document:{title:''},setInterval:()=>1,clearInterval(){},...globals})(key=>imports[key]||{},module,module.exports);
   return module.exports;
 }
 const protection=load('utils/protection.ts');
@@ -62,8 +62,41 @@ test('profile ignores a late balance response after account switching',async()=>
   m.selectedAccountId(2);m.selectAccount();await new Promise(setImmediate);finish({accountId:1,availableToTransfer:100});await new Promise(setImmediate);
   assert.equal(m.funds().accountId,2);assert.equal(m.status(),'Active');m.disconnected();
 });
+
+test('history hard hold cancel is confirmed and updates the list and open receipt',async()=>{
+ const held=row(8,{state:'HARD_HOLD',riskTier:'VERY_HIGH',canCancel:true}),posts=[];
+ const {model:m}=history({get:async()=>held,cancel:async(id,key)=>{posts.push([id,key]);return {...held,state:'CANCELLED',canCancel:false};}});
+ m.transactions([held]);m.openDetail(held);assert.equal(m.canCancel(held),true);
+ m.requestCancel(held);assert.equal(m.cancelOpen(),true);assert.equal(posts.length,0);
+ await m.confirmCancel();assert.equal(posts.length,1);assert.ok(posts[0][1]);
+ assert.equal(m.transactions()[0].state,'CANCELLED');assert.equal(m.selected().state,'CANCELLED');
+ assert.equal(m.canCancel(m.selected()),false);m.disconnected();
+});
+
+test('successful automatic history refresh clears stale drawer errors',async()=>{
+ const held=row(8,{state:'HARD_HOLD',canCancel:true});const {model:m}=history({list:async()=>[held]});
+ m.openDetail(held);m.detailError('Connection interrupted');await m.refresh();
+ assert.equal(m.detailError(),'');assert.equal(m.selected().transactionId,8);m.disconnected();
+});
 test('payment markup has a footer action bar outside the scrolling panel and one login spinner',()=>{
   const read=name=>fs.readFileSync(path.join(__dirname,'../src/ts/views',name+'.html'),'utf8');
   const html=read('send-money');assert.match(html,/<footer class="pay-action-bar">/);assert.match(html,/click: cancelPayment/);assert.match(html,/Awaiting administrator review/);
   assert.equal((read('login').match(/class="spin"/g)||[]).length,1);
+});
+
+test('cancellation dialogs use JET open/close methods after component readiness',async()=>{
+ let ready,dispose,open=false,opens=0,closes=0;const events={};const visible=ko.observable(false);
+ const fakeKo={...ko,bindingHandlers:{},utils:{domNodeDisposal:{addDisposeCallback:(element,fn)=>dispose=fn}}};
+ load('utils/uiAttention.ts',{knockout:fakeKo,'ojs/ojcontext':{getContext:()=>({getBusyContext:()=>({whenReady:()=>new Promise(resolve=>ready=resolve)})})}});
+ const element={isOpen:()=>open,open:()=>{open=true;opens++;},close:()=>{open=false;closes++;events.ojClose?.();},addEventListener:(name,fn)=>events[name]=fn,removeEventListener:name=>delete events[name]};
+ fakeKo.bindingHandlers.dialogOpen.init(element,()=>visible);
+ visible(true);assert.equal(opens,0);ready();await Promise.resolve();assert.equal(opens,1);
+ visible(false);assert.equal(closes,1);visible(true);assert.equal(opens,2);
+ open=false;events.ojClose();assert.equal(visible(),false);
+ dispose();visible(true);assert.equal(opens,2);assert.equal(events.ojClose,undefined);
+ for(const page of ['dashboard','transactions','send-money']) {
+   const html=fs.readFileSync(path.join(__dirname,'../src/ts/views',page+'.html'),'utf8');
+   assert.match(html,/dialogOpen: cancelOpen/);assert.match(html,/click: confirmCancel, disable: busy/);
+   assert.doesNotMatch(html,/opened="\{\{cancelOpen\}\}"/);
+ }
 });

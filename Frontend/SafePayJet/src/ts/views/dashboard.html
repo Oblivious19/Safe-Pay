@@ -17,7 +17,7 @@
       <!-- ko if: pending().length -->
       <section class="pending-area" aria-labelledby="pending-title"><h2 id="pending-title">Payments to keep an eye on</h2>
         <div data-bind="foreach: pending"><article class="pending-payment" data-bind="css: $parent.riskClass($data)">
-          <oj-avatar size="xs" data-bind="attr: {initials: $parent.initials(beneficiaryName)}"></oj-avatar>
+          <oj-avatar size="xs" data-bind="attr: {initials: $parent.initials($parent.displayName($data))}"></oj-avatar>
           <div><strong data-bind="text: $parent.statusLabel(state)"></strong>
             <p><span data-bind="text: beneficiaryName"></span> · <b data-bind="text: $parent.formatMoney(amount)"></b></p>
             <div class="flux-bar flux-bar-mini" data-bind="visible: state === 'PROTECTED', style: {'--flux': $parent.fluxPercent($data)}"><i></i></div>
@@ -55,18 +55,18 @@
         <!-- ko if: transactionError --><div class="dashboard-state" role="status"><h3>Payments couldn’t be loaded</h3><p data-bind="text: transactionError"></p><button class="dashboard-secondary" data-bind="click: load">Try again</button></div><!-- /ko -->
         <!-- ko if: !transactionError() && !recent().length --><div class="dashboard-empty"><span class="state-symbol" aria-hidden="true">↗</span><h3>Your first payment starts here.</h3><p>Once you make a payment, you’ll see it here.<br>No transactions yet.</p></div><!-- /ko -->
         <!-- ko if: recent().length --><ul class="dashboard-transactions" data-bind="foreach: recent"><li>
-          <oj-avatar size="xs" data-bind="attr: {initials: $parent.initials(beneficiaryName)}"></oj-avatar>
-          <div class="payment-person"><strong data-bind="text: beneficiaryName || 'Payment'"></strong><time data-bind="text: $parent.formatDate(createdAt), attr: {datetime: createdAt}"></time></div>
+          <oj-avatar size="xs" data-bind="attr: {initials: $parent.initials($parent.displayName($data))}"></oj-avatar>
+          <div class="payment-person"><strong data-bind="text: $parent.displayName($data) || 'Payment'"></strong><time data-bind="text: $parent.formatDate(createdAt), attr: {datetime: createdAt}"></time></div>
           <div class="payment-value"><strong data-bind="text: $parent.signedAmount($data), css: $parent.amountClass($data)"></strong><small class="dashboard-direction" data-bind="text: $parent.directionLabel($data)"></small><span class="payment-status" data-bind="text: $parent.statusLabel(state), css: $parent.riskClass($data)"></span></div>
         </li></ul><!-- /ko -->
       </section>
     <!-- /ko -->
   <!-- /ko -->
-  <oj-dialog id="dash-cancel-dialog" class="protect-dialog" dialog-title="Cancel this payment?" cancel-behavior="icon" opened="{{cancelOpen}}">
+  <oj-dialog id="dash-cancel-dialog" class="protect-dialog" dialog-title="Cancel this payment?" cancel-behavior="icon" data-bind="dialogOpen: cancelOpen" on-oj-close="[[closeCancel]]">
     <div slot="body"><p>This payment has not settled yet. Cancelling keeps the amount in your account.</p></div>
     <div slot="footer">
-      <oj-button chroming="outlined" on-oj-action="[[closeCancel]]">Keep waiting</oj-button>
-      <oj-button chroming="solid" on-oj-action="[[confirmCancel]]">Cancel payment</oj-button>
+      <button type="button" class="recipient-secondary" data-bind="click: closeCancel">Keep waiting</button>
+      <button type="button" class="protect-cancel" data-bind="click: confirmCancel, disable: busy">Cancel payment</button>
     </div>
   </oj-dialog>
   <p class="dashboard-assurance"><span aria-hidden="true">◇</span> Thoughtfully designed for a little more control.</p>

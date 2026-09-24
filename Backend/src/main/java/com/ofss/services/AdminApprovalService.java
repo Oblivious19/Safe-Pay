@@ -50,9 +50,9 @@ public class AdminApprovalService {
         }
         Long accountId = verifications.accountId(id)
                 .orElseThrow(() -> new ResourceNotFoundExcp("Transaction not found"));
-        // All money writers use this source-account lock. Read the payment only after acquiring it.
-        Account account = accounts.findForSettlement(accountId)
-                .orElseThrow(() -> new ResourceNotFoundExcp("Account not found"));
+        Long receiverId = accounts.findPaymentRecipientId(id).orElse(null);
+        // Lock both accounts in a stable order before reading payment state.
+        Account account = TransferBalances.lockPair(accounts, accountId, receiverId);
         AuditLog receipt = audits.findByRequestKey(key).orElse(null);
         TransactionDb transaction = verifications.findByTransactionId(id)
                 .orElseThrow(() -> new ResourceNotFoundExcp("Transaction not found"));
@@ -81,16 +81,20 @@ public class AdminApprovalService {
                 || account.getBalance().subtract(pending).compareTo(MINIMUM_BALANCE) < 0) {
             throw new TransactionValidationException(409, "Available funds must cover all held payments and the INR 5000 minimum");
         }
-        BigDecimal remaining = account.getBalance().subtract(transaction.getAmount());
         if (verifications.settleVerified(id, transaction.getVersion(), key) != 1) {
             throw new TransactionValidationException(409, "Payment changed concurrently; refresh before retrying");
         }
         // The conditional update clears the persistence context, but the DB lock remains held.
         Account locked = accounts.findForSettlement(accountId)
                 .orElseThrow(() -> new ResourceNotFoundExcp("Account not found"));
-        locked.setBalance(remaining); accounts.save(locked);
+        Account receiver = receiverId == null ? null : TransferBalances.lock(accounts, receiverId);
         TransactionDb settled = verifications.findByTransactionId(id)
                 .orElseThrow(() -> new ResourceNotFoundExcp("Transaction not found"));
+        TransferBalances.move(accounts, locked, receiver, transaction.getAmount(), settled.getSettledAt());
+        if (receiver != null) {
+            settled.setToAccount(receiver);
+            verifications.save(settled);
+        }
         AuditLog audit = new AuditLog();
         audit.setTransactionId(id); audit.setUserId(caller.userId()); audit.setRequestKey(key);
         audit.setAction(ACTION); audit.setOldState(TransactionState.HARD_HOLD.name());
