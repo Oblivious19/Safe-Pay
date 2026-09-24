@@ -61,6 +61,12 @@
       <p class="recipient-field-error" id="ifsc-error" data-bind="text: fieldErrors().ifsc"></p>
       <button class="recipient-primary" type="submit" data-bind="disable: saving"><span class="spin" aria-hidden="true" data-bind="visible: saving"></span><span data-bind="text: saving() ? 'Saving…' : 'Add Beneficiary'"></span></button>
     </form>
+    <div class="recipient-confirm" data-bind="visible: confirmExternal, reveal: confirmExternal">
+      <h3>This recipient is not verified by SafePay</h3>
+      <p>This is a new external beneficiary. Do you want to add them?</p>
+      <button type="button" class="recipient-primary" data-bind="click: function() { save(true); }, disable: saving">Yes, add external beneficiary</button>
+      <button type="button" class="recipient-link" data-bind="click: clearExternal, disable: saving">No, check details</button>
+    </div>
   </div>
   <!-- /ko -->
   <!-- ko if: mode() === 'details' -->

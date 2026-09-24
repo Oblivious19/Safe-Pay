@@ -15,6 +15,7 @@ module.exports = function (configObj) {
     routes.add('/admin'); routes.add('/admin/dashboard'); routes.add('/admin/login');
     routes.add('/admin/users');
     routes.add('/admin/holds');
+    routes.add('/admin/transactions');
     routes.add('/home');
     routes.add('/send-money/review');
     routes.add('/send-money/result');

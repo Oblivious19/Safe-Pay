@@ -15,7 +15,6 @@ import org.springframework.transaction.annotation.Transactional;
 /** Each invocation crosses a Spring proxy and commits or rolls back one payment. */
 @Service
 public class ExpiredTransactionSettlementService {
-    private static final BigDecimal MINIMUM = new BigDecimal("5000.00");
     private final TransactionDao transactions;
     private final AccountDao accounts;
     private final AuditLogDao audits;
@@ -48,8 +47,8 @@ public class ExpiredTransactionSettlementService {
                 List.of(TransactionState.PROTECTED, TransactionState.HARD_HOLD));
         if (account.getBalance() == null || reserved == null
                 || reserved.compareTo(transaction.getAmount()) < 0
-                || account.getBalance().subtract(reserved).compareTo(MINIMUM) < 0) {
-            throw new InsufficientBalanceException("Settlement must preserve other holds and the minimum balance");
+                || account.getBalance().subtract(reserved).signum() < 0) {
+            throw new InsufficientBalanceException("Settlement must preserve funds reserved by other held payments");
         }
         Long ownerId = account.getUserId();
         BigDecimal amount = transaction.getAmount();

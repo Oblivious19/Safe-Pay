@@ -123,9 +123,9 @@ class TransactionSafeguardsTest {
         verify(audits).save(argThat(a -> a.getNewState().equals("SETTLED")));
     }
 
-    @Test void settlementCannotConsumeMinimumOrOtherReservations() {
+    @Test void settlementCannotOverdrawOtherReservations() {
         payment.setProtectionExpiresAt(now);
-        when(transactions.pendingAmount(eq(2L), anyList())).thenReturn(new BigDecimal("25000.01"));
+        when(transactions.pendingAmount(eq(2L), anyList())).thenReturn(new BigDecimal("30000.01"));
         assertThrows(InsufficientBalanceException.class,
                 () -> new ExpiredTransactionSettlementService(transactions, accounts, audits).settle(3L));
         verify(transactions, never()).settleProtected(anyLong(), anyLong());

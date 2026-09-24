@@ -55,8 +55,8 @@
     <!-- /ko -->
     <form novalidate data-bind="submit: continueDetails">
     <label class="pay-amount-label" for="payment-amount">Amount in rupees</label>
-    <div class="send-amount pay-amount" data-bind="css: {'is-invalid': !!amountMessage(), 'is-long': amountLong}"><span aria-hidden="true">₹</span><input id="payment-amount" inputmode="decimal" autocomplete="off" placeholder="0" maxlength="19" required aria-describedby="amount-error amount-preview" data-bind="textInput: amount, disable: busy, attr: {'aria-invalid': !!amountError(), size: amountSize}"></div>
-    <p id="amount-error" class="recipient-field-error pay-amount-error" data-bind="text: amountMessage"></p>
+    <div class="send-amount pay-amount" data-bind="css: {'is-invalid': !!amountMessage(), 'is-long': amountLong}"><span aria-hidden="true">₹</span><input id="payment-amount" inputmode="decimal" autocomplete="off" placeholder="0" maxlength="19" required aria-describedby="amount-error amount-preview" data-bind="textInput: amount, disable: busy, attr: {'aria-invalid': !!amountMessage(), size: amountSize}"></div>
+    <p id="amount-error" class="recipient-field-error pay-amount-error" aria-live="polite" data-bind="text: amountMessage"></p>
     <p id="amount-preview" class="send-amount-preview" data-bind="text: amountPreview"></p>
     <div class="pay-chips" role="group" aria-label="Suggested amounts"><!-- ko foreach: quickAmounts --><button type="button" class="pay-chip" data-bind="click: function(){ $parent.useAmount($data); }, text: '₹' + $data, css: {'is-on': $parent.amount() === $data}, disable: $parent.busy"></button><!-- /ko --></div>
     <!-- ko if: highValue -->
@@ -80,6 +80,7 @@
     <!-- /ko -->
     <!-- ko with: account --><p class="pay-from">From <span data-bind="text: (accountType === 'SAVINGS' ? 'Savings' : 'Current') + ' ' + $parent.mask(accountNumber)"></span> · <span data-bind="text: $parent.money(balance)"></span></p><!-- /ko -->
     <!-- ko with: funds --><p class="pay-from">Available for a new payment: <strong data-bind="text:$parent.money(availableToTransfer)"></strong> · Reserved: <span data-bind="text:$parent.money(reservedBalance)"></span></p><!-- /ko -->
+    <!-- ko if: fundsError --><p class="recipient-field-error" role="alert" data-bind="text: fundsError"></p><button type="button" class="recipient-secondary" data-bind="click: refreshFunds, disable: busy">Retry balance check</button><!-- /ko -->
     <button type="submit" class="send-continue pay-cta pay-shimmer" data-bind="disable: busy() || loading() || !account() || !!error() || !amountReady()"><span class="spin" aria-hidden="true" data-bind="visible: busy"></span><span data-bind="text: busy() ? 'Checking…' : 'Review payment'"></span></button>
     <p class="send-subtitle">Next, review your payment details. Nothing is sent until you confirm.</p>
     <p role="status" class="recipient-success" data-bind="visible: notice, text: notice"></p>

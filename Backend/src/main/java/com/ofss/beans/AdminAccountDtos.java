@@ -9,7 +9,7 @@ import jakarta.validation.constraints.NotNull;
 
 public final class AdminAccountDtos {
     private AdminAccountDtos() {}
-    public record Update(@NotNull @DecimalMin("5000.00") @Digits(integer = 16, fraction = 2) BigDecimal balance,
+    public record Update(@NotNull @DecimalMin("0.00") @Digits(integer = 16, fraction = 2) BigDecimal balance,
             @NotNull AccountType accountType) {
         @JsonAnySetter
         public void rejectExtraField(String name, Object value) {

@@ -35,9 +35,9 @@ class AdminAccountServiceTest {
         });
     }
     @Test
-    void exactMinimumAfterHoldsIsAcceptedWithoutChangingStatusOrOwner() {
-        var result = service.update(11L, new Update(new BigDecimal("15000.00"), AccountType.CURRENT));
-        assertEquals(new BigDecimal("15000.00"), result.balance());
+    void ExactReservedBalanceIsAcceptedWithoutChangingStatusOrOwner() {
+        var result = service.update(11L, new Update(new BigDecimal("10000.00"), AccountType.CURRENT));
+        assertEquals(new BigDecimal("10000.00"), result.balance());
         assertEquals(AccountType.CURRENT, result.accountType()); assertEquals(AccountStatus.BLOCKED, result.status());
         assertEquals(7L, result.userId()); assertEquals("500000000011", result.accountNumber());
         var order = inOrder(accounts, transactions);
@@ -49,12 +49,16 @@ class AdminAccountServiceTest {
     @Test
     void reserveShortfallRejectsBalanceEdit() {
         assertThrows(TransactionValidationException.class, () -> service.update(11L,
-                new Update(new BigDecimal("14999.99"), AccountType.SAVINGS)));
+                new Update(new BigDecimal("9999.99"), AccountType.SAVINGS)));
         verify(accounts, never()).updateDetails(anyLong(), any(), any(), any());
         assertEquals(new BigDecimal("20000.00"), account.getBalance());
     }
+    @Test void zeroBalanceIsAllowedWhenNoFundsAreReserved() {
+        when(transactions.pendingAmount(eq(11L),anyList())).thenReturn(BigDecimal.ZERO);
+        assertEquals(0,service.update(11L,new Update(new BigDecimal("0.00"),AccountType.SAVINGS)).balance().signum());
+    }
     @ParameterizedTest
-    @ValueSource(strings = {"4999.99", "10000.001", "10000000000000000.00", "-10"})
+    @ValueSource(strings = {"-0.01", "10000.001", "10000000000000000.00", "-10"})
     void incompatibleMoneyNeverReachesRepository(String value) {
         assertThrows(IllegalArgumentException.class, () -> service.update(11L,
                 new Update(new BigDecimal(value), AccountType.SAVINGS)));
@@ -64,7 +68,7 @@ class AdminAccountServiceTest {
     void unavailableReservationsFailClosed() {
         when(transactions.pendingAmount(eq(11L), anyList())).thenReturn(null);
         assertThrows(TransactionValidationException.class, () -> service.update(11L,
-                new Update(new BigDecimal("15000.00"), AccountType.SAVINGS)));
+                new Update(new BigDecimal("10000.00"), AccountType.SAVINGS)));
         verify(accounts, never()).updateDetails(anyLong(), any(), any(), any());
     }
 }

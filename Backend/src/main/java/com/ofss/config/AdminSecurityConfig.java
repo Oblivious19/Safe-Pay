@@ -39,7 +39,7 @@ public class AdminSecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/admin/users", "/api/admin/users/*", "/api/admin/users/*/accounts", "/api/admin/accounts").access(admin)
                         .requestMatchers(HttpMethod.POST, "/api/admin/users", "/api/admin/accounts/*/interest-credits").access(admin)
                         .requestMatchers(HttpMethod.PUT, "/api/admin/accounts/*").access(admin)
-                        .requestMatchers(HttpMethod.GET, "/api/admin/reports/transactions/summary",
+                        .requestMatchers(HttpMethod.GET, "/api/admin/reports/transactions", "/api/admin/reports/transactions/summary",
                                 "/api/admin/reports/transactions/daily").access(admin)
                         .requestMatchers(HttpMethod.PATCH, "/api/admin/users/*/status", "/api/admin/accounts/*/status").access(admin)
                         .anyRequest().denyAll())

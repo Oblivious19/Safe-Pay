@@ -1,13 +1,13 @@
 import * as ko from "knockout";
 import { adminHoldService } from "../services/adminHoldService";
-import { adminReportService, AdminBookRow, AdminUserSnapshot } from "../services/adminReportService";
+import { adminReportService, AdminBookRow, AdminUserSnapshot, AdminTransactionPage, AdminTransactionFilters } from "../services/adminReportService";
 import { ApiError } from "../services/apiError";
 import { authService } from "../services/authService";
 import { AdminUsersModel } from "./adminUsers";
 import { AdminHoldsModel } from "./adminHolds";
 import { DailyTransactionSummary, HeldPayment, TransactionSummary } from "../services/types";
 import { statusLabel, tierRisk } from "../utils/protection";
-import { categoryLabel, orderedPayments } from "../constants/paymentCategories";
+import { categoryLabel, orderedPayments, PAYMENT_CATEGORIES } from "../constants/paymentCategories";
 
 const isoDate = (date: Date): string => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 const daysAgo = (n: number): string => {
@@ -17,6 +17,43 @@ const daysAgo = (n: number): string => {
 };
 
 class AdminViewModel {
+  transactionsOnly = ko.observable(false);
+  transactionPage = ko.observable<AdminTransactionPage | null>(null);
+  transactionLoading = ko.observable(false);
+  transactionError = ko.observable("");
+  transactionState = ko.observable(""); transactionRisk = ko.observable("");
+  transactionCategory = ko.observable(""); transactionQuery = ko.observable("");
+  transactionFrom = ko.observable(""); transactionTo = ko.observable("");
+  categoryOptions = PAYMENT_CATEGORIES;
+  private transactionRevision = 0;
+  private appliedFilters: AdminTransactionFilters = {};
+  applyTransactionFilters = (): void => {
+    if (this.transactionLoading()) return;
+    this.appliedFilters = {state: this.transactionState(), risk: this.transactionRisk(), category: this.transactionCategory(),
+      query: this.transactionQuery(), from: this.transactionFrom(), to: this.transactionTo()};
+    void this.loadTransactions(0);
+  };
+  resetTransactionFilters = (): void => {
+    if (this.transactionLoading()) return;
+    this.transactionState(""); this.transactionRisk(""); this.transactionCategory(""); this.transactionQuery("");
+    this.transactionFrom(""); this.transactionTo(""); this.applyTransactionFilters();
+  };
+  loadTransactions = async (page = 0): Promise<void> => {
+    if (this.transactionLoading() || page < 0) return;
+    const revision = ++this.transactionRevision;
+    this.transactionLoading(true); this.transactionError(""); this.forbidden(false); this.transactionPage(null);
+    try {
+      const result = await adminReportService.transactions(this.appliedFilters, page);
+      if (revision === this.transactionRevision) this.transactionPage(result);
+    } catch (e) {
+      if (revision !== this.transactionRevision) return;
+      if (e instanceof ApiError && e.status === 401) window.location.replace("/admin/login");
+      else if (e instanceof ApiError && e.status === 403) this.forbidden(true);
+      else this.transactionError(e instanceof ApiError && e.status === 400 ? e.message : "Transactions are unavailable right now. Please try again.");
+    } finally { if (revision === this.transactionRevision) this.transactionLoading(false); }
+  };
+  previousTransactions = (): void => { const p = this.transactionPage(); if (p && p.page > 0) void this.loadTransactions(p.page - 1); };
+  nextTransactions = (): void => { const p = this.transactionPage(); if (p && p.page + 1 < p.totalPages) void this.loadTransactions(p.page + 1); };
   usersPage = ko.observable<AdminUsersModel | null>(null);
   holdsPage = ko.observable<AdminHoldsModel | null>(null);
   summary = ko.observable<TransactionSummary | null>(null);
@@ -196,10 +233,14 @@ class AdminViewModel {
     }
   };
   parametersChanged(params:{page?:string}):void{
+    this.transactionRevision++; this.transactionsOnly(false); this.transactionPage(null); this.transactionLoading(false);
     this.generation++;this.usersPage()?.disconnected();this.holdsPage()?.disconnected();this.usersPage(null);this.holdsPage(null);this.loading(false);
     this.context.params=params;this.connected();
   }
   connected(): void {
+    if (this.context.params?.page === "transactions") {
+      this.transactionsOnly(true); document.title = "All transactions | SafePay"; this.applyTransactionFilters(); return;
+    }
     if (this.context.params?.page === "users") {
       const model = new AdminUsersModel(); this.usersPage(model);
       document.title = "Admin users | SafePay"; model.startLive(); void model.load(); return;
@@ -212,6 +253,7 @@ class AdminViewModel {
     document.title = "Admin dashboard | SafePay"; void this.load();
   }
   disconnected(): void {
+    this.transactionRevision++; this.transactionPage(null); this.transactionLoading(false);
     this.generation++; this.summary(null); this.daily([]); this.holds([]); this.ledger([]); this.people([]);
     this.usersPage()?.disconnected(); this.holdsPage()?.disconnected();
   }

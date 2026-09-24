@@ -22,11 +22,10 @@ CREATE TABLE users (
 CREATE TABLE account (
  account_id NUMBER(19) PRIMARY KEY, user_id NUMBER(19) NOT NULL REFERENCES users(user_id),
  account_number VARCHAR2(30) NOT NULL UNIQUE, account_type VARCHAR2(20) DEFAULT 'SAVINGS' NOT NULL,
- balance NUMBER(18,2) DEFAULT 5000 NOT NULL, status VARCHAR2(20) DEFAULT 'ACTIVE' NOT NULL,
+ balance NUMBER(18,2) NOT NULL, status VARCHAR2(20) DEFAULT 'ACTIVE' NOT NULL,
  created_at TIMESTAMP DEFAULT LOCALTIMESTAMP NOT NULL, updated_at TIMESTAMP DEFAULT LOCALTIMESTAMP NOT NULL,
  CONSTRAINT sp_ck_acct_type CHECK (account_type IN ('SAVINGS','CURRENT')),
- CONSTRAINT sp_ck_acct_status CHECK (status IN ('ACTIVE','BLOCKED','CLOSED')),
- CONSTRAINT sp_ck_acct_min_bal CHECK (balance >= 5000)
+ CONSTRAINT sp_ck_acct_status CHECK (status IN ('ACTIVE','BLOCKED','CLOSED'))
 );
 CREATE TABLE beneficiaries (
  beneficiary_id NUMBER(19) PRIMARY KEY, account_id NUMBER(19) NOT NULL REFERENCES account(account_id),

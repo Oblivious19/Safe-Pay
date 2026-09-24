@@ -147,8 +147,8 @@ class AdminApprovalServiceTest {
     }
 
     @Test
-    void settlementKeepsMinimumAndAllOtherPendingPaymentsCovered() {
-        when(transactions.pendingAmount(eq(11L), anyList())).thenReturn(new BigDecimal("35000.01"));
+    void settlementKeepsAllPendingPaymentsCovered() {
+        when(transactions.pendingAmount(eq(11L), anyList())).thenReturn(new BigDecimal("40000.01"));
         assertThrows(TransactionValidationException.class, () -> service.approve(21L, admin, "verify-1"));
         verify(verifications, never()).settleVerified(anyLong(), anyLong(), anyString());
         verify(accounts, never()).save(any());

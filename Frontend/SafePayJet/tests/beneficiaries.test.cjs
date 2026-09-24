@@ -24,6 +24,24 @@ function fixture(overrides = {}) {
   const model=new Model(); model.selectedAccountId(1);return { model, calls, redirects };
 }
 function fill(model) { model.beneficiaryName('Recipient'); model.bankAccountNumber('0012345678'); model.ifsc('HDFC0001234'); model.selectedBank(banks.Bank.HDFC); }
+
+test('external recipient needs explicit confirmation; form-submit object is not consent',async()=>{
+ const f=fixture({create:async input=>{if(input.externalConfirmed!==true)throw new ApiError(409,'This recipient is not verified as a SafePay user. Confirm to add them as an external beneficiary.');return row;}});
+ fill(f.model);await f.model.save({tagName:'FORM'});assert.equal(f.calls[0][1].externalConfirmed,undefined);
+ assert.equal(f.model.confirmExternal(),true);assert.equal(f.model.error(),'');
+ await f.model.save(true);assert.equal(f.calls[1][1].externalConfirmed,true);assert.equal(f.model.confirmExternal(),false);
+ assert.equal(f.model.success(),'Beneficiary added successfully.');
+});
+test('editing or declining external recipient clears consent',async()=>{
+ const f=fixture({create:async()=>{throw new ApiError(409,'This recipient is not verified as a SafePay user.');}});
+ fill(f.model);await f.model.save();f.model.bankAccountNumber('777777');assert.equal(f.model.confirmExternal(),false);
+ await f.model.save(true);assert.equal(f.calls[1][1].externalConfirmed,undefined);
+ f.model.clearExternal();await f.model.save(true);assert.equal(f.calls[2][1].externalConfirmed,undefined);
+});
+test('own-account and wrong-name errors stay visible without external bypass',async()=>{
+ const f=fixture({create:async()=>{throw new ApiError(409,'You cannot add your own SafePay account as a beneficiary');}});
+ fill(f.model);await f.model.save();assert.match(f.model.error(),/own SafePay account/);assert.equal(f.model.confirmExternal(),false);
+});
 test('list loads only session-owned API data', async () => { const f = fixture(); await f.model.load(); assert.equal(f.model.beneficiaries()[0], row); assert.deepEqual(f.calls, [['list',1,false]]); });
 test('empty list is distinct from error', async () => { const f = fixture({ list: async () => [] }); await f.model.load(); assert.equal(f.model.beneficiaries().length, 0); assert.equal(f.model.error(), ''); });
 test('valid add returns to list, preserves success and refreshes exactly once', async () => {
@@ -42,7 +60,7 @@ test('validation matches lengths, digits and IFSC; preserves leading zeros', () 
 for (const status of [400, 403, 409, 500]) test(`add handles ${status} without refreshing`, async () => {
   const f = fixture({ create: async () => { throw new ApiError(status); } }); f.model.openAdd(); fill(f.model); await f.model.save();
   assert.equal(f.model.mode(), 'add'); assert.equal(f.calls.length, 1); assert.ok(f.model.error()); assert.equal(f.model.saving(), false);
-  if (status === 409) assert.match(f.model.error(), /already registered/);
+  if (status === 409) assert.equal(f.model.error(), 'Safe error');
 });
 test('401 clears beneficiary data and redirects to login', async () => {
   const f = fixture({ list: async () => { throw new ApiError(401); } }); f.model.beneficiaries([row]); await f.model.load();

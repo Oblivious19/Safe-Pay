@@ -34,6 +34,7 @@ public class BeneficiaryServiceImpl implements BeneficiaryService {
         if (beneficiaryDao.countDuplicate(account.getAccountId(), request.bankAccountNumber(), request.ifsc()) > 0) {
             throw new DuplicateBeneficiaryException();
         }
+        validateRecipientIdentity(callerId, request);
         Beneficiary beneficiary = new Beneficiary();
         beneficiary.setBeneficiaryName(request.beneficiaryName());
         beneficiary.setBankAccountNumber(request.bankAccountNumber());
@@ -43,6 +44,28 @@ public class BeneficiaryServiceImpl implements BeneficiaryService {
         beneficiary.setCreatedAt(LocalDateTime.now());
         // Flush here so racing duplicates reach the controller's safe 409 mapping.
         return BeneficiaryResponse.from(beneficiaryDao.saveAndFlush(beneficiary));
+    }
+
+    private void validateRecipientIdentity(Long callerId, BeneficiaryRequest request) {
+        Account matched = accountDao.findByAccountNumber(request.bankAccountNumber()).orElse(null);
+        if (matched == null) {
+            if (!request.externalConfirmed()) {
+                throw new TransactionValidationException(409,
+                        "This recipient is not verified as a SafePay user. Confirm to add them as an external beneficiary.");
+            }
+            return;
+        }
+        if (matched.getUser().getUserId().equals(callerId)) {
+            throw new TransactionValidationException(409, "You cannot add your own SafePay account as a beneficiary");
+        }
+        if (!normalize(matched.getUser().getName()).equals(normalize(request.beneficiaryName()))) {
+            throw new TransactionValidationException(409,
+                    "This account number belongs to a SafePay customer, but the recipient name does not match");
+        }
+    }
+
+    private String normalize(String value) {
+        return value == null ? "" : value.strip().replaceAll("\\s+", " ").toLowerCase(java.util.Locale.ROOT);
     }
 
     @Override

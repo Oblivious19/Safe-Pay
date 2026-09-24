@@ -35,6 +35,27 @@ const json = (body, status = 200, token) => new Response(JSON.stringify(body), {
   status, headers: { 'Content-Type': 'application/json', ...(token ? { 'X-CSRF-TOKEN': token } : {}) }
 });
 const payment = { fromAccountId: 1, beneficiaryId: 2, amount: '10.25', purpose: 'Demo' };
+
+test('admin list encodes all filters and always requests twenty rows',async()=>{
+ const f=fixture([json({items:[],page:2,size:20,totalItems:0,totalPages:0})]);
+ await f.load('adminReportService').adminReportService.transactions({state:'SETTLED',risk:'LOW',category:'MEDICAL',query:' A&B ',from:'2026-09-01',to:'2026-09-24'},2);
+ const url=new URL(f.calls[0].url);
+ assert.equal(url.pathname,'/api/admin/reports/transactions');assert.equal(url.searchParams.get('size'),'20');
+ assert.equal(url.searchParams.get('page'),'2');assert.equal(url.searchParams.get('query'),'A&B');
+ assert.equal(url.searchParams.get('from'),'2026-09-01');assert.equal(url.searchParams.get('to'),'2026-09-24');
+ assert.equal(url.searchParams.get('category'),'MEDICAL');assert.equal(f.calls[0].credentials,'include');
+});
+test('invalid admin list dates fail before transport',async()=>{
+ const f=fixture(),service=f.load('adminReportService').adminReportService;
+ for(const filter of [{from:'2026-02-30'},{from:'2026-09-24',to:'2026-09-23'},{query:'x'.repeat(101)}])
+   await assert.rejects(service.transactions(filter),e=>e.status===400);
+ assert.equal(f.calls.length,0);
+});
+test('external confirmation is explicitly whitelisted; bank simulation is not sent',async()=>{
+ const f=fixture([json({},200,'token'),json({beneficiaryId:1},201)]);
+ await f.load('beneficiaryService').beneficiaryService.create({accountId:1,beneficiaryName:'Sample',bankAccountNumber:'123456',ifsc:'HDFC0001234',externalConfirmed:true,bank:'HDFC'});
+ const body=JSON.parse(f.calls[1].body);assert.equal(body.externalConfirmed,true);assert.equal('bank' in body,false);
+});
 test('category payload is persisted metadata only, with trimmed Others and no simulated PIN',async()=>{
  const f=fixture([json({},200,'token'),json({transactionId:4,state:'HARD_HOLD',category:'OTHERS'})]);
  await f.load('transactionService').transactionService.create({...payment,amount:'100000.01',category:'OTHERS',purpose:'  Tuition  ',sPin:'123456'},'category-key');

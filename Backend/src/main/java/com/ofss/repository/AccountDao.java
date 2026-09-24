@@ -15,6 +15,7 @@ import com.ofss.beans.Account;
 import com.ofss.beans.AccountStatus;
 
 public interface AccountDao extends JpaRepository<Account, Long> {
+    Optional<Account> findByAccountNumber(String accountNumber);
     // Account numbers are unique inside this simulated bank. Beneficiary.account is
     // the sender's address-book owner, NOT the account to credit.
     @Query("select a.accountId from Account a, Beneficiary b where b.beneficiaryId = :beneficiary "

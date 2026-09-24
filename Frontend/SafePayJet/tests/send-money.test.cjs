@@ -45,6 +45,7 @@ test('category and trimmed Others purpose survive the PIN step and an ambiguous 
 });
 const ojet = { 'ojs/ojprogress-circle': {}, 'ojs/ojdialog': {}, 'ojs/ojbutton': {}, 'ojs/ojtrain': {}, 'ojs/ojinputtext': {}, 'ojs/ojavatar': {}, 'ojs/ojmessages': {} };
 function fixture(list = async () => [recipient], step, transactions = {}, pin) {
+  let fundsCall=async id=>({accountId:id,balance:450000,reservedBalance:0,minimumBalance:0,availableToTransfer:450000});
   const calls = [], redirects = [], routes = [], module = { exports: {} };
   const source = fs.readFileSync(path.join(__dirname, '../src/ts/viewModels/send-money.ts'), 'utf8');
   const code = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2021 } }).outputText;
@@ -74,7 +75,7 @@ function fixture(list = async () => [recipient], step, transactions = {}, pin) {
     },
     '../services/demoSession': { demoRequiresPin: () => !!pin, verifyDemoPin: value => value === pin, demoPinHint: () => pin || '' },
     '../services/beneficiaryService': { beneficiaryService: { list: () => { calls.push('beneficiaries'); return list(); } } },
-    '../services/accountService': { accountService: { funds: async id => ({accountId:id,balance:450000,reservedBalance:0,minimumBalance:5000,availableToTransfer:445000}), list: async () => { calls.push('account'); return [account]; } } },
+    '../services/accountService': { accountService: { funds: id => fundsCall(id), list: async () => { calls.push('account'); return [account]; } } },
     '../services/transactionService': { transactionService: transactions, newIdempotencyKey: () => 'unique-key-' + routes.length } };
   vm.runInNewContext('(function(require,module,exports){' + code + '\n})', {
     TextEncoder, setInterval: () => 1, clearInterval: () => {},
@@ -84,7 +85,7 @@ function fixture(list = async () => [recipient], step, transactions = {}, pin) {
   })(p => imports[p], module, module.exports);
   let model;
   model = new module.exports({ params: { step }, router: { go: async route => { routes.push(route); if (route.path === 'send-money') model.parametersChanged(route.params); } } });
-  return { model, calls, redirects, routes, source, rang, heard };
+  return { model, calls, redirects, routes, source, rang, heard, setFundsCall: value=>fundsCall=value };
 }
 test('step 1 loads real service lists/account; Continue initially disabled', async () => {
   const f = fixture(); assert.equal(f.model.canContinue(), false); await f.model.load();
@@ -108,14 +109,14 @@ for (const value of ['', 'abc', '-1', '0', '0.00', '1.234', '10000000000000000',
 test('amount above the available balance is blocked before any call', async () => {
   const f = fixture(); await f.model.load(); f.model.choose(recipient); await f.model.next();
   f.model.amount('600000');
-  assert.match(f.model.amountMessage(), /more than the ₹4,50,000\.00 account balance/);
+  assert.match(f.model.amountMessage(), /Insufficient balance.*₹4,50,000\.00/);
   assert.equal(f.model.amountReady(), false);
   await f.model.continueDetails();
   assert.equal(f.model.step(), 'details'); assert.equal(f.calls.length, 2);
 });
 test('no invented payment ceiling and live feedback clears for valid amounts', async () => {
   const f = fixture(); await f.model.load(); f.model.choose(recipient); await f.model.next();
-  f.model.account({...account,balance:2000000}); f.model.amount('1000000.01'); assert.equal(f.model.amountMessage(), '');
+  f.model.account({...account,balance:2000000}); f.model.funds({...f.model.funds(),balance:2000000,availableToTransfer:2000000}); f.model.amount('1000000.01'); assert.equal(f.model.amountMessage(), '');
   f.model.amount('abc'); assert.match(f.model.amountMessage(), /digits only/);
   f.model.amount(''); assert.equal(f.model.amountIssue(), '');
   f.model.amount('2500'); assert.equal(f.model.amountMessage(), ''); assert.equal(f.model.amountReady(), true);
@@ -198,6 +199,45 @@ async function pay(model) {
  await model.confirm();
  if (model.pinOpen()) { model.sPin('123456'); await model.submitPin(); }
 }
+
+test('reserved funds reduce the spendable limit; exact balance allowed and correction clears the error',async()=>{
+  const f=fixture();f.setFundsCall(async id=>({accountId:id,balance:166933,reservedBalance:120000,minimumBalance:0,availableToTransfer:46933}));
+  await f.model.load();f.model.choose(recipient);await f.model.next();f.model.amount('46933.01');
+  assert.equal(f.model.amountReady(),false);await f.model.continueDetails();assert.equal(f.model.step(),'details');
+  assert.match(f.model.amountMessage(),/₹46,933.00/);f.model.amount('46933');
+  assert.equal(f.model.amountMessage(),'');assert.equal(f.model.amountReady(),true);
+  await f.model.continueDetails();assert.equal(f.model.step(),'review');f.model.disconnected();
+});
+
+test('fresh reservations block progression both before Review and before S PIN',async()=>{
+  for(const phase of ['review','pin']) {
+    const f=await review({create:async()=>{assert.fail('Must not submit');}});
+    if(phase==='review')await f.model.back();
+    f.setFundsCall(async id=>({accountId:id,balance:450000,reservedBalance:449999,minimumBalance:0,availableToTransfer:1}));
+    if(phase==='review') {await f.model.continueDetails();assert.equal(f.model.step(),'details');}
+    else {await f.model.confirm();assert.match(f.model.paymentError(),/Insufficient balance/);}
+    assert.equal(f.model.pinOpen(),false);assert.equal(f.model.attemptLocked(),false);f.model.disconnected();
+  }
+});
+
+test('balance request failure fails closed before Review or PIN and can be retried',async()=>{
+  for(const phase of ['review','pin']) {
+    const f=await review({create:async()=>{assert.fail('Must not submit');}});
+    if(phase==='review')await f.model.back();
+    f.setFundsCall(async()=>{throw new Error('offline');});
+    if(phase==='review')await f.model.continueDetails();else await f.model.confirm();
+    assert.equal(f.model.pinOpen(),false);assert.equal(f.model.funds(),null);assert.equal(f.model.amountReady(),false);assert.ok(f.model.fundsError());
+    f.setFundsCall(async id=>({accountId:id,balance:50,reservedBalance:0,minimumBalance:0,availableToTransfer:50}));
+    await f.model.refreshFunds();assert.equal(f.model.amountReady(),true);f.model.disconnected();
+  }
+});
+
+test('uncertain payment retry retains original key even when the balance is now unavailable',async()=>{
+  const posts=[];const f=await review({create:async(body,key)=>{posts.push({body:{...body},key});throw new ApiError(0);}});
+  await pay(f.model);assert.equal(f.model.attemptLocked(),true);
+  f.model.funds(null);f.model.fundsError('offline');f.setFundsCall(async()=>{assert.fail('Uncertain retry must not recheck funds');});
+  await pay(f.model);assert.equal(posts.length,2);assert.deepEqual(posts[1],posts[0]);f.model.disconnected();
+});
 test('confirm sends exact body once; double click blocked; response goes to result',async()=>{
  let finish;const posts=[];const f=await review({create:(body,key)=>{posts.push({body,key});return new Promise(r=>finish=r)}});
  await f.model.confirm();assert.equal(posts.length,0);assert.equal(f.model.pinOpen(),true);

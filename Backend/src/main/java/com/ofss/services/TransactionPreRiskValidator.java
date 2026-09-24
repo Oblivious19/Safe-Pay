@@ -13,7 +13,6 @@ import org.springframework.stereotype.Component;
 /** Checks only: never scores risk, changes balances, or creates transactions. */
 @Component
 public class TransactionPreRiskValidator {
-    private static final BigDecimal MINIMUM_BALANCE = new BigDecimal("5000.00");
     private static final BigDecimal MAX_AMOUNT = new BigDecimal("9999999999999999.99");
     private final UserDao users;
     private final AccountDao accounts;
@@ -87,10 +86,7 @@ public class TransactionPreRiskValidator {
             throw new TransactionValidationException(409, "Available balance could not be established");
         }
         BigDecimal available = account.getBalance().subtract(pending);
-        if (available.compareTo(amount) < 0) throw new InsufficientBalanceException("Insufficient available balance. Account balance: INR " + account.getBalance().toPlainString() + "; reserved by pending payments: INR " + pending.toPlainString() + "; available to transfer after the INR 5000 minimum: INR " + available.subtract(MINIMUM_BALANCE).max(BigDecimal.ZERO).toPlainString());
-        if (available.subtract(amount).compareTo(MINIMUM_BALANCE) < 0) {
-            throw new InsufficientBalanceException("Minimum available balance of INR 5000 must remain after transfer");
-        }
+        if (available.compareTo(amount) < 0) throw new InsufficientBalanceException("Insufficient available balance. Account balance: INR " + account.getBalance().toPlainString() + "; reserved by pending payments: INR " + pending.toPlainString() + "; available to transfer: INR " + available.max(BigDecimal.ZERO).toPlainString());
         return beneficiary;
     }
 }

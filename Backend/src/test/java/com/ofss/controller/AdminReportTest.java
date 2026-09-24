@@ -31,7 +31,24 @@ import com.ofss.services.AdminReportService;
 class AdminReportTest extends WebSecuritySliceSupport {
     @Autowired MockMvc mvc;
     @MockitoBean AdminReportRepository reports;
+    @MockitoBean com.ofss.repository.TransactionDao transactions;
     private static final String ROOT = "/api/admin/reports/transactions";
+    @Test void listUsesTwentyRowsAndInclusiveDateRangeBeforePagination() throws Exception {
+        when(transactions.findAdminTransactions(any(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(org.springframework.data.domain.Page.empty());
+        mvc.perform(get(ROOT).session(session("ADMIN")).param("from", "2026-09-01").param("to", "2026-09-24")
+                .param("state", "SETTLED").param("risk", "LOW").param("query", " CUSTOMER "))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.size").value(20)).andExpect(jsonPath("$.totalItems").value(0));
+        verify(transactions).findAdminTransactions(eq(TransactionState.SETTLED), eq(RiskTier.LOW), isNull(), eq("customer"),
+                eq(LocalDate.of(2026,9,1).atStartOfDay()), eq(LocalDate.of(2026,9,25).atStartOfDay()),
+                argThat(p -> p.getPageNumber() == 0 && p.getPageSize() == 20));
+    }
+    @ParameterizedTest @ValueSource(strings = {"?state=FAKE", "?size=0", "?size=101", "?page=-1", "?risk=FAKE",
+            "?category=FAKE", "?sort=password", "?from=2026-09-24&to=2026-09-23", "?from=2026-02-31"})
+    void invalidListFiltersNeverQuery(String query) throws Exception {
+        mvc.perform(get(ROOT + query).session(session("ADMIN"))).andExpect(status().isBadRequest());
+        verifyNoInteractions(transactions);
+    }
     private Summary sample() {
         return new Summary(20, 8, 3, 2, 1, 4, 9, new BigDecimal("100000.03"), new BigDecimal("40000.01"));
     }
@@ -72,7 +89,7 @@ class AdminReportTest extends WebSecuritySliceSupport {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"/summary", "/daily?from=2026-09-01&to=2026-09-13"})
+    @ValueSource(strings = {"", "/summary", "/daily?from=2026-09-01&to=2026-09-13"})
     void customerCannotSpoofAdmin(String path) throws Exception {
         mvc.perform(get(ROOT + path).session(session("CUSTOMER")).param("role", "ADMIN").param("userId", "200"))
                 .andExpect(status().isForbidden());
@@ -80,7 +97,7 @@ class AdminReportTest extends WebSecuritySliceSupport {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"/summary", "/daily?from=2026-09-01&to=2026-09-13"})
+    @ValueSource(strings = {"", "/summary", "/daily?from=2026-09-01&to=2026-09-13"})
     void anonymousGets401(String path) throws Exception {
         mvc.perform(get(ROOT + path)).andExpect(status().isUnauthorized());
         verifyNoInteractions(reports);

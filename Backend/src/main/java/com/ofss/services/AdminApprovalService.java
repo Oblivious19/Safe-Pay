@@ -13,7 +13,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class AdminApprovalService {
-    private static final BigDecimal MINIMUM_BALANCE = new BigDecimal("5000.00");
     private static final String ACTION = "ADMIN_APPROVED_SETTLED";
     private final VerificationRepository verifications;
     private final AccountDao accounts;
@@ -78,8 +77,8 @@ public class AdminApprovalService {
         BigDecimal pending = transactions.pendingAmount(accountId, List.of(TransactionState.PROTECTED, TransactionState.HARD_HOLD));
         if (account.getBalance() == null || pending == null || transaction.getAmount() == null
                 || transaction.getAmount().signum() <= 0 || pending.compareTo(transaction.getAmount()) < 0
-                || account.getBalance().subtract(pending).compareTo(MINIMUM_BALANCE) < 0) {
-            throw new TransactionValidationException(409, "Available funds must cover all held payments and the INR 5000 minimum");
+                || account.getBalance().subtract(pending).signum() < 0) {
+            throw new TransactionValidationException(409, "Available funds must cover all held payments");
         }
         if (verifications.settleVerified(id, transaction.getVersion(), key) != 1) {
             throw new TransactionValidationException(409, "Payment changed concurrently; refresh before retrying");

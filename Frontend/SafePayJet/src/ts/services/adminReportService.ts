@@ -4,10 +4,29 @@ import { adminUserService, AdminUser } from "./adminUserService";
 export interface AdminBookRow {riskTier:string;}
 export type AdminUserSnapshot = AdminUser;
 import { TransactionSummary, DailyTransactionSummary } from "./types";
+export interface AdminTransactionRow {
+  transactionId: number; transactionRef: string; customerName: string; customerEmail: string;
+  beneficiaryName: string; amount: number; state: string; riskTier: string; category: string | null; createdAt: string;
+}
+export interface AdminTransactionPage { items: AdminTransactionRow[]; page: number; size: number; totalItems: number; totalPages: number; }
+export interface AdminTransactionFilters { state?: string; risk?: string; category?: string; query?: string; from?: string; to?: string; }
 
 
 
 export const adminReportService = {
+  async transactions(filters: AdminTransactionFilters = {}, page = 0): Promise<AdminTransactionPage> {
+    const valid = (s?: string): boolean => !s || (/^\d{4}-\d{2}-\d{2}$/.test(s) && Number.isFinite(Date.parse(s)) && new Date(s).toISOString().slice(0, 10) === s);
+    if (!Number.isSafeInteger(page) || page < 0 || !valid(filters.from) || !valid(filters.to)
+        || (filters.from && filters.to && filters.from > filters.to) || (filters.query || "").length > 100) {
+      throw new ApiError(400, "Choose valid dates in order and a search of at most 100 characters.", "validation");
+    }
+    const params = new URLSearchParams({ page: String(page), size: "20", sort: "createdAt" });
+    for (const key of ["state", "risk", "category", "query", "from", "to"] as const) {
+      const value = filters[key]?.trim(); if (value) params.set(key, value);
+    }
+    apiClient.useAdminCsrf(true);
+    return apiClient.request("/api/admin/reports/transactions?" + params.toString());
+  },
   summary(): Promise<TransactionSummary> {
     apiClient.useAdminCsrf(true);
     return apiClient.request("/api/admin/reports/transactions/summary");

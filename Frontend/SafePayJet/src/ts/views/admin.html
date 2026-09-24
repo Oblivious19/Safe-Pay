@@ -3,6 +3,7 @@
 <header class="admin-topbar"><a class="admin-brand safepay-brand" href="/admin/dashboard" aria-label="SafePay administration"><img class="brand-shield" src="css/images/safepay-brand-shield.png" width="48" height="48" alt=""><b class="brand-wordmark">SafePay<span class="brand-dot" aria-hidden="true">.</span><small>Administration</small></b></a><div class="admin-topbar-tools"><span class="admin-tag">Simulated Environment</span><button class="admin-button admin-button-quiet" type="button" data-bind="click: $parent.logout, disable: $parent.signingOut, text: $parent.signingOut() ? 'Signing out…' : 'Sign out'"></button></div></header>
 <nav class="admin-nav" aria-label="Administration">
   <a href="/admin/dashboard">Dashboard</a>
+  <a href="/admin/transactions">Transactions</a>
   <a href="/admin/holds">Held payments</a>
   <a href="/admin/users" aria-current="page">Users &amp; accounts</a>
 </nav>
@@ -34,6 +35,7 @@
 <header class="admin-topbar"><a class="admin-brand safepay-brand" href="/admin/dashboard" aria-label="SafePay administration"><img class="brand-shield" src="css/images/safepay-brand-shield.png" width="48" height="48" alt=""><b class="brand-wordmark">SafePay<span class="brand-dot" aria-hidden="true">.</span><small>Administration</small></b></a><div class="admin-topbar-tools"><span class="admin-tag">Simulated Environment</span><button class="admin-button admin-button-quiet" type="button" data-bind="click: $parent.logout, disable: $parent.signingOut, text: $parent.signingOut() ? 'Signing out…' : 'Sign out'"></button></div></header>
 <nav class="admin-nav" aria-label="Administration">
   <a href="/admin/dashboard">Dashboard</a>
+  <a href="/admin/transactions">Transactions</a>
   <a href="/admin/holds" aria-current="page">Held payments</a>
   <a href="/admin/users">Users &amp; accounts</a>
 </nav>
@@ -55,11 +57,51 @@
 <div class="hold-actions"><button class="admin-button admin-button-go" data-bind="click:approve,disable:busy() || loading() || !confirmed() || forbidden() || pendingDecision() === 'decline',text:busy() && pendingDecision() === 'approve' ? 'Approving…' : 'Approve and settle'"></button><button class="admin-button" style="background:#a9322b;color:white" data-bind="click:decline,disable:busy() || loading() || !confirmed() || forbidden() || pendingDecision() === 'approve',text:busy() &amp;&amp; pendingDecision() === 'decline' ? 'Declining…' : 'Decline payment'"></button><button class="admin-button" data-bind="click:clear,disable:busy">Close review</button></div>
 </section><!-- /ko -->
 </section><!-- /ko -->
-<!-- ko if: !usersPage() && !holdsPage() -->
+<!-- ko if: transactionsOnly -->
+<section class="admin-page" aria-labelledby="transactions-title">
+<header class="admin-topbar"><a class="admin-brand safepay-brand" href="/admin/dashboard" aria-label="SafePay administration"><img class="brand-shield" src="css/images/safepay-brand-shield.png" width="48" height="48" alt=""><b class="brand-wordmark">SafePay<span class="brand-dot" aria-hidden="true">.</span><small>Administration</small></b></a><div class="admin-topbar-tools"><span class="admin-tag">Simulated Environment</span><button class="admin-button admin-button-quiet" type="button" data-bind="click: logout, disable: signingOut, text: signingOut() ? 'Signing out…' : 'Sign out'"></button></div></header>
+<nav class="admin-nav" aria-label="Administration">
+  <a href="/admin/dashboard">Dashboard</a>
+  <a href="/admin/transactions" aria-current="page">Transactions</a>
+  <a href="/admin/holds">Held payments</a>
+  <a href="/admin/users">Users &amp; accounts</a>
+</nav>
+<div class="admin-heading"><div><p class="admin-eyebrow">Transaction oversight</p><h1 id="transactions-title">All transactions</h1><p class="admin-muted">Search and filter every simulated payment.</p></div></div>
+<p role="alert" data-bind="visible: forbidden">Access restricted to administrators. <a href="/admin/login">Sign in</a></p>
+<p role="alert" data-bind="visible: transactionError, text: transactionError, reveal: transactionError"></p>
+<p role="alert" data-bind="visible: error, text: error, reveal: error"></p>
+<!-- ko ifnot: forbidden -->
+<section class="admin-panel admin-table-panel">
+<form class="admin-category-filters" data-bind="submit: applyTransactionFilters">
+  <label>Status<select data-bind="value: transactionState, disable: transactionLoading"><option value="">All states</option><option value="CREATED">Created</option><option value="AUTHORIZED">Authorized</option><option value="RISK_ASSESSED">Risk assessed</option><option value="PROTECTED">Protected</option><option value="HARD_HOLD">Held for extra review</option><option value="SETTLED">Settled</option><option value="CANCELLED">Cancelled</option></select></label>
+  <label>Risk<select data-bind="value: transactionRisk, disable: transactionLoading"><option value="">All risk bands</option><option value="LOW">Low risk</option><option value="MEDIUM">Medium risk</option><option value="HIGH">High risk</option><option value="VERY_HIGH">Very high risk</option><option value="HARD_HOLD">Legacy hard hold</option></select></label>
+  <label>Category<select data-bind="value: transactionCategory, disable: transactionLoading"><option value="">All categories</option><!-- ko foreach: categoryOptions --><option data-bind="value: value, text: label"></option><!-- /ko --></select></label>
+  <label>Customer or reference<input type="search" maxlength="100" placeholder="Name, email or TXN reference" data-bind="textInput: transactionQuery, disable: transactionLoading"></label>
+  <label>From date<input type="date" data-bind="value: transactionFrom, disable: transactionLoading"></label>
+  <label>To date<input type="date" data-bind="value: transactionTo, disable: transactionLoading"></label>
+  <button type="submit" class="admin-button" data-bind="disable: transactionLoading">Apply</button>
+  <button type="button" class="admin-button admin-button-secondary" data-bind="click: resetTransactionFilters, disable: transactionLoading">Reset</button>
+</form>
+<p class="admin-muted">Dates include the whole selected day and filter all results, not just the current page.</p>
+<p class="load-row" role="status" data-bind="visible: transactionLoading"><span class="spin" aria-hidden="true"></span><span>Loading transactions…</span></p>
+<!-- ko with: transactionPage -->
+<p class="admin-empty" role="status" data-bind="visible: !items.length">No transactions match these filters.</p>
+<!-- ko if: items.length -->
+<div class="admin-table-scroll" tabindex="0" role="region" aria-label="All transactions. Scroll for more columns."><table class="admin-table admin-transactions-table"><caption class="send-off-screen">Filtered transactions, 20 per page</caption><thead><tr><th scope="col">Reference</th><th scope="col">Customer</th><th scope="col">To</th><th scope="col" class="admin-cell-number">Amount</th><th scope="col">State</th><th scope="col">Risk</th><th scope="col">Category</th><th scope="col">Created</th></tr></thead><tbody data-bind="foreach: items"><tr><th scope="row" data-bind="text: transactionRef"></th><td data-bind="text: customerName, attr: {title: customerEmail}"></td><td data-bind="text: beneficiaryName"></td><td class="admin-cell-number" data-bind="text: $parents[1].money(amount)"></td><td><span data-bind="text: $parents[1].stateLabel(state), css: $parents[1].stateClass(state)"></span></td><td data-bind="text: $parents[1].riskLabel(riskTier)"></td><td data-bind="text: $parents[1].categoryLabel(category)"></td><td class="admin-cell-date" data-bind="text: $parents[1].when(createdAt)"></td></tr></tbody></table></div>
+<p class="admin-muted" role="status" data-bind="text: 'Showing page ' + (page + 1) + ' of ' + totalPages + ' · ' + totalItems + ' transactions'"></p>
+<div class="hold-actions"><button type="button" class="admin-button admin-button-secondary" data-bind="click: $parent.previousTransactions, disable: page === 0 || $parent.transactionLoading()">Previous</button><button type="button" class="admin-button" data-bind="click: $parent.nextTransactions, disable: page + 1 >= totalPages || $parent.transactionLoading()">Next</button></div>
+<!-- /ko -->
+<!-- /ko -->
+</section>
+<!-- /ko -->
+</section>
+<!-- /ko -->
+<!-- ko if: !usersPage() && !holdsPage() && !transactionsOnly() -->
 <section class="admin-page" aria-labelledby="admin-title">
 <header class="admin-topbar"><a class="admin-brand safepay-brand" href="/admin/dashboard" aria-label="SafePay administration"><img class="brand-shield" src="css/images/safepay-brand-shield.png" width="48" height="48" alt=""><b class="brand-wordmark">SafePay<span class="brand-dot" aria-hidden="true">.</span><small>Administration</small></b></a><div class="admin-topbar-tools"><span class="admin-tag">Simulated Environment · Oversight</span><button class="admin-button admin-button-quiet" type="button" data-bind="click: logout, disable: signingOut, text: signingOut() ? 'Signing out…' : 'Sign out'"></button></div></header>
 <nav class="admin-nav" aria-label="Administration">
   <a href="/admin/dashboard" aria-current="page">Dashboard</a>
+  <a href="/admin/transactions">Transactions</a>
   <a href="/admin/holds">Held payments</a>
   <a href="/admin/users">Users &amp; accounts</a>
 </nav>

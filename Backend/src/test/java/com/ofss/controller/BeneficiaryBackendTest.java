@@ -41,7 +41,7 @@ class BeneficiaryBackendTest extends WebSecuritySliceSupport {
     private Account account;
     private Beneficiary beneficiary;
     private static final String BODY = """
-        {"beneficiaryName":"Rahul Sharma","bankAccountNumber":"123456789012","ifsc":"HDFC0001234"}
+        {"beneficiaryName":"Rahul Sharma","bankAccountNumber":"123456789012","ifsc":"HDFC0001234","externalConfirmed":true}
         """;
 
     @BeforeEach
@@ -107,6 +107,37 @@ class BeneficiaryBackendTest extends WebSecuritySliceSupport {
                 .contentType("application/json").content(BODY))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message").value("Beneficiary is already registered for this account"));
+        verify(beneficiaries, never()).saveAndFlush(any());
+    }
+
+    @Test void externalRecipientRequiresExplicitConfirmationBeforeSaving() throws Exception {
+        mvc.perform(post("/api/beneficiaries").session(customer).header("X-CSRF-TOKEN", csrf(customer))
+                .contentType("application/json").content(BODY.replace(",\"externalConfirmed\":true", "")))
+                .andExpect(status().isConflict()).andExpect(jsonPath("$.message").value(
+                        "This recipient is not verified as a SafePay user. Confirm to add them as an external beneficiary."));
+        verify(beneficiaries, never()).saveAndFlush(any());
+    }
+
+    @Test void internalIdentityNormalizesCaseAndWhitespaceWithoutExternalConfirmation() throws Exception {
+        User owner = new User(); owner.setUserId(104L); owner.setName("  RAHUL   SHARMA  ");
+        Account target = new Account(); target.setUser(owner);
+        when(accounts.findByAccountNumber("123456789012")).thenReturn(Optional.of(target));
+        mvc.perform(post("/api/beneficiaries").session(customer).header("X-CSRF-TOKEN", csrf(customer))
+                .contentType("application/json").content(BODY.replace(",\"externalConfirmed\":true", "")))
+                .andExpect(status().isCreated());
+    }
+
+    @Test void externalFlagCannotBypassOwnAccountOrRecipientNameRestrictions() throws Exception {
+        Account ownOther = new Account(); ownOther.setAccountId(1000002L); ownOther.setUser(account.getUser());
+        when(accounts.findByAccountNumber("123456789012")).thenReturn(Optional.of(ownOther));
+        String token = csrf(customer);
+        mvc.perform(post("/api/beneficiaries").session(customer).header("X-CSRF-TOKEN", token)
+                .contentType("application/json").content(BODY)).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("You cannot add your own SafePay account as a beneficiary"));
+        User owner = new User(); owner.setUserId(104L); owner.setName("Different Owner"); ownOther.setUser(owner);
+        mvc.perform(post("/api/beneficiaries").session(customer).header("X-CSRF-TOKEN", token)
+                .contentType("application/json").content(BODY)).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("This account number belongs to a SafePay customer, but the recipient name does not match"));
         verify(beneficiaries, never()).saveAndFlush(any());
     }
 

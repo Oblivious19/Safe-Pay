@@ -64,7 +64,7 @@ class EnhancedWorkflowIntegrationTest {
         assertNotNull(customer.session);
         JsonNode account = customer.call("GET", "/api/accounts/current", null, 200);
         long accountId = account.path("accountId").asLong();
-        assertMoney("5000.00", account.path("balance"));
+        assertMoney("200000.00", account.path("balance"));
         assertNotNull(customer.csrf, "Protected GET exposes the real session CSRF token");
 
         anonymous.call("GET", "/api/admin/accounts", null, 401);
@@ -91,7 +91,7 @@ class EnhancedWorkflowIntegrationTest {
         assertEquals(updatedEmail, principal.email(), "Email edits update the same authenticated session");
 
         JsonNode beneficiary = customer.call("POST", "/api/beneficiaries", Map.of(
-                "beneficiaryName", "Workflow Recipient", "bankAccountNumber", "123456789012", "ifsc", "SBIN0001234"), 201);
+                "beneficiaryName", "Workflow Recipient", "bankAccountNumber", "123456789012", "ifsc", "SBIN0001234", "externalConfirmed", true), 201);
         long beneficiaryId = beneficiary.path("beneficiaryId").asLong();
         String beneficiaryPath = "/api/beneficiaries/" + beneficiaryId;
         assertEquals(beneficiaryId, customer.call("GET", beneficiaryPath, null, 200).path("beneficiaryId").asLong());

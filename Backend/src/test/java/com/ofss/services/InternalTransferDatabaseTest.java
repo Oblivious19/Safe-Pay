@@ -37,6 +37,8 @@ class InternalTransferDatabaseTest {
     @Autowired AdminApprovalService approvals;
     @Autowired TransactionController controller;
     @Autowired JdbcTemplate jdbc;
+    @Autowired AdminReportService reports;
+    @Autowired com.ofss.controller.AccountFundsController fundsController;
     @MockitoBean TransactionScheduler scheduler;
     Account sender, receiver;
     User senderUser, receiverUser;
@@ -75,6 +77,43 @@ class InternalTransferDatabaseTest {
     void expire(TransactionDb tx) {
         jdbc.update("update transaction_db set protection_expires_at=? where transaction_id=?",
                 LocalDateTime.now().minusMinutes(1),tx.getTransactionId());
+    }
+    @ParameterizedTest @ValueSource(strings={"5000.25","25000.00","75000.00","150000.00"})
+    void allRiskBandsCanSpendDownToZeroWithoutDoubleCredit(String amount) {
+        sender.setBalance(new BigDecimal(amount)); accounts.saveAndFlush(sender);
+        var principal = new LoginPrincipal(senderUser.getUserId(),senderUser.getName(),senderUser.getEmail(),"CUSTOMER",UserStatus.ACTIVE);
+        var before = fundsController.funds(sender.getAccountId(),principal);
+        assertEquals(0,before.minimumBalance().signum());
+        assertEquals(0,new BigDecimal(amount).compareTo(before.availableToTransfer()));
+        String key=UUID.randomUUID().toString(); TransactionDb tx=create(amount,key);
+        assertEquals(0,fundsController.funds(sender.getAccountId(),principal).availableToTransfer().signum());
+        if(tx.getState()==TransactionState.PROTECTED) {expire(tx); assertTrue(settlements.settle(tx.getTransactionId()));}
+        else if(tx.getState()==TransactionState.HARD_HOLD) approvals.approve(tx.getTransactionId(),admin,UUID.randomUUID().toString());
+        create(amount,key);
+        assertEquals(0,balance(sender).signum());
+        assertEquals(new BigDecimal("10000.00").add(new BigDecimal(amount)),balance(receiver));
+        assertEquals(0,fundsController.funds(sender.getAccountId(),principal).reservedBalance().signum());
+    }
+
+    @Test void adminListFiltersAllRowsBeforeTwentyRowPagination() {
+        for(int i=0;i<21;i++) {
+            var tx=create("1.00",UUID.randomUUID().toString());
+            jdbc.update("update transaction_db set created_at=? where transaction_id=?",LocalDateTime.of(2026,9,23,23,59,59),tx.getTransactionId());
+        }
+        var held=create("100001.00",UUID.randomUUID().toString());
+        jdbc.update("update transaction_db set created_at=? where transaction_id=?",LocalDateTime.of(2026,9,24,0,0),held.getTransactionId());
+        var page=reports.transactions(null,null,null,senderUser.getEmail(),null,null,0,20,"createdAt");
+        assertEquals(22,page.totalItems()); assertEquals(2,page.totalPages()); assertEquals(20,page.items().size());
+        assertEquals(held.getTransactionId(),page.items().get(0).transactionId());
+        var second=reports.transactions(null,null,null,senderUser.getEmail(),null,null,1,20,"createdAt");
+        assertEquals(2,second.items().size());
+        assertTrue(second.items().stream().noneMatch(t->page.items().stream().anyMatch(p->p.transactionId().equals(t.transactionId()))));
+        var day=java.time.LocalDate.of(2026,9,23);
+        assertEquals(21,reports.transactions("SETTLED","LOW",null,senderUser.getEmail(),day,day,0,20,"createdAt").totalItems());
+        var filtered=reports.transactions("HARD_HOLD","VERY_HIGH","MEDICAL",senderUser.getEmail(),day.plusDays(1),day.plusDays(1),0,20,"createdAt");
+        assertEquals(1,filtered.totalItems()); assertEquals("MEDICAL",filtered.items().get(0).category());
+        assertEquals(1,reports.transactions(null,null,null,held.getTransactionRef(),null,null,0,20,"createdAt").totalItems());
+        assertEquals(0,reports.transactions(null,null,"LOAN",senderUser.getEmail(),null,null,0,20,"createdAt").totalItems());
     }
     @ParameterizedTest @ValueSource(strings={"5000.25","25000.00","75000.00","150000.00"})
     void everyRiskTierMovesBothBalancesExactlyOnce(String amount) {

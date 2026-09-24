@@ -300,7 +300,7 @@ class TransactionDatabaseTest {
         account.setBalance(new BigDecimal("289600.00")); accounts.saveAndFlush(account);
         hardHold("200000.00");
         var failure = assertThrows(com.ofss.excp.InsufficientBalanceException.class, () -> hardHold("150000.00"));
-        assertTrue(failure.getMessage().contains("84600"));
+        assertTrue(failure.getMessage().contains("89600"));
         account = accounts.findById(account.getAccountId()).orElseThrow();
         account.setBalance(new BigDecimal("355000.00")); accounts.saveAndFlush(account);
         assertEquals(TransactionState.HARD_HOLD, hardHold("150000.00").getState());

@@ -29,6 +29,17 @@ class BeneficiariesViewModel {
   error = ko.observable("");
   success = ko.observable("");
   confirmDeactivate = ko.observable(false);
+  confirmExternal = ko.observable(false);
+  private externalDraft = "";
+  private draft = (): string => JSON.stringify([this.selectedAccountId(), this.beneficiaryName(), this.bankAccountNumber(), this.ifsc(), this.selectedBank()]);
+  clearExternal = (): void => { this.confirmExternal(false); this.externalDraft = ""; };
+  private draftSubscriptions = [
+    this.selectedAccountId.subscribe(() => this.clearExternal()),
+    this.beneficiaryName.subscribe(() => this.clearExternal()),
+    this.bankAccountNumber.subscribe(() => this.clearExternal()),
+    this.ifsc.subscribe(() => this.clearExternal()),
+    this.selectedBank.subscribe(() => this.clearExternal())
+  ];
   private generation = 0;
   private alive = true;
   mask = (value: string): string => value.length > 4 ? "•••• " + value.slice(-4) : "••••";
@@ -46,7 +57,7 @@ class BeneficiariesViewModel {
       window.location.replace("/login?reason=session-expired");
       this.error("Your session has expired. Please log in again.");
     } else if (error instanceof ApiError && [400, 403, 404, 409].includes(error.status)) {
-      this.error(error.status === 409 ? "This beneficiary is already registered." : error.message);
+      this.error(error.message);
     } else this.error("We couldn’t complete this request. Please try again.");
   }
   load = async (): Promise<void> => {
@@ -78,10 +89,12 @@ class BeneficiariesViewModel {
     this.beneficiaryName(""); this.bankAccountNumber(""); this.ifsc("");
     this.selectedBank(undefined);
   };
-  save = async (): Promise<void> => {
+  save = async (externalConfirmed: unknown = false): Promise<void> => {
     if (this.saving() || this.loading()) return;
     if(!this.selectedAccountId()){this.error("Select an account first.");return;}
-    const input = { accountId: this.selectedAccountId()!, beneficiaryName: this.beneficiaryName(), bankAccountNumber: this.bankAccountNumber(), ifsc: this.ifsc() };
+    const draft = this.draft();
+    const input: BeneficiaryInput = { accountId: this.selectedAccountId()!, beneficiaryName: this.beneficiaryName(), bankAccountNumber: this.bankAccountNumber(), ifsc: this.ifsc() };
+    if (externalConfirmed === true && this.confirmExternal() && this.externalDraft === draft) input.externalConfirmed = true;
     const errors: Partial<Record<keyof BeneficiaryInput | "bank", string>> = validateBeneficiary(input);
     if (!this.bankOptions.some(bank => bank.value === this.selectedBank())) errors.bank = "Choose a bank.";
     this.fieldErrors(errors); this.error(""); this.success("");
@@ -97,7 +110,12 @@ class BeneficiariesViewModel {
       this.selectedBank(undefined);
       this.mode("list"); this.success("Beneficiary added successfully.");
       await this.load();
-    } catch (error) { if (this.alive) this.handle(error); }
+    } catch (error) {
+      if (!this.alive) return;
+      if (error instanceof ApiError && error.status === 409 && error.message.includes("not verified as a SafePay user") && draft === this.draft()) {
+        this.externalDraft = draft; this.confirmExternal(true);
+      } else this.handle(error);
+    }
     finally { if (this.alive) this.saving(false); }
   };
   select = async (beneficiary: Beneficiary): Promise<void> => {
@@ -134,6 +152,6 @@ class BeneficiariesViewModel {
     if (new URLSearchParams(window.location.search).get("action") === "add") this.openAdd();
     void this.load();
   }
-  disconnected(): void { this.alive = false; this.generation++; this.selectedBank(undefined); this.selected(null); this.beneficiaries([]); }
+  disconnected(): void { this.alive = false; this.generation++; this.clearExternal(); this.draftSubscriptions.forEach(s => s.dispose()); this.selectedBank(undefined); this.selected(null); this.beneficiaries([]); }
 }
 export = BeneficiariesViewModel;

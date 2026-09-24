@@ -136,6 +136,7 @@ class SendMoneyViewModel {
   constructor(private context: { router: FlowRouter; params?: { step?: string } }) {
     this.initialStep = context.params?.step;
     this.amountSubscription = this.amount.subscribe(value => {
+      this.amountError("");
       if (!this.attemptLocked() && !this.pinOpen() && !categoryApplies(value)) {
         this.category(undefined); this.categoryError("");
       }
@@ -171,7 +172,7 @@ class SendMoneyViewModel {
       if (!this.alive) return;
       this.allBeneficiaries=beneficiaries;this.accounts(account);
       const chosen=account.find(a=>a.accountId===this.selectedAccountId()) || account.find(a=>a.status==="ACTIVE") || account[0];
-      this.selectedAccountId(chosen?.accountId || null);this.selectAccount();
+      this.selectedAccountId(chosen?.accountId || null);await this.selectAccount();
       if(!chosen)this.error("No account is linked to your profile yet.");
     } catch (error) {
       if (!this.alive) return;
@@ -181,29 +182,37 @@ class SendMoneyViewModel {
       this.error(error instanceof ApiError && [400, 401, 403, 404].includes(error.status) ? error.message : "We couldn’t load your payment details. Please try again.");
     } finally { if (this.alive) this.loading(false); }
   };
-  selectAccount = (): void => {
+  selectAccount = async (): Promise<void> => {
     if(this.attemptLocked() || this.result() || this.pinOpen())return;
     const account=this.accounts().find(a=>a.accountId===this.selectedAccountId());
-    this.account(account||null);this.selected(null);this.funds(null);void this.refreshFunds();
+    this.account(account||null);this.selected(null);this.funds(null);
     this.beneficiaries(this.allBeneficiaries.filter(b=>b.accountId===account?.accountId && b.status==="ACTIVE"));
+    await this.refreshFunds();
   };
-  refreshFunds = async (): Promise<void> => {
+  refreshFunds = async (): Promise<boolean> => {
     const id=this.account()?.accountId;const generation=++this.fundsGeneration;this.fundsError("");
-    if(!id){this.funds(null);return;}
+    if(!id){this.funds(null);return false;}
     try{const funds=await accountService.funds(id);if(this.alive && generation===this.fundsGeneration && this.account()?.accountId===id){
+      if (funds?.accountId !== id || ![funds.balance, funds.reservedBalance, funds.availableToTransfer].every(Number.isFinite) || funds.availableToTransfer < 0) throw new Error("Invalid funds response");
       this.funds(funds);
+      if (this.amountError()) this.amountError(this.amountProblem());
       if(this.account()!.balance!==funds.balance){
         const updated={...this.account()!,balance:funds.balance};this.account(updated);
         this.accounts(this.accounts().map(a=>a.accountId===id?updated:a));
       }
+      return true;
     }}
-    catch(error){if(this.alive && generation===this.fundsGeneration){this.funds(null);this.fundsError("Available funds could not be refreshed. The server will check your balance when you confirm.");}}
+    catch(error){if(this.alive && generation===this.fundsGeneration){
+      this.funds(null);this.fundsError("We couldn’t check your current balance. Please retry before continuing.");
+      if(error instanceof ApiError && error.status===401) { this.closePin(); this.stopPolling(); window.location.replace("/login?reason=session-expired"); }
+    }}
+    return false;
   };
   refreshBalances = async (): Promise<void> => {
-    if(!this.alive || this.balancesRefreshing || this.loading() || document.visibilityState === "hidden")return;
+    if(!this.alive || this.balancesRefreshing || this.loading() || this.busy() || document.visibilityState === "hidden")return;
     this.balancesRefreshing=true;
     try {
-      const accounts=await accountService.list();if(!this.alive)return;
+      const accounts=await accountService.list();if(!this.alive || this.busy())return;
       this.accounts(accounts);
       this.account(accounts.find(a=>a.accountId===this.selectedAccountId()) || null);
       await this.refreshFunds();
@@ -263,9 +272,12 @@ class SendMoneyViewModel {
       return "Enter a positive amount in rupees, digits only, up to 2 decimal places.";
     }
     const amount = Number(value);
-    const balance = this.account()?.balance;
-    if (typeof balance === "number" && amount > balance) {
-      return `That is more than the ${this.money(balance)} account balance.`;
+    const funds = this.funds();
+    if (!funds || funds.accountId !== this.account()?.accountId || this.fundsError() || !Number.isFinite(funds.availableToTransfer)) {
+      return "Please wait for your current balance, or retry the balance check.";
+    }
+    if (amount > funds.availableToTransfer) {
+      return `Insufficient balance. Your current balance is ${this.money(funds.availableToTransfer)}. Enter this amount or less.`;
     }
     return "";
   }
@@ -289,7 +301,12 @@ class SendMoneyViewModel {
     if (!this.account() || this.error()) return;
     this.busy(true);
     try {
-      await this.refreshFunds();
+      const refreshed = await this.refreshFunds();
+      if (!this.alive) return;
+      if (!refreshed || !this.validateDetails()) {
+        this.amountError(this.amountProblem());
+        document.getElementById("payment-amount")?.focus(); return;
+      }
       await this.context.router.go({ path: "send-money", params: { step: "review" } });
     } finally { if (this.alive) this.busy(false); }
   };
@@ -316,6 +333,12 @@ class SendMoneyViewModel {
     if (!this.alive || this.busy() || this.loading() || this.pinOpen() || this.result() || this.step() !== "review") return;
     this.paymentError("");
     if (!this.attempt) {
+      this.busy(true);
+      let refreshed: boolean;
+      try { refreshed = await this.refreshFunds(); }
+      finally { if (this.alive) this.busy(false); }
+      if (!this.alive || this.step() !== "review") return;
+      if (!refreshed) { this.paymentError(this.fundsError() || "Please retry the balance check before paying."); return; }
       if (!this.validateDetails() || !this.selected() || !this.account() || this.account()!.status !== "ACTIVE" || this.selected()!.accountId !== this.account()!.accountId) {
         this.paymentError(this.amountError() || this.categoryError() || this.purposeError() || "Choose a beneficiary and source account before paying."); return;
       }
@@ -365,7 +388,7 @@ class SendMoneyViewModel {
         this.showPaymentError(error);
       }
     }
-    finally { if (this.alive) this.busy(false); }
+    finally { if (this.alive) { this.busy(false); if (this.result()) void this.refreshBalances(); } }
   }
   refreshResult = async (): Promise<void> => {
     const current = this.result();
@@ -403,7 +426,7 @@ class SendMoneyViewModel {
       const response = await transactionService.cancel(current.transactionId, this.cancelKey);
       if (this.alive) this.acceptResult(response);
     } catch (error) { if (this.alive) this.showPaymentError(error); }
-    finally { if (this.alive) this.busy(false); }
+    finally { if (this.alive) { this.busy(false); if (this.result()) void this.refreshBalances(); } }
   };
   private startPolling(): void {
     this.stopPolling(); this.lastPoll = Date.now();

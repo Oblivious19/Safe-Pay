@@ -15,14 +15,36 @@ const credit={transactionId:7,fromAccountId:99,toAccountId:1,direction:'CREDIT',
   beneficiaryName:'Receiver',state:'SETTLED',amount:1000,createdAt:'2026-09-24T12:00:00',transactionRef:'TEST-7'};
 function dashboard() {
   const timers=new Map(),redirects=[];let id=0,accounts=[account],rows=[],accountCall=async()=>accounts,transactionCall=async()=>rows;
+  let fundsCall=async id=>({accountId:id,balance:accounts.find(a=>a.accountId===id).balance,reservedBalance:0,minimumBalance:0,availableToTransfer:accounts.find(a=>a.accountId===id).balance});
   const document={title:'',visibilityState:'visible'};
   const Model=load('viewModels/dashboard.ts',{'knockout':ko,'../services/apiError':{ApiError},'../accUtils':{announce(){}},
-    '../utils/protection':protection,'../services/accountService':{accountService:{list:()=>accountCall()}},
+    '../utils/protection':protection,'../services/accountService':{accountService:{list:()=>accountCall(),funds:id=>fundsCall(id)}},
     '../services/transactionService':{transactionService:{list:()=>transactionCall()}},'../utils/chime':{armAudio(){},chimeForPayment(){}}},
     {document,window:{location:{replace:url=>redirects.push(url)}},setInterval:(fn,ms)=>{timers.set(++id,{fn,ms});return id;},clearInterval:id=>timers.delete(id)});
   return {model:new Model(),timers,redirects,document,setAccounts:v=>accounts=v,setRows:v=>rows=v,
-    setAccountCall:v=>accountCall=v,setTransactionCall:v=>transactionCall=v};
+    setAccountCall:v=>accountCall=v,setTransactionCall:v=>transactionCall=v,setFundsCall:v=>fundsCall=v};
 }
+
+test('dashboard current balance uses server available funds and never falls back to total on failure',async()=>{
+  const f=dashboard();f.setAccounts([{...account,balance:166933}]);
+  f.setFundsCall(async id=>({accountId:id,balance:166933,reservedBalance:120000,minimumBalance:0,availableToTransfer:46933}));
+  await f.model.load();assert.equal(f.model.funds().availableToTransfer,46933);assert.equal(f.model.funds().reservedBalance,120000);
+  f.setFundsCall(async()=>{throw new Error('offline');});await f.model.refreshFunds();
+  assert.equal(f.model.funds(),null);assert.ok(f.model.fundsError());assert.equal(f.model.canSend(),false);
+  f.setFundsCall(async id=>({accountId:id,balance:120000,reservedBalance:120000,minimumBalance:0,availableToTransfer:0}));
+  await f.model.refreshFunds();assert.equal(f.model.funds().availableToTransfer,0);assert.equal(f.model.fundsError(),'');f.model.disconnected();
+  const html=fs.readFileSync(path.join(__dirname,'../src/ts/views/dashboard.html'),'utf8');
+  assert.match(html,/>Current Balance</);assert.match(html,/formatMoney\(funds\(\).availableToTransfer\)/);
+});
+
+test('dashboard ignores funds arriving for a previously selected account',async()=>{
+  const f=dashboard();f.setAccounts([account,{...account,accountId:2,balance:100}]);await f.model.load();
+  let finish;f.setFundsCall(()=>new Promise(resolve=>finish=resolve));const pending=f.model.refreshFunds();
+  f.setFundsCall(async id=>({accountId:id,balance:100,reservedBalance:20,minimumBalance:0,availableToTransfer:80}));
+  f.model.selectedAccountId(2);f.model.selectAccount();await new Promise(setImmediate);
+  finish({accountId:1,balance:500000,reservedBalance:0,availableToTransfer:500000});await pending;
+  assert.equal(f.model.funds().accountId,2);assert.equal(f.model.funds().availableToTransfer,80);f.model.disconnected();
+});
 test('idle receiver dashboard keeps polling and loads a new credit and balance without a reload',async()=>{
   const f=dashboard();await f.model.load();assert.equal(f.model.pending().length,0);
   assert.ok([...f.timers.values()].some(t=>t.ms===3000));

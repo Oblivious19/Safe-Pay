@@ -27,7 +27,7 @@ function fixture(accountCall = () => Promise.resolve(account), transactionCall =
   const imports = {
     knockout: ko, '../accUtils': { announce: () => {} }, '../services/apiError': { ApiError }, '../utils/protection': protection,
     'ojs/ojdialog': {}, 'ojs/ojbutton': {}, 'ojs/ojavatar': {},
-    '../services/accountService': { accountService: { list: (...args) => { calls.push(['account', ...args]); return Promise.resolve(accountCall()).then(a=>a?[a]:[]); } } },
+    '../services/accountService': { accountService: { funds: async id => ({accountId:id,balance:450000,reservedBalance:0,minimumBalance:0,availableToTransfer:450000}), list: (...args) => { calls.push(['account', ...args]); return Promise.resolve(accountCall()).then(a=>a?[a]:[]); } } },
     '../services/transactionService': { transactionService: { list: (...args) => { calls.push(['transactions', ...args]); return transactionCall(); }, get: async () => ({}), cancel: async () => ({}) }, newIdempotencyKey: () => 'k' },
     '../utils/chime': { armAudio() {}, chimeForPayment() {} }
   };

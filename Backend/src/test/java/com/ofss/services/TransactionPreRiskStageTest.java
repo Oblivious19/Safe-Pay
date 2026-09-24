@@ -50,7 +50,7 @@ class TransactionPreRiskStageTest {
     @ParameterizedTest
     @ValueSource(strings = {"missingUser", "nonCustomer", "suspended", "inactive", "locked", "foreignAccount",
             "blockedAccount", "closedAccount", "foreignBeneficiary", "inactiveBeneficiary", "zero", "negative",
-            "fraction", "overflow", "nullAmount", "purpose", "unicodePurpose", "key", "blankKey", "balance", "minimum", "pending"})
+            "fraction", "overflow", "nullAmount", "purpose", "unicodePurpose", "key", "blankKey", "balance", "overdraft", "pending"})
     void rejectionAlwaysHappensBeforeRiskOrAnyWrite(String scenario) {
         BigDecimal amount = new BigDecimal("5000");
         String purpose = "Demo";
@@ -76,10 +76,10 @@ class TransactionPreRiskStageTest {
             case "key" -> key = "X".repeat(101);
             case "blankKey" -> key = " ";
             case "balance" -> account.setBalance(new BigDecimal("4000"));
-            case "minimum" -> account.setBalance(new BigDecimal("9999.99"));
+            case "overdraft" -> account.setBalance(new BigDecimal("4999.99"));
             case "pending" -> {
                 account.setBalance(new BigDecimal("20000"));
-                when(transactions.pendingAmount(eq(1000001L), anyList())).thenReturn(new BigDecimal("15000"));
+                when(transactions.pendingAmount(eq(1000001L), anyList())).thenReturn(new BigDecimal("15000.01"));
             }
         }
         BigDecimal requested = amount;
@@ -155,11 +155,11 @@ class TransactionPreRiskStageTest {
     }
 
     @Test
-    void exactMinimumAfterPendingAmountsIsAccepted() {
-        account.setBalance(new BigDecimal("25000.00"));
+    void zeroUnreservedBalanceAfterPaymentIsAccepted() {
+        account.setBalance(new BigDecimal("20000.00"));
         when(transactions.pendingAmount(eq(1000001L), anyList())).thenReturn(new BigDecimal("15000.00"));
         service.initiate(1000001L, 2001L, new BigDecimal("5000.00"), "X".repeat(255), "K".repeat(100), 103L);
-        assertEquals(new BigDecimal("20000.00"), account.getBalance());
+        assertEquals(new BigDecimal("15000.00"), account.getBalance());
         verify(risk).assessAmount(new BigDecimal("5000.00"));
     }
 
