@@ -37,6 +37,12 @@ class DashboardViewModel {
   formatMoney = (amount: number): string => new Intl.NumberFormat("en-IN", {
     style: "currency", currency: "INR", minimumFractionDigits: 2, maximumFractionDigits: 2
   }).format(amount);
+  // The legacy endpoint lists outgoing payments; only explicit CREDIT records are incoming.
+  isCredit = (tx: PaymentTransaction): boolean => tx.direction === "CREDIT";
+  signedAmount = (tx: PaymentTransaction): string =>
+    (tx.state === "SETTLED" ? (this.isCredit(tx) ? "+ " : "− ") : "") + this.formatMoney(tx.amount);
+  amountClass = (tx: PaymentTransaction): string => tx.state !== "SETTLED" ? "" : this.isCredit(tx) ? "amount-credit" : "amount-debit";
+  directionLabel = (tx: PaymentTransaction): string => this.isCredit(tx) ? "Incoming · credit" : "Outgoing · debit";
   maskAccount = (value: string): string => value ? "•••• " + value.slice(-4) : "Account number unavailable";
   accountLabel = (value: string): string => value === "SAVINGS" ? "Savings account" : value === "CURRENT" ? "Current account" : "Your account";
   formatDate = (value: string): string => {

@@ -64,9 +64,42 @@ test('dashboard charts render outcome bars, daily columns and a hold snapshot',a
   assert.equal(f.model.ledger().length,1);
   assert.equal(f.model.people().length,1);
   assert.equal(f.model.riskBars().find(item=>item.label==='Very high').value,1);
-  assert.equal(f.model.dailyAmounts().totalAmount,900000);
-  assert.equal(f.model.dailyAmounts().settledAmount,10000);
-  assert.equal(f.model.dailyAmounts().hasTrend,true);
+  assert.doesNotMatch(html,/Daily payment value|High risk activity|dailyAmounts/);
+  assert.equal('dailyAmounts' in f.model,false);
   assert.equal(f.model.holdAmountBands()[0].value,1);
   assert.equal(f.model.holdAmountBands()[1].value,0);
+});
+
+test('all admin tables have captions, column scopes and keyboard-scrollable regions',()=>{
+  const html=fs.readFileSync(path.join(__dirname,'../src/ts/views/admin.html'),'utf8');
+  const tables=html.match(/<table\b[\s\S]*?<\/table>/g);
+  assert.equal(tables.length,5);
+  for(const table of tables) {
+    assert.match(table,/<caption/);
+    assert.match(table,/<th scope="col"/);
+    assert.match(table,/<th scope="row"/);
+  }
+  assert.equal((html.match(/class="admin-table-scroll" tabindex="0" role="region"/g)||[]).length,5);
+  assert.match(html,/admin-daily-table/);
+  assert.match(html,/admin-panel-head[\s\S]*View users &amp; accounts/);
+});
+
+test('admin navigation keeps the same labels and order with exactly one current page',()=>{
+  const html=fs.readFileSync(path.join(__dirname,'../src/ts/views/admin.html'),'utf8');
+  const navs=html.match(/<nav class="admin-nav"[^>]*>[\s\S]*?<\/nav>/g) || [];
+  const expectedLinks=[
+    {href:'/admin/dashboard',label:'Dashboard'},
+    {href:'/admin/holds',label:'Held payments'},
+    {href:'/admin/users',label:'Users &amp; accounts'}
+  ];
+  const currentPages=['/admin/users','/admin/holds','/admin/dashboard'];
+  assert.equal(navs.length,currentPages.length);
+  navs.forEach((nav,index)=>{
+    assert.match(nav,/aria-label="Administration"/);
+    const links=[...nav.matchAll(/<a\b([^>]*)>([^<]*)<\/a>/g)].map(([,attrs,label])=>({
+      href:attrs.match(/href="([^"]+)"/)[1],label:label.trim(),current:/aria-current="page"/.test(attrs)
+    }));
+    assert.deepEqual(links.map(({href,label})=>({href,label})),expectedLinks);
+    assert.deepEqual(links.filter(link=>link.current).map(link=>link.href),[currentPages[index]]);
+  });
 });

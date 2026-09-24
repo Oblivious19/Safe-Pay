@@ -16,6 +16,12 @@ interface RouteDetail { label: string; }
 class RootViewModel {
   manner = ko.observable("polite");
   message = ko.observable<string>();
+  copyrightYear = new Date().getFullYear();
+  footerSection = ko.observable<"about" | "how">("about");
+  showFooterInfo = (section: "about" | "how"): void => {
+    this.footerSection(section);
+    (document.getElementById("footer-info") as HTMLDialogElement | null)?.showModal();
+  };
   loggingOut = ko.observable(false);
   logoutError = ko.observable("");
   profile = ko.observable<CustomerIdentity | null>(null);

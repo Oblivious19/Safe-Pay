@@ -1,6 +1,6 @@
 <!-- ko if: usersPage -->
 <section class="admin-page" aria-labelledby="users-title" data-bind="with: usersPage">
-<header class="admin-topbar"><a class="admin-brand" href="/admin/dashboard">SafePay / Administration</a><div class="admin-topbar-tools"><span class="admin-tag">Simulated Environment</span><button class="admin-button admin-button-quiet" type="button" data-bind="click: $parent.logout, disable: $parent.signingOut, text: $parent.signingOut() ? 'Signing out…' : 'Sign out'"></button></div></header>
+<header class="admin-topbar"><a class="admin-brand safepay-brand" href="/admin/dashboard" aria-label="SafePay administration"><img class="brand-shield" src="css/images/safepay-brand-shield.png" width="48" height="48" alt=""><b class="brand-wordmark">SafePay<span class="brand-dot" aria-hidden="true">.</span><small>Administration</small></b></a><div class="admin-topbar-tools"><span class="admin-tag">Simulated Environment</span><button class="admin-button admin-button-quiet" type="button" data-bind="click: $parent.logout, disable: $parent.signingOut, text: $parent.signingOut() ? 'Signing out…' : 'Sign out'"></button></div></header>
 <nav class="admin-nav" aria-label="Administration">
   <a href="/admin/dashboard">Dashboard</a>
   <a href="/admin/holds">Held payments</a>
@@ -12,10 +12,11 @@
 <p role="alert" data-bind="text: error, visible: error, reveal: error"></p>
 <p class="load-row" role="status" data-bind="visible: loading"><span class="spin" aria-hidden="true"></span><span>Loading…</span></p>
 <!-- ko ifnot: forbidden -->
-<section class="admin-panel"><h2>Choose a user</h2>
-<p data-bind="visible: !loading() && !users().length">No users found.</p>
-<div class="admin-table-scroll" tabindex="0" role="region" aria-label="Users"><table class="admin-table"><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Account</th></tr></thead>
-<tbody data-bind="foreach: users"><tr><td data-bind="text: name"></td><td data-bind="text: email"></td><td data-bind="text: role"></td><td data-bind="text: status"></td><td><button class="admin-button" data-bind="click: $parent.select, disable: $parent.loading()">View account</button></td></tr></tbody></table></div></section>
+<section class="admin-panel admin-table-panel"><div class="admin-panel-head"><div><h2>Choose a user</h2><p class="admin-muted">Select a user to view their linked accounts below.</p></div><span class="admin-count" data-bind="text: users().length + ' users'"></span></div>
+<p class="admin-empty" data-bind="visible: !loading() && !error() && !users().length">No users found.</p>
+<!-- ko if: users().length -->
+<div class="admin-table-scroll" tabindex="0" role="region" aria-label="User directory. Scroll for more rows and columns."><table class="admin-table admin-users-table"><caption class="send-off-screen">Users and their account access</caption><thead><tr><th scope="col">Name</th><th scope="col">Email</th><th scope="col">Role</th><th scope="col">Status</th><th scope="col" class="admin-cell-action">Accounts</th></tr></thead>
+<tbody data-bind="foreach: users"><tr data-bind="css: {'is-selected': $parent.selected() && $parent.selected().userId === userId}"><th scope="row" data-bind="text: name"></th><td class="admin-cell-email" data-bind="text: email"></td><td><span class="admin-table-tag" data-bind="text: role"></span></td><td><span class="admin-table-tag" data-bind="text: status"></span></td><td class="admin-cell-action"><button class="admin-button admin-table-button" data-bind="click: $parent.select, disable: $parent.loading(), attr: {'aria-label': 'View accounts for ' + name}">View accounts <span aria-hidden="true">↗</span></button></td></tr></tbody></table></div><!-- /ko --></section>
 <!-- ko if: selected -->
 <section class="admin-panel" data-bind="reveal: selected"><h2 data-bind="text: selected().name"></h2>
 <p data-bind="visible: noAccount">This user has no banking account. No account will be created.</p>
@@ -30,23 +31,28 @@
 <!-- /ko -->
 <!-- ko if: holdsPage -->
 <section class="admin-page" data-bind="with: holdsPage" aria-labelledby="holds-title">
-<header class="admin-topbar"><a class="admin-brand" href="/admin/dashboard">SafePay / Administration</a><div class="admin-topbar-tools"><span class="admin-tag">Simulated Environment</span><button class="admin-button admin-button-quiet" type="button" data-bind="click: $parent.logout, disable: $parent.signingOut, text: $parent.signingOut() ? 'Signing out…' : 'Sign out'"></button></div></header>
-<nav class="admin-nav"><a href="/admin/dashboard">Dashboard</a><a href="/admin/users">Users</a><a href="/admin/holds">Held payments</a></nav>
+<header class="admin-topbar"><a class="admin-brand safepay-brand" href="/admin/dashboard" aria-label="SafePay administration"><img class="brand-shield" src="css/images/safepay-brand-shield.png" width="48" height="48" alt=""><b class="brand-wordmark">SafePay<span class="brand-dot" aria-hidden="true">.</span><small>Administration</small></b></a><div class="admin-topbar-tools"><span class="admin-tag">Simulated Environment</span><button class="admin-button admin-button-quiet" type="button" data-bind="click: $parent.logout, disable: $parent.signingOut, text: $parent.signingOut() ? 'Signing out…' : 'Sign out'"></button></div></header>
+<nav class="admin-nav" aria-label="Administration">
+  <a href="/admin/dashboard">Dashboard</a>
+  <a href="/admin/holds" aria-current="page">Held payments</a>
+  <a href="/admin/users">Users &amp; accounts</a>
+</nav>
 <div class="admin-heading"><div><p class="admin-eyebrow">Very high risk queue</p><h1 id="holds-title">Held payments</h1><p class="admin-muted">Review the customer’s purpose, then approve or decline each held payment.</p></div><button class="admin-button" data-bind="click:load,disable:loading() || busy()">Refresh requests</button></div>
 <p role="alert" data-bind="visible:error,text:error,reveal:error"></p><p role="status" data-bind="visible:notice,text:notice,reveal:notice"></p>
 <p data-bind="visible:forbidden">Your administrator access could not be confirmed. Sign in again.</p>
 <p class="admin-muted" data-bind="text:updated() ? 'Updated '+updated() : ''"></p>
 <dl class="admin-metrics"><div class="admin-metric admin-hold"><dt>Awaiting approval</dt><dd data-bind="text:pending().length"></dd></div><div class="admin-metric"><dt>Amount on hold</dt><dd data-bind="text:money(heldAmount())"></dd></div></dl>
-<section class="admin-panel"><h2>Pending review</h2><p data-bind="visible:!loading() && !pending().length">No payments await approval.</p>
-<div class="admin-table-scroll"><table class="admin-table"><thead><tr><th>Reference</th><th>Customer</th><th>To</th><th>Amount</th><th>Purpose / customer note</th><th>Held since</th><th>Action</th></tr></thead><tbody data-bind="foreach:pending"><tr><td data-bind="text:transactionRef"></td><td data-bind="text:customerName"></td><td data-bind="text:beneficiaryName"></td><td data-bind="text:$parent.money(amount)"></td><td style="white-space:pre-wrap;overflow-wrap:anywhere" data-bind="text:purpose || 'No purpose supplied'"></td><td data-bind="text:$parent.when(createdAt)"></td><td><button class="admin-button" data-bind="click:$parent.select,disable:$parent.busy">Review request</button></td></tr></tbody></table></div></section>
-<!-- ko if:selected --><section class="admin-panel" data-bind="reveal:selected() && selected().transactionId"><h2 data-bind="text:selected().transactionRef"></h2><p data-bind="text:selected().customerName+' → '+selected().beneficiaryName+' · '+masked(selected().beneficiaryBankAccountNumber)"></p><h3 data-bind="text:money(selected().amount)"></h3><h3>Purpose / customer note</h3><p style="white-space:pre-wrap;overflow-wrap:anywhere" data-bind="text:selected().purpose || 'No purpose supplied'"></p><h3>Risk assessment</h3><ul data-bind="foreach:selectedReasons"><li data-bind="text:$data"></li></ul>
-<label><input type="checkbox" data-bind="checked:confirmed,disable:busy"> I have reviewed the recipient, amount and customer note.</label>
+<section class="admin-panel admin-table-panel"><div class="admin-panel-head"><div><h2>Pending review</h2><p class="admin-muted">Open a request to review its details before deciding.</p></div><span class="admin-count" data-bind="text: pending().length + ' pending'"></span></div><p class="admin-empty" data-bind="visible:!loading() && !error() && !pending().length">No payments await approval.</p>
+<!-- ko if: pending().length -->
+<div class="admin-table-scroll" tabindex="0" role="region" aria-label="Pending payment requests. Scroll for more rows and columns."><table class="admin-table admin-review-table"><caption class="send-off-screen">Payments awaiting an administrator decision</caption><thead><tr><th scope="col">Reference</th><th scope="col">Customer</th><th scope="col">Recipient</th><th scope="col" class="admin-cell-number">Amount</th><th scope="col">Purpose / customer note</th><th scope="col">Held since</th><th scope="col" class="admin-cell-action">Action</th></tr></thead><tbody data-bind="foreach:pending"><tr data-bind="css: {'is-selected': $parent.selected() && $parent.selected().transactionId === transactionId}"><th scope="row" data-bind="text:transactionRef"></th><td data-bind="text:customerName"></td><td data-bind="text:beneficiaryName"></td><td class="admin-cell-number" data-bind="text:$parent.money(amount)"></td><td class="admin-cell-note" data-bind="text:purpose || 'No purpose supplied'"></td><td class="admin-cell-date" data-bind="text:$parent.when(createdAt)"></td><td class="admin-cell-action"><button class="admin-button admin-table-button" data-bind="click:$parent.select,disable:$parent.busy,attr:{'aria-label':'Review request ' + transactionRef}">Review request <span aria-hidden="true">↗</span></button></td></tr></tbody></table></div><!-- /ko --></section>
+<!-- ko if:selected --><section class="admin-panel admin-hold-review" data-bind="reveal:selected() && selected().transactionId"><h2 data-bind="text:selected().transactionRef"></h2><p data-bind="text:selected().customerName+' → '+selected().beneficiaryName+' · '+masked(selected().beneficiaryBankAccountNumber)"></p><p class="admin-review-amount" data-bind="text:money(selected().amount)"></p><h3>Purpose / customer note</h3><p style="white-space:pre-wrap;overflow-wrap:anywhere" data-bind="text:selected().purpose || 'No purpose supplied'"></p><h3>Risk assessment</h3><ul data-bind="foreach:selectedReasons"><li data-bind="text:$data"></li></ul>
+<label class="admin-review-confirm"><input type="checkbox" data-bind="checked:confirmed,disable:busy"> <span>I have reviewed the recipient, amount and customer note.</span></label>
 <div class="hold-actions"><button class="admin-button admin-button-go" data-bind="click:approve,disable:busy() || loading() || !confirmed() || forbidden() || pendingDecision() === 'decline',text:busy() && pendingDecision() === 'approve' ? 'Approving…' : 'Approve and settle'"></button><button class="admin-button" style="background:#a9322b;color:white" data-bind="click:decline,disable:busy() || loading() || !confirmed() || forbidden() || pendingDecision() === 'approve',text:busy() &amp;&amp; pendingDecision() === 'decline' ? 'Declining…' : 'Decline payment'"></button><button class="admin-button" data-bind="click:clear,disable:busy">Close review</button></div>
 </section><!-- /ko -->
 </section><!-- /ko -->
 <!-- ko if: !usersPage() && !holdsPage() -->
 <section class="admin-page" aria-labelledby="admin-title">
-<header class="admin-topbar"><a class="admin-brand" href="/admin/dashboard">SafePay / Administration</a><div class="admin-topbar-tools"><span class="admin-tag">Simulated Environment · Oversight</span><button class="admin-button admin-button-quiet" type="button" data-bind="click: logout, disable: signingOut, text: signingOut() ? 'Signing out…' : 'Sign out'"></button></div></header>
+<header class="admin-topbar"><a class="admin-brand safepay-brand" href="/admin/dashboard" aria-label="SafePay administration"><img class="brand-shield" src="css/images/safepay-brand-shield.png" width="48" height="48" alt=""><b class="brand-wordmark">SafePay<span class="brand-dot" aria-hidden="true">.</span><small>Administration</small></b></a><div class="admin-topbar-tools"><span class="admin-tag">Simulated Environment · Oversight</span><button class="admin-button admin-button-quiet" type="button" data-bind="click: logout, disable: signingOut, text: signingOut() ? 'Signing out…' : 'Sign out'"></button></div></header>
 <nav class="admin-nav" aria-label="Administration">
   <a href="/admin/dashboard" aria-current="page">Dashboard</a>
   <a href="/admin/holds">Held payments</a>
@@ -126,22 +132,6 @@
     </ul>
   </article>
   <article class="admin-panel">
-    <h2>Daily payment value</h2>
-    <p class="admin-muted">INR amounts for the selected dates. Total created versus the portion now settled; this is not revenue.</p>
-    <div class="admin-chart-legend"><span><i></i>Total: <b data-bind="text: money(dailyAmounts().totalAmount)"></b></span><span><i class="settled-key"></i>Settled: <b data-bind="text: money(dailyAmounts().settledAmount)"></b> (dashed)</span></div>
-    <!-- ko if: dailyAmounts().hasTrend -->
-    <p class="admin-muted" data-bind="text: 'Chart scale: ₹0 to ' + money(dailyAmounts().peak)"></p>
-    <svg class="admin-line-chart" viewBox="0 0 600 180" preserveAspectRatio="none" role="img" aria-labelledby="daily-value-title">
-      <title id="daily-value-title">Total and settled payment value by day. Exact values are in the daily summary table below.</title>
-      <path class="admin-line-grid" d="M10 20H590 M10 90H590 M10 160H590"></path>
-      <polyline class="admin-line-total" data-bind="attr: { points: dailyAmounts().total }"></polyline>
-      <polyline class="admin-line-settled" data-bind="attr: { points: dailyAmounts().settled }"></polyline>
-    </svg>
-    <div class="admin-chart-range"><span data-bind="text: date(loadedFrom())"></span><span data-bind="text: date(loadedTo())"></span></div>
-    <!-- /ko -->
-    <p data-bind="visible: !dailyAmounts().hasTrend">Choose a range with at least two reported days to see a trend. Available values remain in the table below.</p>
-  </article>
-  <article class="admin-panel">
     <h2>Current review queue</h2>
     <p class="admin-muted">Pending administrator reviews by payment amount. A current snapshot, independent of the date filter.</p>
     <p role="status" data-bind="visible: holdsError">The queue is unavailable. Refresh reports to try again.</p>
@@ -150,11 +140,17 @@
     <p class="admin-muted" data-bind="text: money(heldAmount()) + ' awaiting a decision'"></p>
     <!-- /ko -->
   </article>
-  <article class="admin-panel"><h2>High risk activity</h2><p class="admin-muted">High and very high risk payments recorded by the backend.</p><strong data-bind="text:highRiskRate"></strong><p data-bind="text:count(summary().highRiskTransactions)+' payments'"></p></article>
 </section>
-<section class="admin-panel"><h2>Users</h2><p role="alert" data-bind="visible:directoryError,text:directoryError,reveal:directoryError"></p><p class="admin-muted">View each customer’s linked accounts, balances and status.</p><a class="admin-button" href="/admin/users">Open users and accounts</a><div class="admin-table-scroll"><table class="admin-table"><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th></tr></thead><tbody data-bind="foreach:people"><tr><td data-bind="text:name"></td><td data-bind="text:email"></td><td data-bind="text:role"></td><td data-bind="text:status"></td></tr></tbody></table></div></section>
+<section class="admin-panel admin-table-panel" aria-labelledby="admin-users-snap-title">
+  <div class="admin-panel-head"><div><h2 id="admin-users-snap-title">Users &amp; accounts</h2><p class="admin-muted">Your user directory. Open a profile to view linked accounts and balances.</p></div><a class="admin-button" href="/admin/users">View users &amp; accounts <span aria-hidden="true">↗</span></a></div>
+  <p role="alert" data-bind="visible:directoryError,text:directoryError,reveal:directoryError"></p>
+  <p class="admin-empty" data-bind="visible: !directoryError() && !people().length">No users found.</p>
+  <!-- ko if: !directoryError() && people().length -->
+  <div class="admin-table-scroll" tabindex="0" role="region" aria-label="User directory overview. Scroll for more rows and columns."><table class="admin-table admin-users-table"><caption class="send-off-screen">Registered users, roles and account status</caption><thead><tr><th scope="col">Name</th><th scope="col">Email</th><th scope="col">Role</th><th scope="col">Status</th></tr></thead><tbody data-bind="foreach:people"><tr><th scope="row" data-bind="text:name"></th><td class="admin-cell-email" data-bind="text:email"></td><td><span class="admin-table-tag" data-bind="text:role"></span></td><td><span class="admin-table-tag" data-bind="text:status"></span></td></tr></tbody></table></div>
+  <!-- /ko -->
+</section>
 
-<section class="admin-panel" aria-labelledby="admin-holds-snap-title">
+<section class="admin-panel admin-table-panel" aria-labelledby="admin-holds-snap-title">
   <div class="admin-panel-head">
     <div>
       <h2 id="admin-holds-snap-title">Held payments</h2><p role="alert" data-bind="visible:holdsError,text:holdsError,reveal:holdsError"></p>
@@ -165,25 +161,25 @@
   <p class="admin-empty" role="status" data-bind="visible: !holdsError() && !pendingHolds().length">No payments are on hold right now.</p>
   <!-- ko if: pendingHolds().length -->
   <div class="admin-table-scroll" tabindex="0" role="region" aria-label="Payments currently on hold">
-    <table class="admin-table"><thead><tr><th scope="col">Reference</th><th scope="col">Customer</th><th scope="col">To</th><th scope="col">Amount</th><th scope="col">Held since</th><th scope="col">Review status</th></tr></thead>
+    <table class="admin-table admin-holds-table"><caption class="send-off-screen">Current held payment snapshot</caption><thead><tr><th scope="col">Reference</th><th scope="col">Customer</th><th scope="col">Recipient</th><th scope="col" class="admin-cell-number">Amount</th><th scope="col">Held since</th><th scope="col">Review status</th></tr></thead>
     <tbody data-bind="foreach: pendingHolds">
       <tr>
         <th scope="row" data-bind="text: transactionRef"></th>
         <td data-bind="text: customerName"></td>
         <td data-bind="text: beneficiaryName"></td>
-        <td data-bind="text: $parent.money(amount)"></td>
-        <td data-bind="text: $parent.when(createdAt)"></td>
-        <td data-bind="text: 'Awaiting admin approval'"></td>
+        <td class="admin-cell-number" data-bind="text: $parent.money(amount)"></td>
+        <td class="admin-cell-date" data-bind="text: $parent.when(createdAt)"></td>
+        <td><span class="admin-table-tag admin-table-tag-pending">Awaiting approval</span></td>
       </tr>
     </tbody></table>
   </div>
   <!-- /ko -->
 </section>
-<section class="admin-panel" aria-labelledby="admin-daily-title"><h2 id="admin-daily-title">Daily transaction summary</h2>
-<p class="admin-muted" data-bind="text: date(loadedFrom()) + ' – ' + date(loadedTo())"></p>
+<section class="admin-panel admin-table-panel" aria-labelledby="admin-daily-title"><div class="admin-panel-head"><div><h2 id="admin-daily-title">Daily transaction summary</h2>
+<p class="admin-muted" data-bind="text: date(loadedFrom()) + ' – ' + date(loadedTo()) + ' · All amounts in INR'"></p></div><span class="admin-count" data-bind="text: daily().length + ' reported days'"></span></div>
 <!-- ko if: daily().length -->
 <div class="admin-table-scroll" tabindex="0" role="region" aria-label="Daily transactions. Scroll horizontally for more columns.">
-<table class="admin-table"><caption class="send-off-screen">Daily counts and amounts for the selected dates</caption><thead><tr><th scope="col">Date</th><th scope="col">Total transactions</th><th scope="col">Settled</th><th scope="col">Protected</th><th scope="col">Hard holds</th><th scope="col">Cancelled</th><th scope="col">Rejected</th><th scope="col">Total amount</th><th scope="col">Settled amount</th></tr></thead><tbody data-bind="foreach: daily"><tr><th scope="row" data-bind="text: $parent.date(date)"></th><td data-bind="text: $parent.count(summary.totalTransactions)"></td><td data-bind="text: $parent.count(summary.settledTransactions)"></td><td data-bind="text: $parent.count(summary.protectedTransactions)"></td><td data-bind="text: $parent.count(summary.hardHolds)"></td><td data-bind="text: $parent.count(summary.cancelledTransactions)"></td><td data-bind="text: $parent.count(summary.rejectedTransactions)"></td><td data-bind="text: $parent.money(summary.totalAmount)"></td><td data-bind="text: $parent.money(summary.settledAmount)"></td></tr></tbody></table></div>
+<table class="admin-table admin-daily-table"><caption class="send-off-screen">Daily counts and amounts for the selected dates, most recent first</caption><thead><tr><th scope="col">Date</th><th scope="col">Payments</th><th scope="col">Settled</th><th scope="col">Protected</th><th scope="col">Hard holds</th><th scope="col">Cancelled</th><th scope="col">Rejected</th><th scope="col">Total amount</th><th scope="col">Settled amount</th></tr></thead><tbody data-bind="foreach: daily"><tr><th scope="row" data-bind="text: $parent.date(date)"></th><td class="admin-cell-total" data-bind="text: $parent.count(summary.totalTransactions)"></td><td data-bind="text: $parent.count(summary.settledTransactions)"></td><td data-bind="text: $parent.count(summary.protectedTransactions)"></td><td data-bind="text: $parent.count(summary.hardHolds)"></td><td data-bind="text: $parent.count(summary.cancelledTransactions)"></td><td data-bind="text: $parent.count(summary.rejectedTransactions)"></td><td data-bind="text: $parent.money(summary.totalAmount)"></td><td data-bind="text: $parent.money(summary.settledAmount)"></td></tr></tbody></table></div>
 <!-- /ko -->
 <p class="admin-empty" role="status" data-bind="visible: !daily().length">No transactions were recorded in this date range.</p>
 </section>

@@ -84,16 +84,18 @@
     <p class="pay-from">From <span data-bind="text: (accountType === 'SAVINGS' ? 'Savings' : 'Current') + ' ' + $parent.mask(accountNumber)"></span></p>
     <!-- /ko -->
     <!-- ko if: showProcessFlux -->
-    <div class="flux-loader flux-loader-live" role="status" aria-live="polite">
-      <p class="flux-phase" data-bind="foreach: fluxChars"><span class="flux-char" data-bind="text: char, style: { 'animation-delay': delay }"></span></p>
-      <div class="flux-bar" data-bind="style: {'--flux': fluxPercent}"><i></i></div>
-      <p class="flux-caption">Checking this payment before it can settle.</p>
+    <div class="protect-phone payment-progress gauge-waiting">
+      <div class="payment-gauge" role="img" aria-label="Checking payment">
+        <svg viewBox="0 0 200 120" aria-hidden="true"><path class="payment-arc-track" d="M18 105 A82 82 0 0 1 182 105"/><path class="payment-arc-value" d="M18 105 A82 82 0 0 1 182 105" pathLength="257.6" stroke-dasharray="257.6"/></svg>
+        <p class="payment-gauge-label">Checking</p>
+      </div>
+      <p class="protect-copy" role="status">Checking this payment before it can settle.</p>
     </div>
     <!-- /ko -->
     
     <p role="alert" class="recipient-error" data-bind="visible: paymentError, text: paymentError, reveal: paymentError"></p>
     
-    <button type="button" class="send-continue pay-cta pay-shimmer" data-bind="click: confirm, disable: busy"><span class="spin" aria-hidden="true" data-bind="visible: busy"></span><span data-bind="text: busy() ? 'Processing…' : attemptLocked() ? 'Retry same payment' : 'Confirm & Pay'"></span></button>
+    <button type="button" class="send-continue pay-cta pay-shimmer" data-bind="click: confirm, disable: busy"><span data-bind="text: busy() ? 'Processing…' : attemptLocked() ? 'Retry same payment' : 'Confirm & Pay'"></span></button>
     
     
     <p class="send-subtitle" data-bind="visible: attemptLocked">Keep this page open while checking the outcome. Retrying here uses the same payment request; do not start a second payment if the result is uncertain.</p>
@@ -104,59 +106,13 @@
     <div class="pay-panel protect-stage" data-bind="reveal: true">
       <h2 data-bind="text: resultTitle"></h2>
       <span class="pay-tone" data-bind="css: riskTone, text: riskBadge"></span>
-      <!-- ko if: sheetKind() === 'short' -->
-      <div class="protect-phone" aria-live="polite">
-        <div class="flux-gauge">
-          <svg viewBox="0 0 200 120" role="img" data-bind="attr: {'aria-label': countdown}">
-            <defs>
-                <linearGradient id="protectFlux" x1="0" y1="0" x2="1" y2="0">
-                  <stop offset="0%" stop-color="#0e554f"/>
-                  <stop offset="55%" stop-color="#19a38a"/>
-                  <stop offset="100%" stop-color="#cfe8e1"/>
-                </linearGradient>
-            </defs>
-            <path class="flux-track-arc" d="M18 105 A 82 82 0 0 1 182 105"/>
-            <path class="flux-value-arc" d="M18 105 A 82 82 0 0 1 182 105" pathLength="257.6" stroke-dasharray="257.6" data-bind="attr: {'stroke-dashoffset': arcOffset}"/>
-          </svg>
-          <p class="protect-clock" data-bind="text: isSettling() ? 'Settling' : countdownClock"></p>
-          <span class="flux-min">0%</span><span class="flux-max">100%</span>
+      <div class="protect-phone payment-progress" data-bind="css: 'gauge-' + gauge().mode">
+        <div class="payment-gauge" role="img" data-bind="attr: {'aria-label': gauge().mode === 'timed' ? gauge().label + ' remaining' : gauge().label}">
+          <svg viewBox="0 0 200 120" aria-hidden="true"><path class="payment-arc-track" d="M18 105 A82 82 0 0 1 182 105"/><path class="payment-arc-value" d="M18 105 A82 82 0 0 1 182 105" pathLength="257.6" stroke-dasharray="257.6" data-bind="attr: {'stroke-dashoffset': gauge().offset}"/></svg>
+          <p class="payment-gauge-label" data-bind="text: gauge().label"></p>
         </div>
-        <oj-progress-circle class="protect-ring send-off-screen" size="lg" data-bind="attr: {value: progressValue}"></oj-progress-circle>
-        <div class="flux-loader">
-          <p class="flux-phase" data-bind="foreach: fluxChars"><span class="flux-char" data-bind="text: char, style: { 'animation-delay': delay }"></span></p>
-          <div class="flux-bar" data-bind="style: {'--flux': fluxPercent}"><i></i></div>
-        </div>
-        <p class="protect-copy" data-bind="text: isSettling() ? 'The pause has ended. SafePay is settling this payment.' : 'Short pause. You can cancel until the timer ends.'"></p>
+        <p class="protect-copy" role="status" data-bind="text: gauge().caption"></p>
       </div>
-      <!-- /ko -->
-      <!-- ko if: sheetKind() === 'long' -->
-      <div class="protect-phone protect-long" aria-live="polite">
-        <p class="protect-clock protect-clock-inline" data-bind="text: isSettling() ? 'Settling' : countdownClock"></p>
-        <div class="long-track" role="img" data-bind="attr: {'aria-label': countdown}, foreach: longTicks"><i data-bind="css: { on: $data }"></i></div>
-        <div class="flux-loader">
-          <p class="flux-phase" data-bind="foreach: fluxChars"><span class="flux-char" data-bind="text: char, style: { 'animation-delay': delay }"></span></p>
-        </div>
-        <p class="protect-copy" data-bind="text: isSettling() ? 'The longer pause has ended. SafePay is settling this payment.' : 'Longer pause. You can still cancel until this bar completes.'"></p>
-      </div>
-      <!-- /ko -->
-      <!-- ko if: sheetKind() === 'hold' -->
-      <div class="protect-phone protect-hold" aria-live="polite">
-        <div class="hold-pulse" aria-hidden="true"><i></i><i></i><i></i></div>
-        <p class="protect-copy">Awaiting administrator approval. Only an administrator can approve this payment. The status updates automatically.</p>
-      </div>
-      <!-- /ko -->
-      <!-- ko if: sheetKind() === 'done' -->
-      <div class="protect-done" aria-live="polite">
-        <span class="done-burst" aria-hidden="true">✓</span>
-        <p class="protect-copy" data-bind="text: result().protectionSeconds > 0 ? 'The protection window ended and this payment has now settled.' : 'SafePay checked this payment and released it with no pause.'"></p>
-      </div>
-      <!-- /ko -->
-      <!-- ko if: sheetKind() === 'cancelled' -->
-      <div class="protect-cancelled" aria-live="polite">
-        <div class="cancel-track"><i></i></div>
-        <p class="protect-copy">This payment was cancelled before settlement. The amount never left your account.</p>
-      </div>
-      <!-- /ko -->
       <!-- ko with: result -->
       <p class="send-review-amount" data-bind="text: $parent.money(amount)"></p>
       <div class="pay-person"><div><strong data-bind="text: beneficiaryName"></strong><p data-bind="text: $parent.mask(beneficiaryBankAccountNumber || '')"></p></div></div>

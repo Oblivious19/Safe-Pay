@@ -57,7 +57,7 @@
         <!-- ko if: recent().length --><ul class="dashboard-transactions" data-bind="foreach: recent"><li>
           <oj-avatar size="xs" data-bind="attr: {initials: $parent.initials(beneficiaryName)}"></oj-avatar>
           <div class="payment-person"><strong data-bind="text: beneficiaryName || 'Payment'"></strong><time data-bind="text: $parent.formatDate(createdAt), attr: {datetime: createdAt}"></time></div>
-          <div class="payment-value"><strong data-bind="text: $parent.formatMoney(amount)"></strong><span class="payment-status" data-bind="text: $parent.statusLabel(state), css: $parent.riskClass($data)"></span></div>
+          <div class="payment-value"><strong data-bind="text: $parent.signedAmount($data), css: $parent.amountClass($data)"></strong><small class="dashboard-direction" data-bind="text: $parent.directionLabel($data)"></small><span class="payment-status" data-bind="text: $parent.statusLabel(state), css: $parent.riskClass($data)"></span></div>
         </li></ul><!-- /ko -->
       </section>
     <!-- /ko -->

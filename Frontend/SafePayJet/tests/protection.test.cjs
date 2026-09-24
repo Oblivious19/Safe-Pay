@@ -54,6 +54,54 @@ test('progress kind follows state and pause length', () => {
   assert.equal(p.progressKind({ state: 'CANCELLED' }), 'cancelled');
 });
 
+test('medium and high risk share the same gauge with their actual remaining time',()=>{
+  const now=100000;
+  for(const [riskTier,protectionSeconds,remaining] of [['MEDIUM',10,5],['HIGH',60,30]]) {
+    const tx={state:'PROTECTED',riskTier,protectionSeconds,protectionDeadline:now+remaining*1000};
+    const gauge=p.paymentGauge(tx,now);
+    assert.equal(gauge.mode,'timed');
+    assert.equal(gauge.label,p.formatCountdown(remaining));
+    assert.equal(gauge.offset,p.FLUX_ARC/2);
+  }
+});
+
+test('very high risk waits for administrator review, never an invented countdown',()=>{
+  const tx={state:'HARD_HOLD',riskTier:'VERY_HIGH',protectionSeconds:0};
+  const gauge=p.paymentGauge(tx,Date.now());
+  assert.equal(gauge.mode,'waiting');assert.equal(gauge.label,'Awaiting review');
+  assert.match(gauge.caption,/no countdown or automatic release/);
+  assert.equal(p.paymentGauge(tx,Date.now()+86400000).label,'Awaiting review');
+});
+
+test('elapsed or missing protection deadline waits for server status instead of settling locally',()=>{
+  for(const protectionDeadline of [undefined,100]) {
+    const tx={state:'PROTECTED',riskTier:'HIGH',protectionSeconds:60,protectionDeadline};
+    const gauge=p.paymentGauge(tx,200);
+    assert.equal(gauge.mode,'waiting');assert.equal(gauge.label,'Checking status');
+    assert.equal(tx.state,'PROTECTED');assert.doesNotMatch(gauge.label,/0:00|Settled/);
+  }
+});
+
+test('all settled tiers share the completed semicircle and final states do not animate',()=>{
+  for(const riskTier of ['LOW','MEDIUM','HIGH','VERY_HIGH']) {
+    const gauge=p.paymentGauge({state:'SETTLED',riskTier},Date.now());
+    assert.equal(gauge.mode,'settled');assert.equal(gauge.offset,0);assert.equal(gauge.label,'Settled');
+  }
+  assert.equal(p.paymentGauge({state:'CANCELLED'},0).label,'Cancelled');
+  assert.equal(p.paymentGauge({state:'REJECTED'},0).label,'Not approved');
+  assert.equal(p.paymentGauge({state:'REJECTED'},0).mode,'stopped');
+  assert.equal(p.paymentGauge(null,0).mode,'waiting');
+});
+
+test('payment template uses a common semicircle instead of tier-specific bars or rings',()=>{
+  const html=fs.readFileSync(path.join(__dirname,'../src/ts/views/send-money.html'),'utf8');
+  assert.match(html,/css: 'gauge-' \+ gauge\(\)\.mode/);
+  assert.match(html,/payment-arc-value/);
+  assert.doesNotMatch(html,/long-track|hold-pulse|done-burst|cancel-track|oj-progress-circle|sheetKind/);
+  const admin=fs.readFileSync(path.join(__dirname,'../src/ts/views/admin.html'),'utf8');
+  assert.match(admin,/admin-hold-review/);assert.match(admin,/<p class="admin-review-amount"/);
+});
+
 test('transactions show session email without using it as caller identity', async () => {
   const profile = ko.observable({ email: 'current@example.test' });
   const calls = [], module = { exports: {} };

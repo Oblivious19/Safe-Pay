@@ -97,3 +97,22 @@ test('dashboard markup has no email loader, secrets or debug fields', () => {
   assert.doesNotMatch(html,/Customer email|Load account|password|userId|riskReason|riskScore/);
   assert.match(html,/aria-busy/); assert.match(html,/dashboard-empty/); assert.match(html,/sessionExpired/);
 });
+
+test('dashboard signs and colours settled credits and debits without implying pending money moved',()=>{
+  const {model}=fixture();
+  assert.equal(model.signedAmount(payment(1)),'− ₹100.25');
+  assert.equal(model.amountClass(payment(1)),'amount-debit');
+  const credit={...payment(2),direction:'CREDIT'};
+  assert.equal(model.signedAmount(credit),'+ ₹100.25');
+  assert.equal(model.amountClass(credit),'amount-credit');
+  assert.equal(model.directionLabel(credit),'Incoming · credit');
+  assert.equal(model.directionLabel(payment(1)),'Outgoing · debit');
+  for(const state of ['PROTECTED','HARD_HOLD','CANCELLED','REJECTED']) {
+    const tx=payment(3,state);
+    assert.equal(model.signedAmount(tx),'₹100.25');
+    assert.equal(model.amountClass(tx),'');
+  }
+  const html=fs.readFileSync(path.join(__dirname,'../src/ts/views/dashboard.html'),'utf8');
+  assert.match(html,/signedAmount\(\$data\)/);
+  assert.match(html,/directionLabel\(\$data\)/);
+});

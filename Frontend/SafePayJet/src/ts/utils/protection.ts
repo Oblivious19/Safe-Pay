@@ -140,6 +140,43 @@ export function arcOffset(progress: number): number {
   return FLUX_ARC * (1 - value / 100);
 }
 
+/** Presentation only: one semicircle for every risk tier, driven by server state. */
+export function paymentGauge(tx: PaymentTransaction | null | undefined, now: number): {
+  mode: "timed" | "waiting" | "settled" | "stopped";
+  label: string; caption: string; offset: number;
+} {
+  if (tx?.state === "SETTLED") return {
+    mode: "settled", label: "Settled", offset: 0,
+    caption: (tx.protectionSeconds || 0) > 0
+      ? "This payment has settled after its protection window."
+      : "SafePay checked this payment and released it with no pause."
+  };
+  if (tx?.state === "CANCELLED" || tx?.state === "REJECTED") return {
+    mode: "stopped", label: tx.state === "CANCELLED" ? "Cancelled" : "Not approved", offset: 0,
+    caption: tx.state === "CANCELLED"
+      ? "This payment was cancelled before settlement. The amount never left your account."
+      : "This payment was not approved and has not settled."
+  };
+  if (tx?.state === "HARD_HOLD") return {
+    mode: "waiting", label: "Awaiting review", offset: FLUX_ARC,
+    caption: "Awaiting administrator approval. There is no countdown or automatic release. The status updates automatically."
+  };
+  if (tx?.state === "PROTECTED") {
+    const remaining = remainingFor(tx, now);
+    if (Number.isFinite(remaining) && remaining > 0) return {
+      mode: "timed", label: formatCountdown(remaining), offset: arcOffset(progressValue(tx, now)),
+      caption: "Your payment is paused. You can cancel until the timer ends."
+    };
+    return {
+      mode: "waiting", label: "Checking status", offset: FLUX_ARC,
+      caption: Number.isFinite(remaining)
+        ? "The pause has ended. Waiting for the server to confirm the payment status."
+        : "The timer is unavailable. Checking the latest payment status."
+    };
+  }
+  return { mode: "waiting", label: "Processing", offset: FLUX_ARC, caption: "Checking this payment before it can settle." };
+}
+
 export type ProgressKind = "idle" | "check" | "short" | "long" | "hold" | "done" | "cancelled";
 
 export function progressKind(tx?: PaymentTransaction | null, checking = false): ProgressKind {

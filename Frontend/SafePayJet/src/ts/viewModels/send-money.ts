@@ -5,12 +5,10 @@ import { Account, PaymentTransaction, TransactionRequest } from "../services/typ
 import { transactionService, newIdempotencyKey } from "../services/transactionService";
 import { ApiError } from "../services/apiError";
 import {
-  arcOffset as fluxArcOffset, canCancelPayment, CHECK_PHASES, explainReasons, fluxLetters,
-  formatCountdown, isInFlight, needsVerification, parseExpiry, phaseFor, progressKind, progressValue,
-  PROTECTION_PHASES, remainingFor, remainingSeconds, resultTitle, riskClass, statusLabel, tierLabel, tierRisk
+  canCancelPayment, explainReasons, formatCountdown, isInFlight, needsVerification,
+  paymentGauge, progressValue, remainingFor, resultTitle, riskClass, statusLabel, tierLabel, tierRisk
 } from "../utils/protection";
 import { armAudio, chimeForPayment } from "../utils/chime";
-import "ojs/ojprogress-circle";
 import "ojs/ojdialog";
 import "ojs/ojbutton";
 import "ojs/ojtrain";
@@ -45,7 +43,6 @@ class SendMoneyViewModel {
   refreshing = ko.observable(false);
   cancelOpen = ko.observable(false);
   now = ko.observable(Date.now());
-  processing = ko.observable(0);
   trainSteps = [
     { id: "beneficiary", label: "Recipient" },
     { id: "details", label: "Amount" },
@@ -62,7 +59,6 @@ class SendMoneyViewModel {
   private attempt?: { key: string; body: TransactionRequest };
   private cancelKey?: string;
   private timer?: ReturnType<typeof setInterval>;
-  private processTimer?: ReturnType<typeof setInterval>;
   private lastPoll = 0;
 
 
@@ -92,12 +88,7 @@ class SendMoneyViewModel {
   showReasons = ko.pureComputed(() => this.reasons().length > 0
     && !(this.isSettled() && !(this.result()?.protectionSeconds || 0)));
   riskTone = ko.pureComputed(() => this.result() ? riskClass(this.result() as PaymentTransaction) : "risk-neutral");
-  fluxPhase = ko.pureComputed(() => this.isProtected()
-    ? phaseFor(this.progressValue(), PROTECTION_PHASES)
-    : phaseFor(this.processing(), CHECK_PHASES));
-  fluxChars = ko.pureComputed(() => fluxLetters(this.fluxPhase()));
-  arcOffset = ko.pureComputed(() => fluxArcOffset(this.progressValue()));
-  fluxPercent = ko.pureComputed(() => `${this.isProtected() ? this.progressValue() : this.processing()}%`);
+  gauge = ko.pureComputed(() => paymentGauge(this.result(), this.now()));
   showProcessFlux = ko.pureComputed(() => this.busy() && this.attemptLocked() && !this.result());
   private alive = true;
   private initialStep: string | undefined;
@@ -106,11 +97,6 @@ class SendMoneyViewModel {
   sheetOpen = ko.pureComputed(() => this.step() !== "beneficiary");
   /** After a payment is placed, tapping the dimmed page should close the receipt. */
   canLeave = ko.pureComputed(() => this.step() === "result" && !!this.result() && !this.busy());
-  sheetKind = ko.pureComputed(() => progressKind(this.result(), this.showProcessFlux()));
-  longTicks = ko.pureComputed(() => {
-    const filled = this.progressValue();
-    return Array.from({ length: 12 }, (_, index) => ((index + 1) * 100) / 12 <= filled + 0.5);
-  });
   quickAmounts = ["500", "1000", "2000", "5000"];
   mask = (value: string): string => value.length > 4 ? "•••• " + value.slice(-4) : "••••";
   money = (value: number): string => new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value);
@@ -283,7 +269,7 @@ class SendMoneyViewModel {
         amount: this.amount().trim(), purpose: this.purpose()
       } };
     }
-    this.busy(true); this.attemptLocked(true); this.startProcessFlux();
+    this.busy(true); this.attemptLocked(true);
     armAudio();
     try {
       const response = await transactionService.create(this.attempt.body, this.attempt.key);
@@ -299,20 +285,8 @@ class SendMoneyViewModel {
         this.showPaymentError(error);
       }
     }
-    finally { this.stopProcessFlux(); if (this.alive) this.busy(false); }
+    finally { if (this.alive) this.busy(false); }
   };
-  private startProcessFlux(): void {
-    this.stopProcessFlux(); this.processing(8);
-    this.processTimer = setInterval(() => {
-      const next = this.processing() + 6;
-      this.processing(next >= 88 ? 88 : next);
-    }, 140);
-  }
-  private stopProcessFlux(): void {
-    if (this.processTimer) clearInterval(this.processTimer);
-    this.processTimer = undefined;
-    this.processing(this.result() ? 100 : 0);
-  }
   refreshResult = async (): Promise<void> => {
     const current = this.result();
     if (!current || this.refreshing() || this.busy()) return;
@@ -359,6 +333,6 @@ class SendMoneyViewModel {
     this.parametersChanged({ step: this.initialStep });
     void this.load();
   }
-  disconnected(): void { this.alive = false;    this.stopPolling(); this.stopProcessFlux(); this.result(null); this.attempt = undefined; this.selected(null); this.account(null); this.beneficiaries([]); this.amount(""); this.purpose("");  }
+  disconnected(): void { this.alive = false;    this.stopPolling(); this.result(null); this.attempt = undefined; this.selected(null); this.account(null); this.beneficiaries([]); this.amount(""); this.purpose("");  }
 }
 export = SendMoneyViewModel;

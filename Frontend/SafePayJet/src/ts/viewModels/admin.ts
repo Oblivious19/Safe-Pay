@@ -111,21 +111,6 @@ class AdminViewModel {
         ? Math.round((row.summary.settledTransactions / row.summary.totalTransactions) * 100) : 0
     }));
   });
-  dailyAmounts = ko.pureComputed(() => {
-    const rows = this.chartDays();
-    const peak = Math.max(1, ...rows.map(row => Math.max(row.summary.totalAmount, row.summary.settledAmount)));
-    const start = Date.parse(this.loadedFrom() || rows[0]?.date || this.from());
-    const end = Date.parse(this.loadedTo() || rows[rows.length - 1]?.date || this.to());
-    const point = (value: number, index: number): string => `${end > start ? 10 + (Date.parse(rows[index].date) - start) * 580 / (end - start) : 300},${160 - value / peak * 140}`;
-    return {
-      total: rows.map((row, i) => point(row.summary.totalAmount, i)).join(' '),
-      settled: rows.map((row, i) => point(row.summary.settledAmount, i)).join(' '),
-      totalAmount: rows.reduce((sum, row) => sum + row.summary.totalAmount, 0),
-      settledAmount: rows.reduce((sum, row) => sum + row.summary.settledAmount, 0),
-      peak,
-      hasTrend: rows.length > 1
-    };
-  });
   holdAmountBands = ko.pureComputed(() => {
     const rows = this.pendingHolds();
     const bands = [
