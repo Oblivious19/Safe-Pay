@@ -8,10 +8,31 @@
 5- After everything (the entire backend+ frontend is ready, working, launched tested) divide the whole project amongst - Aditya, Ruchi, Shreya, Gaurav- so as to prepare for the presentation of project. Each person should be able to understand and should be able to answer - which part he worked on, what classes, functions used to do what, why the choices were taken and most importantly should able to present (after understanding) an entire flow - from any specific APIs( in his work divided part) , how it goes from frontend to middleware to backend to what functions and classes exactly i.e. should be able to map and explain the entire flow of any feature in his/her part.
 
 -----------------------------
+##Database level changes:
+1. Way to remove safepay_app and safepay_owner safely throughout the database with all the constraints. Keep only safepay_onwer throughout the project.
+2. Change on the database level to remove UPI option from everywhere - if possible without dropping or changing the structure, assign null, dont take input or compulsory from user , like how in real world scenario structure is kept but it should not be accessible to input or basically be disabled, like a future upcoming or not yet functional types. 
+3. Need to re seed the data all over again - without edge case or simulated idempotency users/scheduled race customer etc.
+4. What are exact consequences of removing exactly these ELEMENT from the whole SafePay project - a) Idempotency key(whole concept), CorrelationID, what is transaction reference column for and what happens if decided to remove it; what is customer reference column doing.
 
-Add accounts simulation or method to add account(via user or admin in the database) for new registered customers needed. Otherwise wont be able to insert accounts for that customer. Find a way later on.
+
+
+##Backend Changes:
+1. Remove UPI option completely from database tables/constraints as well.
+2. Replace confirm and authorise / screen in the frontend with a SINGLE M-PIN (UPI Pin types, how people) in the backend. Not like an OTP but like a passkey where when the USER SET Mpin(simulated for now, do not store in the backend, just do frontend temp memory validation check, just one thing- simulated 6 digit pin should be randomly generated and shown in the frontend small size) should be entered and then the payment from  CREATED status should automatically be authorised AND jump to next state. And all other rules of transaction should be applied.
+3. Remove reverification step entirely - i.e. there should not be an extra state verification required in transaction flow. Risk officer can only approve or reject without reverification option
+##Frontend/UI-UX fixes: 
+
+1.Add accounts simulation or method to add account(via user or admin in the database) for new registered customers needed. Otherwise wont be able to insert accounts for that customer. Find a way later on. Balance 2 lakh default for every new user.
+
 
 ----------------------
 
 Implementation of Swagger UI for complete API testing end to end
 Check if mapper and logger are used in your backends
+
+INTEGRATE Jenkins with the final application
+--------------------
+
+Replace reserved(on frontend) with ON HOLD banner
+
+Give filters to sort by transaction by states for auditor

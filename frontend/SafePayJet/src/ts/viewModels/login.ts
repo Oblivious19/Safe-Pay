@@ -14,7 +14,7 @@ class Login {
  if(this.mode()==='phone'&&!/^[6-9][0-9]{9}$/.test(this.phone().trim()))this.phoneError('Enter a 10-digit Indian mobile number.');
  if(!this.password()||new TextEncoder().encode(this.password()).length>72)this.passwordError('Enter your password, at most 72 UTF-8 bytes.');
  if(this.emailError()||this.phoneError()||this.passwordError())return;
- this.submitting(true);try{await signIn(identifier,this.password());if(this.alive)location.assign('/'+landing());}catch(e){if(this.alive)this.error(errorText(e));}finally{this.password('');this.showPassword(false);if(this.alive)this.submitting(false);}};
+ this.submitting(true);try{await signIn(identifier,this.password());if(this.alive){const destination='/'+landing();try{sessionStorage.setItem('safepay-entry-transition',destination);}catch{/* Animation is optional when storage is restricted. */}location.assign(destination);}}catch(e){if(this.alive)this.error(errorText(e));}finally{this.password('');this.showPassword(false);if(this.alive)this.submitting(false);}};
  connected(){document.title='Login | SafePay';if(new URLSearchParams(location.search).get('reason')==='session-expired')this.error('Your session ended. Please sign in again.');}
  disconnected(){this.alive=false;this.password('');}
 }

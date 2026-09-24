@@ -15,7 +15,8 @@ import { reviewPending } from './services/staffService';
 import { recovery } from './services/transactionService';
 import 'ojs/ojknockout'; import 'ojs/ojmodule-element'; import 'ojs/ojbutton';
 class RootViewModel {
-  manner=ko.observable('polite'); message=ko.observable(''); routeBusy=ko.observable(true); entryLoaderBusy=ko.observable(false);
+  manner=ko.observable('polite'); message=ko.observable(''); routeBusy=ko.observable(true); entryLoaderBusy=ko.observable(document.documentElement.hasAttribute('data-safepay-entry-loader'));
+  currentYear=new Date().getFullYear(); private entryTimer:number|undefined;
   profile=ko.observable<Profile|null>(null); profileLoading=ko.observable(false); loggingOut=ko.observable(false); logoutError=ko.observable('');
   session=session; confirmation=confirmation; ready=ko.observable(false); sessionError=ko.observable('');
   navItems=ko.pureComputed(()=>{
@@ -39,23 +40,36 @@ class RootViewModel {
       void this.router.go({path,params}).then(()=>{ history.replaceState(null,'',location.pathname+(extra?'?'+extra:'')); window.dispatchEvent(new CustomEvent('safepay:route-params',{detail:params})); }).catch(e=>this.sessionError(errorText(e)));
     });
     this.router.beforeStateChange.subscribe(event=>{ if(!event.state)return; this.routeBusy(true); event.accept(Promise.resolve().then(()=>{if(!mayOpen(event.state.path || 'home')){this.routeBusy(false);throw new Error('Access denied');}})); });
-    this.router.currentState.subscribe(()=>{this.routeBusy(false);this.entryLoaderBusy(false);document.documentElement.removeAttribute('data-safepay-entry-loader');});
-    session.subscribe(value=>{ if(!this.ready()) return; if(!value){this.profile(null);this.ready(false);location.replace('/login?reason=session-expired');return;} if(this.identity && this.identity!==value.userId){this.profile(null);location.replace('/'+landing());} });
+    this.router.currentState.subscribe(()=>{this.routeBusy(false);});
+    session.subscribe(value=>{ if(!this.ready()) return; if(!value){this.profile(null);this.ready(false);if(!this.loggingOut())location.replace('/login?reason=session-expired');return;} if(this.identity && this.identity!==value.userId){this.profile(null);location.replace('/'+landing());} });
     confirmation.subscribe(value=>{ const dialog=document.getElementById('app-confirm') as HTMLDialogElement|null; if(value) requestAnimationFrame(()=>{if(dialog && !dialog.open)dialog.showModal();}); else if(dialog?.open)dialog.close(); });
     document.getElementById('globalBody')?.addEventListener('announce',((e:CustomEvent)=>{this.message(e.detail.message);this.manner(e.detail.manner);}) as EventListener);
     void this.initialize();
   }
   answer=(yes:boolean)=>{const c=confirmation();confirmation(null);c?.resolve(yes);};
   cancelConfirmation=()=>{this.answer(false);return false;};
+  private finishEntry(){
+    if(this.entryTimer!==undefined)return;
+    const started=Number(document.documentElement.getAttribute('data-safepay-entry-start')) || Date.now();
+    const reveal=()=>{
+      this.entryLoaderBusy(false);
+      document.documentElement.removeAttribute('data-safepay-entry-loader');
+      document.documentElement.removeAttribute('data-safepay-booting');
+      document.documentElement.removeAttribute('data-safepay-bootstrap-timeout');
+      document.getElementById('safepay-app-content')?.removeAttribute('inert');
+    };
+    if(this.entryLoaderBusy())this.entryTimer=window.setTimeout(reveal,Math.max(0,2000-(Date.now()-started)));
+    else reveal();
+  }
   initialize=async()=>{
     this.sessionError('');this.routeBusy(true);
     try { await restore();this.identity=session()?.userId || null;const route=location.pathname.split('/')[1] || 'home';
       if(!mayOpen(route)){location.replace(session()?'/'+landing():'/login');return;}
       if(session()?.authorities.includes('CUSTOMER')){this.profileLoading(true);try{this.profile(await profileApi());}catch(e){this.logoutError(errorText(e));}finally{this.profileLoading(false);}}
       this.ready(true);startRealtime();await this.router.sync();
-    } catch(e){this.sessionError(errorText(e));} finally{this.routeBusy(false);this.entryLoaderBusy(false);document.documentElement.removeAttribute('data-safepay-entry-loader');Context.getPageContext().getBusyContext().applicationBootstrapComplete();}
+    } catch(e){this.sessionError(errorText(e));} finally{this.routeBusy(false);this.finishEntry();Context.getPageContext().getBusyContext().applicationBootstrapComplete();}
   };
   logout=async()=>{if(this.loggingOut())return;try{if(reviewPending() && !await confirmAction('Unconfirmed review action','Inspect the review and its audit evidence before signing out. Signing out discards the original request text.','Sign out anyway',true))return;if(session()?.authorities.includes('CUSTOMER') && recovery().status!=='empty' && !await confirmAction('Unconfirmed payment','A payment outcome still needs reconciliation. Signing out clears recovery metadata; retain its reference and review history before starting a replacement.','Sign out anyway',true))return;
-    this.loggingOut(true);await logout();location.replace('/login');}catch(e){this.logoutError(errorText(e));this.loggingOut(false);}};
+    this.loggingOut(true);await logout();location.replace('/home');}catch(e){this.logoutError(errorText(e));this.loggingOut(false);}};
 }
 export default new RootViewModel();

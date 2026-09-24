@@ -11,16 +11,25 @@
   <!-- injector:font -->
   <!-- endinjector:font -->
   <script>
-    /* Give the landing and post-login dashboard handoff a visual from the
-       very first paint. appController clears this bootstrap-only flag on
-       every completed or failed router sync. */
+    /* Hide unbound templates, but animate only home and one sign-in handoff. */
     (function () {
       var path = window.location.pathname;
-      var show = path === "/" || path === "/home";
-      if (!show && path === "/dashboard") {
-        try { show = window.sessionStorage && window.sessionStorage.getItem("safepay-dashboard-entry-loader") === "1"; } catch (error) { show = false; }
+      var signInArrival = false;
+      try {
+        signInArrival = window.sessionStorage.getItem("safepay-entry-transition") === path;
+        window.sessionStorage.removeItem("safepay-entry-transition");
+      } catch (error) { /* Storage restrictions must never block navigation. */ }
+      document.documentElement.setAttribute("data-safepay-booting", "true");
+      if (path === "/" || path === "/home" || path === "/home/" || signInArrival) {
+        document.documentElement.setAttribute("data-safepay-entry-loader", "true");
       }
-      if (show) document.documentElement.setAttribute("data-safepay-entry-loader", "true");
+      document.documentElement.setAttribute("data-safepay-entry-start", String(Date.now()));
+      if (signInArrival) document.documentElement.setAttribute("data-safepay-refresh", "true");
+      window.setTimeout(function () {
+        if (document.documentElement.hasAttribute("data-safepay-booting")) {
+          document.documentElement.setAttribute("data-safepay-bootstrap-timeout", "true");
+        }
+      }, 15000);
     }());
   </script>
   <link rel="stylesheet" href="js/libs/manrope/400.css">
@@ -42,6 +51,7 @@
   <link rel="stylesheet" href="css/loading-overlay.css">
   <link rel="stylesheet" href="css/page-transitions.css">
   <link rel="stylesheet" href="css/contract-integration.css">
+  <link rel="stylesheet" href="css/brand-refresh.css">
 </head>
 <body class="oj-web-applayout-body customer-shell">
   <div id="globalBody">
@@ -54,13 +64,15 @@
         </div>
         <p class="safepay-loader-brand" aria-hidden="true">SafePay</p>
         <p class="safepay-loader-message" aria-hidden="true">Preparing your secure space<span class="safepay-loader-dots"><i></i><i></i><i></i></span></p>
+        <p class="safepay-bootstrap-help">Taking longer than expected. Check your connection, then <a href="">reload SafePay</a>.</p>
       </div>
     </div>
+    <div id="safepay-app-content" inert>
     <a class="skip-link" href="#main-content">Skip to content</a>
     <div id="announce" class="send-off-screen" data-bind="attr: {'aria-live': manner}" aria-atomic="true"><p data-bind="text: message"></p></div>
     <header class="customer-header" style="display:none" data-bind="visible: session() && selection.path() !== 'home' && selection.path() !== 'login' && selection.path() !== 'register'">
       <div class="customer-header-inner">
-        <a class="customer-brand" href="/home" aria-label="SafePay home"><span class="customer-logo" aria-hidden="true">S<span>✓</span></span>SafePay<span class="brand-dot" aria-hidden="true">.</span></a>
+        <a class="customer-brand" href="/home" aria-label="SafePay home"><span class="safepay-mark" aria-hidden="true"></span>SafePay<span class="brand-dot" aria-hidden="true">.</span></a>
         <div class="customer-header-tools">
           <button class="dashboard-secondary" data-bind="click: logout, disable: loggingOut"><span class="spin" aria-hidden="true" data-bind="visible: loggingOut"></span><span data-bind="text: loggingOut() ? 'Signing out…' : 'Logout'">Logout</span></button>
           <details class="header-disclosure" data-bind="visible:session() && session().authorities.includes('CUSTOMER')"><summary aria-label="Notifications"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M5 17h14l-2-3V9a5 5 0 0 0-10 0v5l-2 3ZM10 20h4"/></svg></summary><div class="header-popover"><strong>Payment updates</strong><p>Read your stored payment notifications.</p><a href="/notifications">View notifications →</a></div></details>
@@ -73,7 +85,18 @@
     <p class="login-message" role="alert" data-bind="visible:sessionError,text:sessionError"></p><button class="dashboard-secondary" data-bind="visible:sessionError,click:initialize">Retry connection</button>
     <main id="main-content" tabindex="-1"><!-- ko if: ready --><oj-module config="[[moduleAdapter.koObservableConfig]]"></oj-module><!-- /ko --></main>
     <dialog id="app-confirm" class="sp-confirm" aria-labelledby="confirm-title" data-bind="event:{cancel:cancelConfirmation}"><!-- ko with: confirmation --><h2 id="confirm-title" data-bind="text:title"></h2><p data-bind="text:message"></p><div class="sp-actions"><button class="recipient-secondary" data-bind="click:function(){$root.answer(false);}">Go back</button><button class="recipient-primary" data-bind="click:function(){$root.answer(true);},text:action"></button></div><!-- /ko --></dialog>
-    <footer class="customer-footer"><strong>SafePay<span aria-hidden="true"> ◇</span></strong><p>SafePay is a simulated risk-adaptive pre-settlement transaction-control layer.</p><span>Simulated payments. No real money is moved.</span></footer>
+    <footer class="customer-footer">
+      <div class="footer-main">
+        <div class="footer-identity"><a class="footer-brand" href="/home" aria-label="SafePay home"><span class="safepay-mark" aria-hidden="true"></span>SafePay<span class="brand-dot" aria-hidden="true">.</span></a><p class="footer-tagline">Every payment. A little more peace of mind.</p></div>
+        <nav class="footer-navigation" aria-label="Footer navigation"><a href="/home">Home</a><a href="/about">About SafePay</a><a href="/home#how-it-works">How it works</a></nav>
+        <div class="footer-social"><span class="footer-label">Stay connected</span><div class="footer-social-icons">
+          <span role="img" aria-label="Twitter — coming soon" title="Twitter — coming soon"><svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><path d="M22 5.9a8.2 8.2 0 0 1-2.4.7 4.2 4.2 0 0 0 1.8-2.3 8.3 8.3 0 0 1-2.6 1 4.1 4.1 0 0 0-7.1 2.8c0 .3 0 .6.1.9A11.7 11.7 0 0 1 3.3 4.7a4.1 4.1 0 0 0 1.3 5.5 4.1 4.1 0 0 1-1.9-.5v.1A4.1 4.1 0 0 0 6 13.8a4.1 4.1 0 0 1-1.8.1 4.1 4.1 0 0 0 3.8 2.8 8.3 8.3 0 0 1-5.1 1.8H2a11.7 11.7 0 0 0 18-9.9v-.5A8.4 8.4 0 0 0 22 5.9Z"/></svg></span>
+          <span role="img" aria-label="Instagram — coming soon" title="Instagram — coming soon"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg></span>
+        </div></div>
+      </div>
+      <div class="footer-bottom"><span>© <span data-bind="text: currentYear"></span> SafePay</span><span>Simulated payments · No real money is moved.</span></div>
+    </footer>
+    </div>
   </div>
   <!-- injector:scripts -->
   <!-- endinjector -->

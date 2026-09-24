@@ -1,17 +1,17 @@
 <section class="login-page onboarding-page" aria-labelledby="onboarding-title">
-<div class="login-brand customer-brand">SafePay<span class="brand-dot">.</span></div>
+<aside class="auth-intro"><a class="login-brand customer-brand" href="/home" aria-label="SafePay home"><span class="safepay-mark" aria-hidden="true"></span>SafePay<span class="brand-dot" aria-hidden="true">.</span></a><p class="auth-heading">Your next step.<br>A safer start.</p><p class="auth-caption">Make room for a little more peace of mind.</p></aside>
 <div class="login-card">
-<p class="login-overline">SIMULATED ENVIRONMENT</p>
-<h1 id="onboarding-title" tabindex="-1">Create your SafePay account</h1>
-<p class="login-intro">A few simple steps to get started. Use fictional details for this college demo.</p>
+<p class="login-overline" data-bind="text: step() === 'success' ? 'WELCOME TO SAFEPAY' : 'GET STARTED'"></p>
+<h1 id="onboarding-title" tabindex="-1" data-bind="text: step() === 'success' ? 'You’re all set' : 'Create your account'">Create your account</h1>
+<p class="login-intro" data-bind="text: step() === 'success' ? 'Your SafePay journey starts here.' : 'A safer start to everyday payments.'"></p>
 <ol class="onboarding-progress" aria-label="Registration progress" data-bind="visible: step() !== 'success'">
-<li data-bind="attr: {'aria-current': progress() === 1 ? 'step' : null}">1 Mobile</li>
-<li data-bind="attr: {'aria-current': progress() === 2 ? 'step' : null}">2 Details</li>
-<li data-bind="attr: {'aria-current': progress() === 3 ? 'step' : null}">3 Password</li>
+<li data-bind="attr: {'aria-current': progress() === 1 ? 'step' : null}, css: {'is-complete': progress() > 1}">Contact</li>
+<li data-bind="attr: {'aria-current': progress() === 2 ? 'step' : null}, css: {'is-complete': progress() > 2}">About you</li>
+<li data-bind="attr: {'aria-current': progress() === 3 ? 'step' : null}">Security</li>
 </ol>
 <form novalidate data-bind="submit: next, attr: {'aria-busy': busy}">
 <!-- ko if: step() === 'mobile' -->
-<h2>Mobile number</h2><p>Use your mobile number or email with your password to sign in. Contact verification is not enabled yet.</p>
+<h2>Stay connected</h2><p>Your mobile number makes signing in easier.</p>
 <div class="login-field"><label for="reg-phone">Mobile number (+91)</label><input id="reg-phone" type="tel" inputmode="numeric" maxlength="10" autocomplete="tel-national" required data-bind="textInput: phone, disable: busy"></div>
 <!-- /ko -->
 <!-- ko if: step() === 'details' -->
@@ -34,12 +34,8 @@
 <button class="onboarding-secondary" type="button" data-bind="visible: step() !== 'mobile' && step() !== 'success', click: back, disable: busy">Back</button>
 </form>
 <!-- ko if: step() === 'success' -->
-<h2>SafePay account created</h2>
-<p>Your customer identity is ready. Banking accounts are provisioned separately; a new profile may have no account.</p><p>Customer ID: <strong data-bind="text:userId"></strong></p><button type="button" class="recipient-secondary" data-bind="click:copy">Copy Customer ID</button><p role="status" data-bind="text:notice"></p>
-<a class="login-submit" href="/login">Go to Login</a>
+<div class="registration-success"><span class="safepay-mark" aria-hidden="true"></span><h2>Welcome aboard</h2><p>You can now sign in. Your payment account will be available once it has been set up.</p><div class="registration-reference"><span>Your customer ID</span><strong data-bind="text:userId"></strong><button type="button" class="recipient-secondary" data-bind="click:copy">Copy ID</button></div><p role="status" data-bind="visible:notice,text:notice"></p><a class="login-submit" href="/login">Go to Login</a></div>
 <!-- /ko -->
 <p class="login-registration" data-bind="visible: step() !== 'success'">Already have an account? <a href="/login">Login</a></p>
 </div>
-<p class="login-simulation">Simulated Environment</p>
-<p class="login-footnote">SafePay is a simulated risk-adaptive pre-settlement transaction-control layer.</p>
 </section>

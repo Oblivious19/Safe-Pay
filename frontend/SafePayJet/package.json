@@ -34,7 +34,7 @@
     "test:setup": "node --test tests/setup.test.cjs",
     "test:contracts": "tsc src/ts/services/wireCodec.ts src/ts/services/apiClient.ts src/ts/services/accountService.ts src/ts/services/beneficiaryService.ts src/ts/utils/paymentState.ts --target ES2022 --module commonjs --moduleResolution node --lib ES2022,DOM --strict --skipLibCheck --noEmitOnError --outDir .test-build/contracts && node --test tests/contracts.test.cjs",
     "test": "npm run test:recovery && npm run test:setup && npm run test:contracts && npm run test:ui && npm run test:evidence",
-    "test:ui": "node --test tests/integrated-ui.test.cjs",
+    "test:ui": "node --test tests/integrated-ui.test.cjs tests/entry-loader.test.cjs",
     "test:evidence": "node --test tests/snapshot-comparison.test.cjs"
   }
 }
