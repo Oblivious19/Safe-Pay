@@ -63,6 +63,12 @@ test('step 1 loads real service lists/account; Continue initially disabled', asy
   assert.equal(f.model.beneficiaries()[0], recipient); assert.equal(f.model.account(), account);
   assert.deepEqual(f.calls, ['beneficiaries', 'account']); assert.equal(f.model.canContinue(), false);
 });
+test('available funds details are collapsed until the customer asks to view them', async () => {
+  const f = fixture(); await f.model.load();
+  assert.equal(f.model.fundsExpanded(), false);
+  f.model.toggleFunds(); assert.equal(f.model.fundsExpanded(), true);
+  f.model.selectAccount(); assert.equal(f.model.fundsExpanded(), false);
+});
 test('empty list cannot continue', async () => { const f = fixture(async () => []); await f.model.load(); assert.equal(f.model.beneficiaries().length, 0); assert.equal(f.model.canContinue(), false); });
 test('select and Continue navigate without another API call; back preserves draft', async () => {
   const f = fixture(); await f.model.load(); f.model.choose(recipient); await f.model.next();
@@ -140,15 +146,16 @@ test('review payment action is guarded by busy state', () => {
   assert.match(html,/Go Back/); assert.match(html,/text: amountPreview/);
 });
 const result = {transactionId:123, transactionRef:'TXN-123',amount:50,state:'SETTLED',beneficiaryName:'Recipient',protectionExpiresAt:'',protectionSeconds:0};
-test('a verified hold stops asking for a call', async () => {
+test('a settled result offers no verification action', async () => {
   const settled = { ...result, transactionId: 322, state: 'SETTLED', verification: 'VERIFIED' };
   const f = fixture(undefined, undefined, { create: async () => settled });
   await f.model.load(); f.model.choose(recipient); await f.model.next();
   f.model.amount('150000'); await f.model.continueDetails();
   await f.model.confirm();
-  assert.equal(f.model.needsCall(), false);
   assert.equal(f.rang.length, 0);
   assert.deepEqual(f.heard, ['ok']);
+  const transactionsHtml = fs.readFileSync(path.join(__dirname, '../src/ts/views/transactions.html'), 'utf8');
+  assert.doesNotMatch(transactionsHtml, /Verify by call|Take the verification call/);
 });
 test('after a settled payment tapping away closes the receipt', async () => {
   const f = fixture(undefined, undefined, { create: async () => result });

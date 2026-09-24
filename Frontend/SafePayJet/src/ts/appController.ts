@@ -72,7 +72,7 @@ class RootViewModel {
     // Keep existing saved JET links working during the clean-route transition.
     if(window.location.pathname === "/admin" || window.location.pathname === "/admin/") window.history.replaceState(null,"","/admin/dashboard");
     const legacy = new URLSearchParams(window.location.search).get("ojr");
-    if (legacy && ["/login", "/dashboard", ...this.navItems.map(item => "/" + item.path)].includes(legacy)) {
+    if (legacy && ["/login", "/dashboard", "/admin/dashboard", "/admin/transactions", "/admin/holds", "/admin/users", ...this.navItems.map(item => "/" + item.path)].includes(legacy)) {
       window.history.replaceState(null, "", legacy);
     }
     document.getElementById("globalBody")!.addEventListener("announce", ((event: CustomEvent) => {

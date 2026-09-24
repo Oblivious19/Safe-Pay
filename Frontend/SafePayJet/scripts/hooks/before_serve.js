@@ -13,6 +13,7 @@ module.exports = function (configObj) {
     // Serve the app shell for known browser routes, never for API or asset URLs.
     const routes = new Set(['/login', '/dashboard', '/send-money', '/send-money/beneficiary', '/send-money/details', '/beneficiaries', '/transactions', '/profile']);
     routes.add('/admin'); routes.add('/admin/dashboard'); routes.add('/admin/login');
+    routes.add('/admin/transactions');
     routes.add('/admin/users');
     routes.add('/admin/holds');
     routes.add('/home');

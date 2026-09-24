@@ -60,7 +60,7 @@ test('beneficiary service uses real session endpoints and CSRF for writes', asyn
   assert.deepEqual(f.calls.map(c => [c.method, c.url]), [
     ['GET', 'http://localhost:8080/api/beneficiaries'], ['POST', 'http://localhost:8080/api/beneficiaries'],
     ['GET', 'http://localhost:8080/api/beneficiaries/3'], ['DELETE', 'http://localhost:8080/api/beneficiaries/3']]);
-  assert.deepEqual(JSON.parse(f.calls[1].body), { beneficiaryName: 'Recipient', bankAccountNumber: '00123', ifsc: 'HDFC0001234' });
+  assert.deepEqual(JSON.parse(f.calls[1].body), { beneficiaryName: 'Recipient', bankAccountNumber: '00123', ifsc: 'HDFC0001234', externalConfirmed: false });
   for (const call of f.calls) assert.equal(call.credentials, 'include');
   assert.equal(f.calls[1].headers.get('X-CSRF-TOKEN'), 'csrf-test');
   assert.equal(f.calls[3].headers.get('X-CSRF-TOKEN'), 'csrf-test'); assert.equal(f.calls[3].body, undefined);

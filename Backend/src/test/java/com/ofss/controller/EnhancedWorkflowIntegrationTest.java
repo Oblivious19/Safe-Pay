@@ -165,7 +165,7 @@ class EnhancedWorkflowIntegrationTest {
         long highId = high.path("transactionId").asLong();
         assertEquals("HIGH", high.path("riskTier").asText());
         assertEquals("PROTECTED", high.path("state").asText());
-        assertEquals(60, high.path("protectionSeconds").asInt());
+        assertEquals(30, high.path("protectionSeconds").asInt());
         String highCancelKey = UUID.randomUUID().toString();
         assertEquals("CANCELLED", customer.call("POST", "/api/transactions/" + highId + "/cancel", null,
                 200, highCancelKey, true).path("state").asText());

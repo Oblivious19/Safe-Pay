@@ -30,6 +30,8 @@ export interface PaymentTransaction {
   settledAt: string; cancelledAt: string;
   protectionRemainingMillis?: number | null; canCancel?: boolean; protectionDeadline?: number;
   verifiedAt?: string;
+  direction?: "DEBIT" | "CREDIT";
+  counterpartyName?: string;
 }
 /** A held payment as the bank sees it: one row of the admin review queue. */
 export interface HeldPayment {

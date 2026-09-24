@@ -23,7 +23,7 @@ public final class TransactionProtectionStateMachine {
         int seconds = switch (risk.riskTier()) {
             case LOW, VERY_HIGH -> 0;
             case MEDIUM -> 10;
-            case HIGH -> 60;
+            case HIGH -> 30;
         };
         require(risk.protectionDurationSeconds() == seconds
                 && risk.protectionRequired() == (risk.riskTier() != AssessmentRiskTier.LOW)

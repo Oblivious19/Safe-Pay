@@ -78,7 +78,7 @@ public class BeneficiaryController {
     @ExceptionHandler({HttpMessageNotReadableException.class, MethodArgumentNotValidException.class})
     ResponseEntity<Map<String, String>> invalidRequest() {
         return ResponseEntity.badRequest().body(Map.of("message",
-                "Provide beneficiaryName (1-100 characters), numeric bankAccountNumber (1-30 digits), valid 11-character IFSC, and optional positive accountId"));
+                "Invalid beneficiary details. Check the name, account number and IFSC code."));
     }
 
     @ExceptionHandler(DuplicateBeneficiaryException.class)

@@ -2,6 +2,7 @@ package com.ofss.repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Collection;
 import java.util.Optional;
 import java.math.BigDecimal;
 
@@ -10,11 +11,17 @@ import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import com.ofss.beans.RiskTier;
 
 import com.ofss.beans.TransactionDb;
 import com.ofss.beans.TransactionState;
 
 public interface TransactionDao extends JpaRepository<TransactionDb, Long> {
+    @EntityGraph(attributePaths = { "fromAccount", "fromAccount.user", "beneficiary" })
+    @Query("select t from TransactionDb t where (:state is null or t.state = :state) and (:risk is null or t.riskTier = :risk) and (:query is null or lower(t.fromAccount.user.name) like lower(concat('%', :query, '%')) or lower(t.fromAccount.user.email) like lower(concat('%', :query, '%')) or lower(t.transactionRef) like lower(concat('%', :query, '%')))")
+    Page<TransactionDb> findAdminTransactions(@Param("state") TransactionState state, @Param("risk") RiskTier risk, @Param("query") String query, Pageable pageable);
     @Query("select count(t) from TransactionDb t where t.fromAccount.user.userId = :userId "
             + "and t.beneficiary.beneficiaryId = :beneficiaryId and t.state = 'SETTLED'")
     long settledPaymentsToBeneficiary(@Param("userId") Long userId, @Param("beneficiaryId") Long beneficiaryId);
@@ -47,11 +54,14 @@ public interface TransactionDao extends JpaRepository<TransactionDb, Long> {
             + "and t.protectionExpiresAt <= local datetime order by t.fromAccount.accountId, t.transactionId")
     List<Long> findExpiredTransactionIds();
 
-    @EntityGraph(attributePaths = { "fromAccount", "beneficiary" })
+    @EntityGraph(attributePaths = { "fromAccount", "fromAccount.user", "beneficiary" })
     List<TransactionDb> findByFromAccountUserEmail(String email);
 
-    @EntityGraph(attributePaths = { "fromAccount", "beneficiary" })
+    @EntityGraph(attributePaths = { "fromAccount", "fromAccount.user", "beneficiary" })
     List<TransactionDb> findByFromAccountUserEmailAndState(String email, TransactionState state);
+
+    @EntityGraph(attributePaths = { "fromAccount", "fromAccount.user", "beneficiary" })
+    List<TransactionDb> findByBeneficiaryBankAccountNumberIn(Collection<String> accountNumbers);
     List<TransactionDb> findByStateAndProtectionExpiresAtLessThanEqual(TransactionState state, LocalDateTime time);
     boolean existsByFromAccountAccountId(Long accountId);
 

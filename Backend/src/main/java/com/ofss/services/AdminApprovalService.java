@@ -13,18 +13,19 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class AdminApprovalService {
-    private static final BigDecimal MINIMUM_BALANCE = new BigDecimal("5000.00");
     private static final String ACTION = "ADMIN_APPROVED_SETTLED";
     private final VerificationRepository verifications;
     private final AccountDao accounts;
     private final TransactionDao transactions;
     private final AuditLogDao audits;
     private final CurrentSessionService sessions;
+    private final InternalPaymentRecipientResolver recipients;
 
     public AdminApprovalService(VerificationRepository verifications, AccountDao accounts,
             TransactionDao transactions, AuditLogDao audits, CurrentSessionService sessions) {
         this.verifications = verifications; this.accounts = accounts; this.transactions = transactions;
         this.audits = audits; this.sessions = sessions;
+        this.recipients = new InternalPaymentRecipientResolver(accounts);
     }
 
     private void requireAdmin(LoginPrincipal caller) {
@@ -78,8 +79,8 @@ public class AdminApprovalService {
         BigDecimal pending = transactions.pendingAmount(accountId, List.of(TransactionState.PROTECTED, TransactionState.HARD_HOLD));
         if (account.getBalance() == null || pending == null || transaction.getAmount() == null
                 || transaction.getAmount().signum() <= 0 || pending.compareTo(transaction.getAmount()) < 0
-                || account.getBalance().subtract(pending).compareTo(MINIMUM_BALANCE) < 0) {
-            throw new TransactionValidationException(409, "Available funds must cover all held payments and the INR 5000 minimum");
+                || account.getBalance().subtract(pending).signum() < 0) {
+            throw new TransactionValidationException(409, "Available funds must cover all held payments");
         }
         BigDecimal remaining = account.getBalance().subtract(transaction.getAmount());
         if (verifications.settleVerified(id, transaction.getVersion(), key) != 1) {
@@ -89,6 +90,7 @@ public class AdminApprovalService {
         Account locked = accounts.findForSettlement(accountId)
                 .orElseThrow(() -> new ResourceNotFoundExcp("Account not found"));
         locked.setBalance(remaining); accounts.save(locked);
+        creditInternalRecipient(transaction, transaction.getAmount());
         TransactionDb settled = verifications.findByTransactionId(id)
                 .orElseThrow(() -> new ResourceNotFoundExcp("Transaction not found"));
         AuditLog audit = new AuditLog();
@@ -135,5 +137,17 @@ public class AdminApprovalService {
         audit.setOldState(TransactionState.HARD_HOLD.name()); audit.setNewState(TransactionState.CANCELLED.name());
         audit.setCreatedAt(declined.getCancelledAt()); audits.saveAndFlush(audit);
         return VerifiedTransactionResponse.from(declined);
+    }
+
+    private void creditInternalRecipient(TransactionDb transaction, BigDecimal amount) {
+        recipients.recipientAccountId(transaction.getBeneficiary()).ifPresent(recipientId -> {
+            Account recipient = accounts.findForSettlement(recipientId)
+                    .orElseThrow(() -> new ResourceNotFoundExcp("Recipient account not found"));
+            if (recipient.getStatus() != AccountStatus.ACTIVE) {
+                throw new TransactionValidationException(409, "Recipient SafePay account must be ACTIVE");
+            }
+            recipient.setBalance(recipient.getBalance().add(amount));
+            accounts.save(recipient);
+        });
     }
 }

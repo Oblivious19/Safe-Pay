@@ -47,8 +47,11 @@ public class TransactionController {
     @PostMapping(consumes = "application/json")
     public Map<String, Object> initiate(@RequestHeader("Idempotency-Key") String idempotencyKey,
             @Valid @RequestBody TransactionRequest input, @AuthenticationPrincipal LoginPrincipal caller) {
-        return toResponse(transactionService.initiate(input.fromAccountId(), input.beneficiaryId(),
-                input.amount(), input.purpose(), idempotencyKey, caller.userId()));
+        TransactionDb created = transactionService.initiate(input.fromAccountId(), input.beneficiaryId(),
+                input.amount(), input.purpose(), idempotencyKey, caller.userId());
+        // createdAt is read from Oracle inside the settlement transaction.  Reusing it here
+        // avoids a second clock query after the write and gives the browser the full server-set window.
+        return toResponse(created, needsProtectionClock(created) ? created.getCreatedAt() : null);
     }
 
     @GetMapping("/{transactionId}")
@@ -127,6 +130,9 @@ public class TransactionController {
         response.put("beneficiaryName", transaction.getBeneficiary().getBeneficiaryName());
         response.put("beneficiaryBankAccountNumber", transaction.getBeneficiary().getBankAccountNumber());
         response.put("beneficiaryIfsc", transaction.getBeneficiary().getIfsc());
+        response.put("direction", transaction.getDirection() == null ? "DEBIT" : transaction.getDirection());
+        response.put("counterpartyName", transaction.getCounterpartyName() == null
+                ? transaction.getBeneficiary().getBeneficiaryName() : transaction.getCounterpartyName());
         response.put("state", transaction.getState().name());
         response.put("riskTier", transaction.getRiskTier().name());
         response.put("riskReason", transaction.getRiskReason());

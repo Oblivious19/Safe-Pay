@@ -1,6 +1,6 @@
 import * as ko from "knockout";
 import { adminHoldService } from "../services/adminHoldService";
-import { adminReportService, AdminBookRow, AdminUserSnapshot } from "../services/adminReportService";
+import { adminReportService, AdminBookRow, AdminUserSnapshot, AdminTransactionPage } from "../services/adminReportService";
 import { ApiError } from "../services/apiError";
 import { authService } from "../services/authService";
 import { AdminUsersModel } from "./adminUsers";
@@ -23,6 +23,8 @@ class AdminViewModel {
   holds = ko.observableArray<HeldPayment>([]);
   ledger = ko.observableArray<AdminBookRow>([]);
   people = ko.observableArray<AdminUserSnapshot>([]);
+  transactionPage=ko.observable<AdminTransactionPage|null>(null);transactionState=ko.observable("");transactionRisk=ko.observable("");transactionQuery=ko.observable("");transactionLoading=ko.observable(false);
+  transactionsOnly=ko.observable(false);
   directoryError=ko.observable("");holdsError=ko.observable("");
   loading = ko.observable(false); signingOut = ko.observable(false);
   forbidden = ko.observable(false); error = ko.observable("");
@@ -152,6 +154,7 @@ class AdminViewModel {
       this.loadedFrom(from); this.loadedTo(to);
       this.daily(daily.slice().sort((a, b) => b.date.localeCompare(a.date)));
       this.summary(summary);
+      void this.loadTransactions(0);
       this.updated(new Date().toLocaleTimeString("en-IN"));
       try {
         const holds = await adminHoldService.list();
@@ -172,6 +175,8 @@ class AdminViewModel {
       else this.error("Reports are unavailable right now. Please try again.");
     } finally { if (generation === this.generation) this.loading(false); }
   };
+  loadTransactions=async(page=0):Promise<void>=>{if(this.transactionLoading())return;this.transactionLoading(true);try{this.transactionPage(await adminReportService.transactions(this.transactionState(),this.transactionRisk(),this.transactionQuery(),page));}catch{this.directoryError("Transactions could not be loaded.");}finally{this.transactionLoading(false);}};
+  applyTransactionFilters=():void=>{void this.loadTransactions(0);};
   logout = async (): Promise<void> => {
     if (this.signingOut()) return;
     this.signingOut(true);
@@ -184,7 +189,7 @@ class AdminViewModel {
     }
   };
   parametersChanged(params:{page?:string}):void{
-    this.generation++;this.usersPage()?.disconnected();this.holdsPage()?.disconnected();this.usersPage(null);this.holdsPage(null);this.loading(false);
+    this.generation++;this.usersPage()?.disconnected();this.holdsPage()?.disconnected();this.usersPage(null);this.holdsPage(null);this.transactionsOnly(false);this.loading(false);
     this.context.params=params;this.connected();
   }
   connected(): void {
@@ -196,6 +201,7 @@ class AdminViewModel {
       const model = new AdminHoldsModel(); this.holdsPage(model);
       document.title = "Held payments | SafePay"; void model.load(); return;
     }
+    if (this.context.params?.page === "transactions") { this.transactionsOnly(true); document.title="Transactions | SafePay"; void this.loadTransactions(0); return; }
     if (this.context.params?.page !== "dashboard") { window.location.replace("/login?admin=1&reason=session-expired"); return; }
     document.title = "Admin dashboard | SafePay"; void this.load();
   }

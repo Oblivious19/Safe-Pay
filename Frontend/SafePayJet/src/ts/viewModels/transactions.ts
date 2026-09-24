@@ -1,11 +1,11 @@
 import * as ko from "knockout";
 import app from "../appController";
 import * as AccUtils from "../accUtils";
-import { PaymentTransaction } from "../services/types";
+import { PaymentTransaction, TransactionState } from "../services/types";
 import { transactionService, newIdempotencyKey } from "../services/transactionService";
 import { ApiError } from "../services/apiError";
 import {
-  canCancelPayment, explainReasons, formatCountdown, needsVerification, parseExpiry, progressValue,
+  canCancelPayment, explainReasons, formatCountdown, parseExpiry, progressValue,
   remainingFor, remainingSeconds, resultTitle, riskClass, statusLabel, tierLabel
 } from "../utils/protection";
 import { armAudio, chimeForPayment, chimeIfSettled, rememberSettled } from "../utils/chime";
@@ -14,9 +14,13 @@ import "ojs/ojbutton";
 import "ojs/ojavatar";
 import "ojs/ojdrawerpopup";
 
+type TransactionSort = "NEWEST" | "OLDEST" | "AMOUNT_HIGH" | "AMOUNT_LOW";
+
 class TransactionsViewModel {
   signedInEmail = ko.pureComputed(() => app.profile()?.email || "");
   transactions = ko.observableArray<PaymentTransaction>([]);
+  statusFilter = ko.observable<TransactionState | "">("");
+  sortBy = ko.observable<TransactionSort>("NEWEST");
   loading = ko.observable(false);
   error = ko.observable("");
   now = ko.observable(Date.now());
@@ -30,6 +34,20 @@ class TransactionsViewModel {
   private poll?: ReturnType<typeof setInterval>;
   private cancelKeys = new Map<number, string>();
   pendingCount = ko.pureComputed(() => this.transactions().filter((t) => t.state === "PROTECTED" || t.state === "HARD_HOLD").length);
+  displayedTransactions = ko.pureComputed(() => {
+    const rows = this.transactions().slice();
+    const timestamp = (row: PaymentTransaction): number => {
+      const value = Date.parse(row.createdAt || "");
+      return Number.isFinite(value) ? value : 0;
+    };
+    const amount = (row: PaymentTransaction): number => Number.isFinite(Number(row.amount)) ? Number(row.amount) : 0;
+    switch (this.sortBy()) {
+      case "OLDEST": return rows.sort((left, right) => timestamp(left) - timestamp(right));
+      case "AMOUNT_HIGH": return rows.sort((left, right) => amount(right) - amount(left) || timestamp(right) - timestamp(left));
+      case "AMOUNT_LOW": return rows.sort((left, right) => amount(left) - amount(right) || timestamp(right) - timestamp(left));
+      default: return rows.sort((left, right) => timestamp(right) - timestamp(left));
+    }
+  });
   selectedTitle = ko.pureComputed(() => resultTitle(this.selected(), remainingFor(this.selected(), this.now())));
   selectedReasons = ko.pureComputed(() => explainReasons(this.selected()?.riskReason));
   selectedCountdown = ko.pureComputed(() => {
@@ -45,7 +63,7 @@ class TransactionsViewModel {
     if(this.loading())return;const revision=++this.revision;
     this.loading(true); this.error("");
     try {
-      const list = await transactionService.list();
+      const list = await transactionService.list(this.statusFilter() || undefined);
       if(!this.alive || revision!==this.revision)return;
       if (!Array.isArray(list)) throw new Error("list");
       this.transactions(list);
@@ -83,7 +101,7 @@ class TransactionsViewModel {
   private async refresh(): Promise<void> {
     if(this.polling || this.loading() || this.busy())return;const revision=this.revision;this.polling=true;
     try {
-      const list = await transactionService.list();
+      const list = await transactionService.list(this.statusFilter() || undefined);
       if (!this.alive || revision!==this.revision || !Array.isArray(list)) return;
       this.transactions(list);
       for (const row of list) chimeIfSettled(row);
@@ -96,6 +114,13 @@ class TransactionsViewModel {
 
   openDetail = (tx: PaymentTransaction): void => { this.selected(tx); this.detailOpen(true); };
   closeDetail = (): void => { this.detailOpen(false); };
+  changeStatusFilter = (_: unknown, event: Event): void => {
+    this.statusFilter((event.target as HTMLSelectElement).value as TransactionState | "");
+    void this.load();
+  };
+  changeSort = (_: unknown, event: Event): void => {
+    this.sortBy((event.target as HTMLSelectElement).value as TransactionSort);
+  };
 
   requestCancel = (tx: PaymentTransaction): void => {
     if (!this.canCancel(tx) || this.busy()) return;
@@ -132,7 +157,6 @@ class TransactionsViewModel {
   }
 
   canCancel = (transaction: PaymentTransaction): boolean => canCancelPayment(transaction, this.now()) && !this.busy();
-  needsCall = (transaction: PaymentTransaction): boolean => needsVerification(transaction);
   fluxPercent = (tx: PaymentTransaction): string => { this.now(); return `${progressValue(tx, this.now())}%`; };
   countdownText = (tx: PaymentTransaction): string => {
     this.now();
@@ -144,6 +168,9 @@ class TransactionsViewModel {
   };
   formatMoney = (amount: number): string =>
     new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number.isFinite(amount) ? amount : 0);
+  counterpartyName = (transaction: PaymentTransaction): string => transaction.counterpartyName || transaction.beneficiaryName || transaction.transactionRef;
+  directionLabel = (transaction: PaymentTransaction): string => transaction.direction === "CREDIT" ? "Received" : "Sent";
+  signedAmount = (transaction: PaymentTransaction): string => `${transaction.direction === "CREDIT" ? "+" : "−"}${this.formatMoney(transaction.amount)}`;
   formatDate = (value: string): string => {
     if (!value) return "—";
     const date = new Date(value);

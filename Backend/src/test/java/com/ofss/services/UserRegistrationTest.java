@@ -79,7 +79,7 @@ class UserRegistrationTest {
         assertEquals("500000000004", account.getAccountNumber());
         assertEquals(AccountType.SAVINGS, account.getAccountType());
         assertEquals(AccountStatus.ACTIVE, account.getStatus());
-        assertEquals(new BigDecimal("5000.00"), account.getBalance());
+        assertEquals(new BigDecimal("200000.00"), account.getBalance());
         assertEquals(saved.getCreatedAt(), account.getCreatedAt());
         assertEquals(account.getCreatedAt(), account.getUpdatedAt());
     }

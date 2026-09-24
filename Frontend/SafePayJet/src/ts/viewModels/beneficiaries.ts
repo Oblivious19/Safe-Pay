@@ -21,6 +21,7 @@ class BeneficiariesViewModel {
   error = ko.observable("");
   success = ko.observable("");
   confirmDeactivate = ko.observable(false);
+  confirmExternal = ko.observable(false);
   private generation = 0;
   private alive = true;
   mask = (value: string): string => value.length > 4 ? "•••• " + value.slice(-4) : "••••";
@@ -38,7 +39,7 @@ class BeneficiariesViewModel {
       window.location.replace("/login?reason=session-expired");
       this.error("Your session has expired. Please log in again.");
     } else if (error instanceof ApiError && [400, 403, 404, 409].includes(error.status)) {
-      this.error(error.status === 409 ? "This beneficiary is already registered." : error.message);
+      this.error(error.message);
     } else this.error("We couldn’t complete this request. Please try again.");
   }
   load = async (): Promise<void> => {
@@ -60,18 +61,18 @@ class BeneficiariesViewModel {
   openAdd = (): void => {
     if (this.loading() || this.saving()) return;
     this.error(""); this.success(""); this.fieldErrors({});
-    this.beneficiaryName(""); this.bankAccountNumber(""); this.ifsc("");
+    this.beneficiaryName(""); this.bankAccountNumber(""); this.ifsc(""); this.confirmExternal(false);
     this.mode("add");
   };
   back = (): void => {
     if (this.saving() || this.loading()) return;
     this.mode("list"); this.selected(null); this.error(""); this.confirmDeactivate(false);
-    this.beneficiaryName(""); this.bankAccountNumber(""); this.ifsc("");
+    this.beneficiaryName(""); this.bankAccountNumber(""); this.ifsc(""); this.confirmExternal(false);
   };
-  save = async (): Promise<void> => {
+  save = async (externalConfirmed = false): Promise<void> => {
     if (this.saving()) return;
     if(!this.selectedAccountId()){this.error("Select an account first.");return;}
-    const input = { accountId: this.selectedAccountId()!, beneficiaryName: this.beneficiaryName(), bankAccountNumber: this.bankAccountNumber(), ifsc: this.ifsc() };
+    const input = { accountId: this.selectedAccountId()!, beneficiaryName: this.beneficiaryName(), bankAccountNumber: this.bankAccountNumber(), ifsc: this.ifsc(), externalConfirmed };
     const errors = validateBeneficiary(input);
     this.fieldErrors(errors); this.error(""); this.success("");
     if (Object.keys(errors).length) {
@@ -85,7 +86,12 @@ class BeneficiariesViewModel {
       this.beneficiaryName(""); this.bankAccountNumber(""); this.ifsc("");
       this.mode("list"); this.success("Beneficiary added successfully.");
       await this.load();
-    } catch (error) { if (this.alive) this.handle(error); }
+    } catch (error) {
+      if (this.alive && error instanceof ApiError && error.status === 409
+          && error.message.includes("Confirm to add them as an external beneficiary")) {
+        this.confirmExternal(true); this.error("");
+      } else if (this.alive) this.handle(error);
+    }
     finally { if (this.alive) this.saving(false); }
   };
   select = async (beneficiary: Beneficiary): Promise<void> => {
@@ -106,7 +112,7 @@ class BeneficiariesViewModel {
       await beneficiaryService.deactivate(this.selected()!.beneficiaryId);
       if (!this.alive) return;
       this.selected(null); this.confirmDeactivate(false); this.mode("list");
-      this.success("Beneficiary deactivated. They no longer appear in your saved list.");
+      this.success("Beneficiary removed. They no longer appear in your saved list.");
       await this.load();
     } catch (error) { if (this.alive) this.handle(error); }
     finally { if (this.alive) this.saving(false); }

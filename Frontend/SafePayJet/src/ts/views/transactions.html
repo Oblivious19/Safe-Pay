@@ -8,27 +8,44 @@
     <oj-button chroming="outlined" data-bind="click: load, disable: loading"><span class="spin" aria-hidden="true" data-bind="visible: loading"></span><span data-bind="text: loading() ? 'Loading…' : 'Refresh'"></span></oj-button>
   </header>
   <p class="tx-identity">Signed in as <span data-bind="text: signedInEmail"></span></p>
+  <section class="tx-controls" aria-label="Transaction filters">
+    <label for="transaction-status">Status
+      <select id="transaction-status" data-bind="value: statusFilter, event: { change: changeStatusFilter }, disable: loading">
+        <option value="">All transactions</option>
+        <option value="PROTECTED">Protected</option>
+        <option value="SETTLED">Settled</option>
+        <option value="CANCELLED">Cancelled</option>
+        <option value="HARD_HOLD">Held for review</option>
+      </select>
+    </label>
+    <label for="transaction-sort">Sort by
+      <select id="transaction-sort" data-bind="value: sortBy, event: { change: changeSort }, disable: loading">
+        <option value="NEWEST">Newest first</option>
+        <option value="OLDEST">Oldest first</option>
+        <option value="AMOUNT_HIGH">Amount: high to low</option>
+        <option value="AMOUNT_LOW">Amount: low to high</option>
+      </select>
+    </label>
+  </section>
   <p class="recipient-error" role="alert" data-bind="visible: error, text: error"></p>
   <div class="dash-skeleton" role="status" aria-label="Loading your payments" data-bind="visible: loading"><span class="sk sk-small"></span><span class="sk sk-line"></span><span class="sk sk-line"></span><span class="sk sk-line"></span></div>
   <div class="sk-cards" aria-hidden="true" data-bind="visible: loading"><span class="sk-card"></span><span class="sk-card"></span><span class="sk-card"></span></div>
-  <ul class="tx-list" data-bind="foreach: transactions">
+  <ul class="tx-list" data-bind="foreach: displayedTransactions">
     <li class="tx-row" data-bind="click: $parent.openDetail, css: $parent.riskClass($data)">
-      <oj-avatar size="xs" data-bind="attr: {initials: $parent.initials(beneficiaryName)}"></oj-avatar>
+      <oj-avatar size="xs" data-bind="attr: {initials: $parent.initials($parent.counterpartyName($data))}"></oj-avatar>
       <div class="tx-copy">
-        <strong data-bind="text: beneficiaryName || transactionRef"></strong>
+        <strong data-bind="text: $parent.counterpartyName($data)"></strong>
+        <small class="tx-direction" data-bind="text: $parent.directionLabel($data), css: direction === 'CREDIT' ? 'is-credit' : 'is-debit'"></small>
         <span data-bind="text: $parent.formatDate(createdAt)"></span>
         <div class="flux-bar flux-bar-mini" data-bind="visible: state === 'PROTECTED', style: {'--flux': $parent.fluxPercent($data)}"><i></i></div>
         <small data-bind="visible: $parent.countdownText($data), text: $parent.countdownText($data)"></small>
       </div>
       <div class="tx-meta">
-        <b data-bind="text: $parent.formatMoney(amount)"></b>
+        <b data-bind="text: $parent.signedAmount($data), css: direction === 'CREDIT' ? 'is-credit' : 'is-debit'"></b>
         <span class="payment-status" data-bind="text: $parent.statusLabel(state), css: $parent.riskClass($data)"></span>
         <span class="tx-tier" data-bind="text: $parent.tierLabel(riskTier)"></span>
         <!-- ko if: $parent.canCancel($data) -->
         <button type="button" class="tx-row-action" data-bind="click: function(data, event) { event.stopPropagation(); $parent.requestCancel($data); }">Cancel</button>
-        <!-- /ko -->
-        <!-- ko if: $parent.needsCall($data) -->
-        <button type="button" class="tx-row-action tx-row-call" data-bind="click: function(data, event) { event.stopPropagation(); $parent.startCall($data); }">Verify by call</button>
         <!-- /ko -->
       </div>
     </li>
@@ -58,9 +75,8 @@
       <!-- ko if: selected() && canCancel(selected()) -->
       <oj-button chroming="solid" class="send-continue" data-bind="click: function() { requestCancel(selected()); }">Cancel this payment</oj-button>
       <!-- /ko -->
-      <!-- ko if: selected() && needsCall(selected()) -->
+      <!-- ko if: selected() && selected().state === 'HARD_HOLD' -->
       <p class="protect-copy">This payment is waiting for administrator approval. Only an administrator can approve and settle it.</p>
-      <oj-button chroming="callToAction" class="send-continue" data-bind="click: function() { startCall(selected()); }">Take the verification call</oj-button>
       <!-- /ko -->
     </div>
   </oj-drawer-popup>

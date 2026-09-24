@@ -6,7 +6,7 @@ import { transactionService, newIdempotencyKey } from "../services/transactionSe
 import { ApiError } from "../services/apiError";
 import {
   arcOffset as fluxArcOffset, canCancelPayment, CHECK_PHASES, explainReasons, fluxLetters,
-  formatCountdown, isInFlight, needsVerification, parseExpiry, phaseFor, progressKind, progressValue,
+  formatCountdown, isInFlight, parseExpiry, phaseFor, progressKind, progressValue,
   PROTECTION_PHASES, remainingFor, remainingSeconds, resultTitle, riskClass, statusLabel, tierLabel, tierRisk
 } from "../utils/protection";
 import { armAudio, chimeForPayment } from "../utils/chime";
@@ -30,6 +30,7 @@ class SendMoneyViewModel {
   account = ko.observable<Account | null>(null);
   funds = ko.observable<AccountFunds | null>(null);
   fundsError = ko.observable("");
+  fundsExpanded = ko.observable(false);
   private fundsGeneration = 0;
   amount = ko.observable("");
   purpose = ko.observable("");
@@ -85,7 +86,6 @@ class SendMoneyViewModel {
   isProtected = ko.pureComputed(() => this.result()?.state === "PROTECTED");
   isSettling = ko.pureComputed(() => this.isProtected() && Number.isFinite(this.remaining()) && this.remaining() <= 0);
   isHold = ko.pureComputed(() => this.result()?.state === "HARD_HOLD");
-  needsCall = ko.pureComputed(() => needsVerification(this.result()));
   isSettled = ko.pureComputed(() => this.result()?.state === "SETTLED");
   isCancelled = ko.pureComputed(() => this.result()?.state === "CANCELLED");
   // An instant settle has nothing to explain; pauses and holds still show their reasons.
@@ -171,9 +171,10 @@ class SendMoneyViewModel {
   selectAccount = (): void => {
     if(this.attemptLocked() || this.result())return;
     const account=this.accounts().find(a=>a.accountId===this.selectedAccountId());
-    this.account(account||null);this.selected(null);this.funds(null);void this.refreshFunds();
+    this.account(account||null);this.selected(null);this.funds(null);this.fundsExpanded(false);void this.refreshFunds();
     this.beneficiaries(this.allBeneficiaries.filter(b=>b.accountId===account?.accountId && b.status==="ACTIVE"));
   };
+  toggleFunds = (): void => this.fundsExpanded(!this.fundsExpanded());
   refreshFunds = async (): Promise<void> => {
     const id=this.account()?.accountId;const generation=++this.fundsGeneration;this.fundsError("");
     if(!id){this.funds(null);return;}
@@ -257,7 +258,7 @@ class SendMoneyViewModel {
       this.result(null); this.stopPolling();
       window.location.replace("/login?reason=session-expired");
     }
-    this.paymentError(error instanceof ApiError && [400, 403, 404, 409].includes(error.status)
+    this.paymentError(error instanceof ApiError && [400, 403, 404, 409, 500].includes(error.status)
       ? error.message : "We couldn’t confirm the payment status. Check Transactions before starting another payment. You can retry this unchanged request here safely.");
   }
   private acceptResult(value: PaymentTransaction): void {

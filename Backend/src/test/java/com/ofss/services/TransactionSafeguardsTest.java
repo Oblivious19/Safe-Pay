@@ -101,9 +101,28 @@ class TransactionSafeguardsTest {
         verify(audits).save(argThat(a -> a.getNewState().equals("SETTLED")));
     }
 
+    @Test void timedInternalPaymentDebitsSenderAndCreditsRecipientOnce() {
+        payment.setProtectionExpiresAt(now);
+        Beneficiary beneficiary = new Beneficiary(); beneficiary.setBeneficiaryName("Subir Das");
+        beneficiary.setBankAccountNumber("999999999999"); beneficiary.setIfsc("HDFC0001234"); payment.setBeneficiary(beneficiary);
+        User recipientUser = new User(); recipientUser.setUserId(4L); recipientUser.setName("Subir Das");
+        Account recipient = new Account(); recipient.setAccountId(5L); recipient.setUser(recipientUser);
+        recipient.setAccountNumber("999999999999"); recipient.setStatus(AccountStatus.ACTIVE);
+        recipient.setBalance(new BigDecimal("2000.00"));
+        when(accounts.findByAccountNumber("999999999999")).thenReturn(Optional.of(recipient));
+        when(accounts.findForSettlement(5L)).thenReturn(Optional.of(recipient));
+        when(transactions.pendingAmount(eq(2L), anyList())).thenReturn(new BigDecimal("10000.00"));
+        when(transactions.settleProtected(3L, 0L)).thenReturn(1);
+
+        assertTrue(new ExpiredTransactionSettlementService(transactions, accounts, audits).settle(3L));
+        assertEquals(new BigDecimal("20000.00"), account.getBalance());
+        assertEquals(new BigDecimal("12000.00"), recipient.getBalance());
+        verify(accounts).save(account); verify(accounts).save(recipient);
+    }
+
     @Test void settlementCannotConsumeMinimumOrOtherReservations() {
         payment.setProtectionExpiresAt(now);
-        when(transactions.pendingAmount(eq(2L), anyList())).thenReturn(new BigDecimal("25000.01"));
+        when(transactions.pendingAmount(eq(2L), anyList())).thenReturn(new BigDecimal("30000.01"));
         assertThrows(InsufficientBalanceException.class,
                 () -> new ExpiredTransactionSettlementService(transactions, accounts, audits).settle(3L));
         verify(transactions, never()).settleProtected(anyLong(), anyLong());

@@ -57,8 +57,8 @@ public class AccountServiceImpl implements AccountService {
         if (accountDao.existsByUserUserId(userId)) {
             throw new AccountAlreadyExistsException("An account already exists for this user");
         }
-        if (account.getBalance() == null || account.getBalance().compareTo(new java.math.BigDecimal("5000.00")) < 0) {
-            throw new IllegalArgumentException("Account balance must be at least 5000");
+        if (account.getBalance() == null || account.getBalance().signum() < 0) {
+            throw new IllegalArgumentException("Account balance must not be negative");
         }
         account.setAccountId(null);
         account.setUser(user);
@@ -75,8 +75,8 @@ public class AccountServiceImpl implements AccountService {
     @Transactional
     public Account updateAccount(Long accountId, Account account) {
         Account savedAccount = getAccount(accountId);
-        if (account.getBalance() == null || account.getBalance().compareTo(new java.math.BigDecimal("5000.00")) < 0) {
-            throw new IllegalArgumentException("Account balance must be at least 5000");
+        if (account.getBalance() == null || account.getBalance().signum() < 0) {
+            throw new IllegalArgumentException("Account balance must not be negative");
         }
         savedAccount.setBalance(account.getBalance());
         return accountDao.save(savedAccount);

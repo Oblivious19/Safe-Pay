@@ -18,6 +18,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import jakarta.persistence.Version;
 import org.hibernate.annotations.JdbcTypeCode;
 
@@ -101,6 +102,14 @@ public class TransactionDb {
     @Column(name = "cancelled_at")
     private LocalDateTime cancelledAt;
 
+    /** Read-only customer-history metadata; deliberately not stored in the transaction table. */
+    @Transient
+    private String direction;
+
+    /** The other SafePay customer for an internal payment; never persisted. */
+    @Transient
+    private String counterpartyName;
+
     public Long getTransactionId() { return transactionId; }
     public void setTransactionId(Long transactionId) { this.transactionId = transactionId; }
     public String getTransactionRef() { return transactionRef; }
@@ -145,4 +154,8 @@ public class TransactionDb {
     public void setSettledAt(LocalDateTime settledAt) { this.settledAt = settledAt; }
     public LocalDateTime getCancelledAt() { return cancelledAt; }
     public void setCancelledAt(LocalDateTime cancelledAt) { this.cancelledAt = cancelledAt; }
+    public String getDirection() { return direction; }
+    public void setDirection(String direction) { this.direction = direction; }
+    public String getCounterpartyName() { return counterpartyName; }
+    public void setCounterpartyName(String counterpartyName) { this.counterpartyName = counterpartyName; }
 }

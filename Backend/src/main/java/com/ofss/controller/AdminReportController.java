@@ -21,6 +21,13 @@ public class AdminReportController {
     @GetMapping("/summary")
     public Summary summary() { return reports.summary(); }
 
+    @GetMapping
+    public TransactionPage transactions(@RequestParam(required=false) String state, @RequestParam(required=false) String risk,
+            @RequestParam(required=false) String query, @RequestParam(defaultValue="0") int page,
+            @RequestParam(defaultValue="20") int size, @RequestParam(defaultValue="createdAt") String sort) {
+        return reports.transactions(state, risk, query, page, size, sort);
+    }
+
     @GetMapping("/daily")
     public List<Daily> daily(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,

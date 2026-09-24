@@ -74,12 +74,41 @@ test('transactions show session email without using it as caller identity', asyn
   assert.equal(model.signedInEmail(), 'different@example.test');
   profile(null); assert.equal(model.signedInEmail(), '');
   await model.load(); assert.ok(calls.length > 0);
-  assert.ok(calls.every(args => args.length === 0));
+  assert.ok(calls.every(args => args.length === 1 && args[0] === undefined));
+  model.statusFilter('SETTLED');
+  await model.load();
+  assert.equal(calls.at(-1)[0], 'SETTLED');
   assert.equal(model.error(), '');
   assert.doesNotMatch(source, /shreya@example|this\.email|userEmail/);
   const html = fs.readFileSync(path.join(__dirname, '../src/ts/views/transactions.html'), 'utf8');
   assert.match(html, /Signed in as/);
   assert.match(html, /text: signedInEmail/);
+});
+
+test('transactions sort the visible rows without changing their saved state', () => {
+  const profile = ko.observable({ email: 'current@example.test' });
+  const module = { exports: {} };
+  const source = fs.readFileSync(path.join(__dirname, '../src/ts/viewModels/transactions.ts'), 'utf8');
+  const code = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2021 } }).outputText;
+  const imports = {
+    knockout: ko, '../appController': { default: { profile } }, '../accUtils': { announce() {} }, '../services/types': {}, '../utils/protection': p, '../services/apiError': {},
+    '../utils/chime': { armAudio() {}, chimeForPayment() {}, chimeIfSettled() {}, rememberSettled() {} },
+    '../services/transactionService': { transactionService: { list: async () => [] }, newIdempotencyKey: () => 'k' },
+    'ojs/ojdialog': {}, 'ojs/ojbutton': {}, 'ojs/ojavatar': {}, 'ojs/ojdrawerpopup': {}
+  };
+  vm.runInNewContext('(function(require,module,exports){' + code + '\n})', { setInterval: () => 1, clearInterval: () => {} })(key => imports[key], module, module.exports);
+  const model = new module.exports();
+  model.transactions([
+    { transactionId: 1, amount: 100, createdAt: '2026-09-01T10:00:00Z' },
+    { transactionId: 2, amount: 500, createdAt: '2026-09-03T10:00:00Z' }
+  ]);
+  assert.deepEqual(model.displayedTransactions().map(row => row.transactionId), [2, 1]);
+  model.sortBy('AMOUNT_LOW');
+  assert.deepEqual(model.displayedTransactions().map(row => row.transactionId), [1, 2]);
+  assert.equal(model.transactions()[0].transactionId, 1);
+  const html = fs.readFileSync(path.join(__dirname, '../src/ts/views/transactions.html'), 'utf8');
+  assert.match(html, /transaction-status/);
+  assert.match(html, /transaction-sort/);
 });
 
 test('a loaded list is kept even if receipt bookkeeping throws', async () => {

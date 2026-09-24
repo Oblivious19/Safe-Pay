@@ -22,6 +22,7 @@ public interface AccountDao extends JpaRepository<Account, Long> {
     List<Account> findByUserUserIdOrderByAccountId(Long userId);
     Optional<Account> findByAccountIdAndUserUserId(Long accountId, Long userId);
     boolean existsByAccountIdAndUserUserId(Long accountId, Long userId);
+    Optional<Account> findByAccountNumber(String accountNumber);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select a from Account a where a.accountId = :accountId and a.user.userId = :userId")

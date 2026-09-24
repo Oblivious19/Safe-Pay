@@ -41,7 +41,7 @@ class BeneficiaryBackendTest extends WebSecuritySliceSupport {
     private Account account;
     private Beneficiary beneficiary;
     private static final String BODY = """
-        {"beneficiaryName":"Rahul Sharma","bankAccountNumber":"123456789012","ifsc":"HDFC0001234"}
+        {"beneficiaryName":"Rahul Sharma","bankAccountNumber":"123456789012","ifsc":"HDFC0001234","externalConfirmed":true}
         """;
 
     @BeforeEach
@@ -53,6 +53,7 @@ class BeneficiaryBackendTest extends WebSecuritySliceSupport {
         beneficiary.setIfsc("HDFC0001234"); beneficiary.setStatus("ACTIVE");
         beneficiary.setCreatedAt(LocalDateTime.of(2026, 9, 1, 10, 0));
         when(accounts.findFirstByUserUserIdOrderByAccountId(103L)).thenReturn(Optional.of(account));
+        when(accounts.findByAccountNumber(anyString())).thenReturn(Optional.empty());
         when(beneficiaries.findByAccountUserUserIdAndStatusOrderByBeneficiaryId(103L, "ACTIVE"))
                 .thenReturn(List.of(beneficiary));
         when(beneficiaries.findByBeneficiaryIdAndAccountUserUserId(7L, 103L))
@@ -108,6 +109,48 @@ class BeneficiaryBackendTest extends WebSecuritySliceSupport {
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message").value("Beneficiary is already registered for this account"));
         verify(beneficiaries, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void unverifiedExternalBeneficiaryNeedsExplicitConfirmation() throws Exception {
+        String withoutConfirmation = BODY.replace(",\"externalConfirmed\":true", "");
+        mvc.perform(post("/api/beneficiaries").session(customer).header("X-CSRF-TOKEN", csrf(customer))
+                .contentType("application/json").content(withoutConfirmation))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("This recipient is not verified as a SafePay user. Confirm to add them as an external beneficiary."));
+        verify(beneficiaries, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void matchingSafePayAccountRequiresMatchingName() throws Exception {
+        User recipient = new User(); recipient.setUserId(104L); recipient.setName("Subir Das");
+        Account recipientAccount = new Account(); recipientAccount.setAccountId(1000002L);
+        recipientAccount.setAccountNumber("999999999999"); recipientAccount.setUser(recipient);
+        when(accounts.findByAccountNumber("999999999999")).thenReturn(Optional.of(recipientAccount));
+        String mismatched = """
+                {"beneficiaryName":"Different Name","bankAccountNumber":"999999999999","ifsc":"HDFC0001234","externalConfirmed":true}
+                """;
+        mvc.perform(post("/api/beneficiaries").session(customer).header("X-CSRF-TOKEN", csrf(customer))
+                .contentType("application/json").content(mismatched))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("This account number belongs to a SafePay customer, but the recipient name does not match"));
+        verify(beneficiaries, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void matchingSafePayAccountWithCorrectNameIsAddedWithoutExternalConfirmation() throws Exception {
+        User recipient = new User(); recipient.setUserId(104L); recipient.setName("Subir Das");
+        Account recipientAccount = new Account(); recipientAccount.setAccountId(1000002L);
+        recipientAccount.setAccountNumber("999999999999"); recipientAccount.setUser(recipient);
+        when(accounts.findByAccountNumber("999999999999")).thenReturn(Optional.of(recipientAccount));
+        String internal = """
+                {"beneficiaryName":" Subir  Das ","bankAccountNumber":"999999999999","ifsc":"HDFC0001234"}
+                """;
+        mvc.perform(post("/api/beneficiaries").session(customer).header("X-CSRF-TOKEN", csrf(customer))
+                .contentType("application/json").content(internal))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.bankName").value("HDFC Bank"));
+        verify(beneficiaries).saveAndFlush(any());
     }
 
     @Test

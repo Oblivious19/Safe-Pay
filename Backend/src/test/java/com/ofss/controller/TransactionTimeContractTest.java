@@ -38,7 +38,7 @@ class TransactionTimeContractTest {
         TransactionDb transaction = new TransactionDb(); transaction.setTransactionId(id);
         transaction.setFromAccount(account); transaction.setBeneficiary(beneficiary);
         transaction.setAmount(new BigDecimal("20000.00")); transaction.setRiskTier(RiskTier.MEDIUM);
-        transaction.setState(state); transaction.setProtectionExpiresAt(expiry);
+        transaction.setState(state); transaction.setProtectionExpiresAt(expiry); transaction.setCreatedAt(databaseNow);
         return transaction;
     }
 
@@ -120,10 +120,10 @@ class TransactionTimeContractTest {
     void createCancelAndVerificationResponsesUseTheSameAdditionalFields() {
         var pending = payment(1, 20, TransactionState.PROTECTED, databaseNow.plusSeconds(10));
         when(service.initiate(20L, 501L, pending.getAmount(), "rent", "create-key", 103L)).thenReturn(pending);
-        when(service.currentDatabaseTime(20L)).thenReturn(databaseNow);
         var created = controller.initiate("create-key", new TransactionRequest(20L, 501L, pending.getAmount(), "rent"), caller);
         assertEquals(10000L, created.get("protectionRemainingMillis"));
         assertEquals(true, created.get("canCancel"));
+        verify(service, never()).currentDatabaseTime(20L);
         var cancelled = payment(1, 20, TransactionState.CANCELLED, pending.getProtectionExpiresAt());
         when(service.cancel(1L, "cancel-key", caller.email())).thenReturn(cancelled);
         var cancelResponse = controller.cancel(1L, "cancel-key", caller);
@@ -132,6 +132,6 @@ class TransactionTimeContractTest {
         var verified = VerifiedTransactionResponse.from(payment(2, 20, TransactionState.SETTLED, null));
         assertNull(verified.protectionRemainingMillis());
         assertFalse(verified.canCancel());
-        verify(service, times(1)).currentDatabaseTime(anyLong());
+        verify(service, never()).currentDatabaseTime(anyLong());
     }
 }

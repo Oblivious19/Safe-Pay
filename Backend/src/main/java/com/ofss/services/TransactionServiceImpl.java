@@ -3,6 +3,9 @@ package com.ofss.services;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.UUID;
 import java.util.Objects;
 import java.nio.charset.StandardCharsets;
@@ -38,6 +41,7 @@ public class TransactionServiceImpl implements TransactionService {
     private final AuditLogDao auditLogDao;
     private final RiskAssessmentEngine riskEngine;
     private final ExpiredTransactionSettlementService settlements;
+    private final InternalPaymentRecipientResolver recipients;
 
     @Autowired
     public TransactionServiceImpl(TransactionDao transactionDao, AccountDao accountDao,
@@ -55,6 +59,7 @@ public class TransactionServiceImpl implements TransactionService {
         this.auditLogDao = auditLogDao;
         this.riskEngine = riskEngine;
         this.settlements = settlements;
+        this.recipients = new InternalPaymentRecipientResolver(accountDao);
     }
 
     @Override
@@ -97,7 +102,8 @@ public class TransactionServiceImpl implements TransactionService {
         transition(transaction, TransactionState.AUTHORIZED);
         transaction.setAuthorizedAt(now);
         transaction.setRiskTier(RiskTier.valueOf(assessment.riskTier().name()));
-        transaction.setProtectionSeconds(assessment.protectionDurationSeconds());
+        int protectionSeconds = assessment.protectionDurationSeconds();
+        transaction.setProtectionSeconds(protectionSeconds);
         transaction.setAuthenticationRequired(assessment.authenticationRequired());
         transaction.setRiskReason(assessment.reason());
         transition(transaction, TransactionState.RISK_ASSESSED);
@@ -108,11 +114,12 @@ public class TransactionServiceImpl implements TransactionService {
             transaction.setReleasedAt(now);
             account.setBalance(account.getBalance().subtract(amount));
             accountDao.save(account);
+            creditInternalRecipient(beneficiary, amount);
         } else if (assessment.authenticationRequired()) {
             transition(transaction, TransactionState.HARD_HOLD);
         } else {
             transition(transaction, TransactionState.PROTECTED);
-            transaction.setProtectionExpiresAt(now.plusSeconds(assessment.protectionDurationSeconds()));
+            transaction.setProtectionExpiresAt(now.plusSeconds(protectionSeconds));
         }
 
         TransactionDb saved = transactionDao.save(transaction);
@@ -130,10 +137,33 @@ public class TransactionServiceImpl implements TransactionService {
     @Override
     @Transactional(readOnly = true)
     public List<TransactionDb> getTransactions(String state, String email) {
-        if (state == null || state.isBlank()) {
-            return transactionDao.findByFromAccountUserEmail(email);
+        TransactionState requestedState = state == null || state.isBlank() ? null : TransactionState.valueOf(state);
+        List<TransactionDb> outgoing = requestedState == null
+                ? transactionDao.findByFromAccountUserEmail(email)
+                : transactionDao.findByFromAccountUserEmailAndState(email, requestedState);
+        List<TransactionDb> history = new ArrayList<>(outgoing);
+        for (TransactionDb payment : outgoing) {
+            payment.setDirection("DEBIT");
+            payment.setCounterpartyName(payment.getBeneficiary().getBeneficiaryName());
         }
-        return transactionDao.findByFromAccountUserEmailAndState(email, TransactionState.valueOf(state));
+
+        List<Account> destinationAccounts = accountDao.findByUserEmail(email);
+        if (destinationAccounts == null || destinationAccounts.isEmpty()) return history;
+        Set<Long> destinationAccountIds = new LinkedHashSet<>();
+        Set<String> destinationNumbers = new LinkedHashSet<>();
+        for (Account destination : destinationAccounts) {
+            destinationAccountIds.add(destination.getAccountId());
+            destinationNumbers.add(destination.getAccountNumber());
+        }
+        for (TransactionDb payment : transactionDao.findByBeneficiaryBankAccountNumberIn(destinationNumbers)) {
+            // A credit only exists once the recipient balance was actually increased.
+            if (payment.getState() != TransactionState.SETTLED || payment.getFromAccount().getUser().getEmail().equalsIgnoreCase(email)) continue;
+            if (recipients.recipientAccountId(payment.getBeneficiary()).filter(destinationAccountIds::contains).isEmpty()) continue;
+            payment.setDirection("CREDIT");
+            payment.setCounterpartyName(payment.getFromAccount().getUser().getName());
+            history.add(payment);
+        }
+        return history;
     }
 
     @Override
@@ -212,5 +242,17 @@ public class TransactionServiceImpl implements TransactionService {
         audit.setNewState(newState);
         audit.setCreatedAt(LocalDateTime.now());
         auditLogDao.save(audit);
+    }
+
+    private void creditInternalRecipient(Beneficiary beneficiary, BigDecimal amount) {
+        recipients.recipientAccountId(beneficiary).ifPresent(recipientId -> {
+            Account recipient = accountDao.findForSettlement(recipientId)
+                    .orElseThrow(() -> new ResourceNotFoundExcp("Recipient account not found"));
+            if (recipient.getStatus() != com.ofss.beans.AccountStatus.ACTIVE) {
+                throw new TransactionValidationException(409, "Recipient SafePay account must be ACTIVE");
+            }
+            recipient.setBalance(recipient.getBalance().add(amount));
+            accountDao.save(recipient);
+        });
     }
 }

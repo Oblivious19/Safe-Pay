@@ -200,8 +200,8 @@ class TransactionDatabaseTest {
         "10000.00,LOW,SETTLED,0,false",
         "10000.01,MEDIUM,PROTECTED,10,false",
         "50000.00,MEDIUM,PROTECTED,10,false",
-        "50000.01,HIGH,PROTECTED,60,false",
-        "100000.00,HIGH,PROTECTED,60,false",
+        "50000.01,HIGH,PROTECTED,30,false",
+        "100000.00,HIGH,PROTECTED,30,false",
         "100000.01,VERY_HIGH,HARD_HOLD,0,true"
     })
     void realDatabaseUsesExactAmountBoundariesWithoutHistorySignals(String value, RiskTier tier,

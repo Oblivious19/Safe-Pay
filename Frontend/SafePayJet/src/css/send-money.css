@@ -378,6 +378,61 @@
   font-weight: 740;
 }
 
+.funds-disclosure {
+  margin: 22px 0 16px;
+}
+
+.funds-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 46px;
+  padding: 0 18px;
+}
+
+.funds-toggle span:last-child {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.funds-panel {
+  margin-top: 12px;
+  padding: 16px;
+  border: 1px solid #d7e2d4;
+  border-radius: 18px;
+  background: #f4f7f1;
+}
+
+.funds-panel .funds-details {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 18px;
+  margin: 0 0 14px;
+}
+
+.funds-panel .funds-details > div {
+  min-width: 0;
+}
+
+.funds-panel .funds-details dt {
+  margin-bottom: 4px;
+  color: #698076;
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.funds-panel .funds-details dd {
+  font-size: 15px;
+  color: var(--sportive-ink);
+}
+
+.funds-refresh {
+  min-height: 40px;
+  padding: 0 14px;
+  font-size: 13px;
+}
+
 /* Floating transfer sheet ------------------------------------------------- */
 .pay-overlay {
   z-index: 180;
@@ -525,6 +580,48 @@
   color: var(--sportive-muted);
 }
 
+.pay-sheet .pay-review-summary {
+  text-align: center;
+}
+
+.pay-sheet .pay-review-summary .send-review-amount {
+  margin: 4px 0 24px;
+  font-size: clamp(2.25rem, 5.8vw, 3.1rem);
+  font-weight: 520;
+  line-height: 1.08;
+  font-variant-numeric: tabular-nums;
+}
+
+.pay-sheet .pay-note {
+  margin: 0 0 16px;
+}
+
+.pay-sheet .pay-note-label {
+  margin: 0 0 6px;
+  color: var(--sportive-ink);
+  font-size: 14px;
+  font-weight: 720;
+  letter-spacing: .01em;
+  line-height: 1.3;
+}
+
+.pay-sheet .pay-note-line {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.pay-sheet .pay-review-funds,
+.pay-sheet .pay-panel > .pay-from {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.pay-sheet .pay-panel > .pay-from {
+  margin-top: 4px;
+}
+
 .pay-sheet .pay-amount-label,
 .pay-sheet .pay-note-label {
   font-weight: 720;
@@ -620,6 +717,10 @@
   }
 
   .send-review-details {
+    grid-template-columns: 1fr;
+  }
+
+  .funds-panel .funds-details {
     grid-template-columns: 1fr;
   }
 

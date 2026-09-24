@@ -26,8 +26,8 @@ public final class RiskAssessmentEngine {
                     explanation + " is above INR 10,000 and at most INR 50,000: MEDIUM, 10-second protection window.", false);
         }
         if (amount.compareTo(HIGH_LIMIT) <= 0) {
-            return new RuleBasedRiskResult(AssessmentRiskTier.HIGH, true, 60,
-                    explanation + " is above INR 50,000 and at most INR 100,000: HIGH, 60-second protection window.", false);
+            return new RuleBasedRiskResult(AssessmentRiskTier.HIGH, true, 30,
+                    explanation + " is above INR 50,000 and at most INR 100,000: HIGH, 30-second protection window.", false);
         }
         return new RuleBasedRiskResult(AssessmentRiskTier.VERY_HIGH, true, 0,
                 explanation + " is above INR 100,000: VERY_HIGH, administrator approval required before settlement.", true);

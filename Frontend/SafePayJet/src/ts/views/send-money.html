@@ -12,16 +12,23 @@
 <div class="integration-account"><label for="payment-account">Account</label><select id="payment-account" data-bind="options: accounts, optionsText: accountOption, optionsValue: 'accountId', value: selectedAccountId, optionsCaption: 'Select account', valueAllowUnset: true, event: {change: selectAccount}, disable: loading() || busy() || attemptLocked() || !!result()"></select></div>
 
 
-<!-- ko with: funds -->
-<dl class="send-review-details" aria-label="Available funds">
-  <div><dt>Account balance</dt><dd data-bind="text:$parent.money(balance)"></dd></div>
-  <div><dt>Reserved for pending payments</dt><dd data-bind="text:$parent.money(reservedBalance)"></dd></div>
-  <div><dt>Minimum balance to retain</dt><dd data-bind="text:$parent.money(minimumBalance)"></dd></div>
-  <div><dt>Available for a new payment</dt><dd><strong data-bind="text:$parent.money(availableToTransfer)"></strong></dd></div>
-</dl>
-<!-- /ko -->
-<p role="status" class="send-subtitle" data-bind="visible:fundsError,text:fundsError"></p>
-<button type="button" class="recipient-secondary" data-bind="click:refreshFunds,disable:busy">Refresh available funds</button>
+<section class="funds-disclosure" aria-label="Available funds">
+  <button type="button" class="recipient-secondary funds-toggle" data-bind="click:toggleFunds, disable:busy() || !account(), attr: {'aria-expanded': fundsExpanded, 'aria-controls': 'available-funds-details'}">
+    <span data-bind="text: fundsExpanded() ? 'Hide available funds' : 'View available funds'"></span><span aria-hidden="true" data-bind="text: fundsExpanded() ? '⌃' : '⌄'"></span>
+  </button>
+  <div id="available-funds-details" class="funds-panel" data-bind="visible: fundsExpanded">
+    <!-- ko with: funds -->
+    <dl class="send-review-details funds-details">
+      <div><dt>Account balance</dt><dd data-bind="text:$parent.money(balance)"></dd></div>
+      <div><dt>Reserved for pending payments</dt><dd data-bind="text:$parent.money(reservedBalance)"></dd></div>
+      <div><dt>Minimum balance to retain</dt><dd data-bind="text:$parent.money(minimumBalance)"></dd></div>
+      <div><dt>Available for a new payment</dt><dd><strong data-bind="text:$parent.money(availableToTransfer)"></strong></dd></div>
+    </dl>
+    <!-- /ko -->
+    <p role="status" class="send-subtitle" data-bind="visible:fundsError,text:fundsError"></p>
+    <button type="button" class="recipient-secondary funds-refresh" data-bind="click:refreshFunds,disable:busy">Refresh available funds</button>
+  </div>
+</section>
 
 <p class="send-subtitle">Tap a person to open the payment sheet. Choose one of your saved recipients.</p>
 <oj-train id="send-train" class="send-train" aria-label="Send money steps" data-bind="attr: {'selected-step': trainStep}" steps="[[trainSteps]]"></oj-train>
@@ -77,9 +84,15 @@
     <!-- ko with: selected -->
     <div class="pay-person"><span class="pay-face" data-bind="text: $parent.initials(beneficiaryName)"></span><div><strong data-bind="text: beneficiaryName"></strong><small data-bind="text: $parent.mask(bankAccountNumber)"></small></div></div>
     <!-- /ko -->
-    <p class="pay-pay-label">Paying</p>
-    <p class="send-review-amount" data-bind="text: amountPreview"></p>
-    <h3>Purpose / customer note</h3><p class="pay-note-line" style="white-space:pre-wrap;overflow-wrap:anywhere" data-bind="text: purpose().trim() ? purpose() : 'No note added'"></p><!-- ko with: funds --><p class="pay-from">Available for a new payment: <strong data-bind="text:$parent.money(availableToTransfer)"></strong><br>Already reserved: <span data-bind="text:$parent.money(reservedBalance)"></span></p><!-- /ko -->
+    <section class="pay-review-summary" aria-label="Payment summary">
+      <p class="pay-pay-label">Paying</p>
+      <p class="send-review-amount" data-bind="text: amountPreview"></p>
+      <div class="pay-note">
+        <p class="pay-note-label">Purpose / customer note</p>
+        <p class="pay-note-line" style="white-space:pre-wrap;overflow-wrap:anywhere" data-bind="text: purpose().trim() ? purpose() : 'No note added'"></p>
+      </div>
+      <!-- ko with: funds --><p class="pay-from pay-review-funds">Available for a new payment: <strong data-bind="text:$parent.money(availableToTransfer)"></strong><br>Already reserved: <span data-bind="text:$parent.money(reservedBalance)"></span></p><!-- /ko -->
+    </section>
     <!-- ko with: account -->
     <p class="pay-from">From <span data-bind="text: (accountType === 'SAVINGS' ? 'Savings' : 'Current') + ' ' + $parent.mask(accountNumber)"></span></p>
     <!-- /ko -->

@@ -14,7 +14,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class AdminAccountService {
-    private static final BigDecimal MINIMUM = new BigDecimal("5000.00");
     private static final BigDecimal MAXIMUM = new BigDecimal("9999999999999999.99");
     private final AdminAccountRepository accounts;
     private final TransactionDao transactions;
@@ -29,14 +28,14 @@ public class AdminAccountService {
     @Transactional
     public Response update(Long id, Update input) {
         if (id == null || id <= 0 || input == null || input.accountType() == null || input.balance() == null
-                || input.balance().compareTo(MINIMUM) < 0 || input.balance().compareTo(MAXIMUM) > 0
+                || input.balance().signum() < 0 || input.balance().compareTo(MAXIMUM) > 0
                 || input.balance().scale() > 2) {
-            throw new IllegalArgumentException("Valid account type and NUMBER(18,2) balance of at least INR 5000 are required");
+            throw new IllegalArgumentException("Valid account type and non-negative NUMBER(18,2) balance are required");
         }
         accounts.lockAccount(id).orElseThrow(() -> new ResourceNotFoundExcp("Account not found"));
         BigDecimal held = transactions.pendingAmount(id, List.of(TransactionState.PROTECTED, TransactionState.HARD_HOLD));
-        if (held == null || held.signum() < 0 || input.balance().subtract(held).compareTo(MINIMUM) < 0) {
-            throw new TransactionValidationException(409, "Balance must cover all held payments and the INR 5000 minimum");
+        if (held == null || held.signum() < 0 || input.balance().subtract(held).signum() < 0) {
+            throw new TransactionValidationException(409, "Balance must cover all held payments");
         }
         if (accounts.updateDetails(id, input.balance().setScale(2), input.accountType(), LocalDateTime.now()) != 1) {
             throw new TransactionValidationException(409, "Account changed concurrently; refresh and retry");

@@ -30,6 +30,11 @@ test('valid add returns to list, preserves success and refreshes exactly once', 
   assert.equal(f.model.mode(), 'list'); assert.equal(f.model.success(), 'Beneficiary added successfully.');
   assert.deepEqual(f.calls.map(c => c[0]), ['create', 'list']); assert.equal(f.model.bankAccountNumber(), '');
 });
+test('unverified recipient requires a visible confirmation before an external save', async () => {
+  const f = fixture({ create: async () => { throw new ApiError(409, 'This recipient is not verified as a SafePay user. Confirm to add them as an external beneficiary.'); } });
+  f.model.openAdd(); fill(f.model); await f.model.save();
+  assert.equal(f.model.confirmExternal(), true); assert.equal(f.model.error(), '');
+});
 test('invalid local form makes no request', async () => {
   const f = fixture(); await f.model.save(); assert.equal(Object.keys(f.model.fieldErrors()).length, 3); assert.equal(f.calls.length, 0);
   fill(f.model); f.model.ifsc('TOO-LONG-INVALID'); await f.model.save(); assert.equal(f.calls.length, 0);
@@ -41,7 +46,7 @@ test('validation matches lengths, digits and IFSC; preserves leading zeros', () 
 for (const status of [400, 403, 409, 500]) test(`add handles ${status} without refreshing`, async () => {
   const f = fixture({ create: async () => { throw new ApiError(status); } }); f.model.openAdd(); fill(f.model); await f.model.save();
   assert.equal(f.model.mode(), 'add'); assert.equal(f.calls.length, 1); assert.ok(f.model.error()); assert.equal(f.model.saving(), false);
-  if (status === 409) assert.match(f.model.error(), /already registered/);
+  if (status === 409) assert.equal(f.model.error(), 'Safe error');
 });
 test('401 clears beneficiary data and redirects to login', async () => {
   const f = fixture({ list: async () => { throw new ApiError(401); } }); f.model.beneficiaries([row]); await f.model.load();

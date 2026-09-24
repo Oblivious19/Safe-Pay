@@ -23,6 +23,7 @@ import com.ofss.repository.UserDao;
 
 @Service
 public class UserServiceImpl implements UserService {
+    private static final BigDecimal NEW_ACCOUNT_OPENING_BALANCE = new BigDecimal("200000.00");
 
     private final UserDao userDao;
     private final AccountDao accountDao;
@@ -65,7 +66,7 @@ public class UserServiceImpl implements UserService {
         account.setAccountNumber(accountDao.nextAccountNumber());
         account.setAccountType(AccountType.SAVINGS);
         account.setStatus(AccountStatus.ACTIVE);
-        account.setBalance(new BigDecimal("5000.00"));
+        account.setBalance(NEW_ACCOUNT_OPENING_BALANCE);
         account.setCreatedAt(now);
         account.setUpdatedAt(now);
         accountDao.save(account);

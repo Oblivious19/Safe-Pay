@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/accounts")
 public class AccountFundsController {
-    private static final BigDecimal MINIMUM = new BigDecimal("5000.00");
+    private static final BigDecimal MINIMUM = BigDecimal.ZERO;
     private final AccountFundsRepository accounts;
     public AccountFundsController(AccountFundsRepository accounts) { this.accounts = accounts; }
     public record FundsView(Long accountId, BigDecimal balance, BigDecimal reservedBalance,
@@ -24,6 +24,6 @@ public class AccountFundsController {
         var funds = accounts.funds(id, caller.userId(), List.of(TransactionState.PROTECTED, TransactionState.HARD_HOLD))
                 .orElseThrow(() -> new ResourceNotFoundExcp("Account not found"));
         return new FundsView(funds.getAccountId(), funds.getBalance(), funds.getReservedBalance(), MINIMUM,
-                funds.getBalance().subtract(funds.getReservedBalance()).subtract(MINIMUM).max(BigDecimal.ZERO));
+                funds.getBalance().subtract(funds.getReservedBalance()).max(BigDecimal.ZERO));
     }
 }
