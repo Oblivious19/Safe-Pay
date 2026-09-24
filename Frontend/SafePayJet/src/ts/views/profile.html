@@ -1,33 +1,46 @@
 <section class="profile-page" aria-labelledby="profile-title" data-bind="attr: {'aria-busy': loading}">
-  <p class="dash-overline">YOUR ACCOUNT</p>
-  <h1 id="profile-title">Profile</h1>
-<div class="integration-account"><label for="profile-account">Account</label><select id="profile-account" data-bind="options: accounts, optionsText: accountOption, optionsValue: 'accountId', value: selectedAccountId, optionsCaption: 'Select account', valueAllowUnset: true, event: {change: selectAccount}, disable: loading"></select></div>
-
-  <p class="send-subtitle">Signed-in details for this simulated session. SafePay does not move real money.</p>
-  <div class="dash-skeleton" data-bind="visible: loading" role="status" aria-label="Loading profile"><span class="sk sk-small"></span><span class="sk sk-money"></span><span class="sk sk-line"></span><span class="sk sk-line"></span></div>
-  <p class="recipient-error" role="alert" data-bind="visible: error, text: error"></p>
-  <button type="button" class="dashboard-secondary" data-bind="visible: error, click: load">Try again</button>
+  <header class="profile-heading">
+    <div><p class="dash-overline">YOUR ACCOUNT</p><h1 id="profile-title">Profile</h1></div>
+    <div class="integration-account"><label for="profile-account">Linked account</label><select id="profile-account" data-bind="options: accounts, optionsText: accountOption, optionsValue: 'accountId', value: selectedAccountId, optionsCaption: 'Select account', valueAllowUnset: true, event: {change: selectAccount}, disable: loading"></select></div>
+  </header>
+  <div class="dash-skeleton" data-bind="visible: loading" role="status" aria-label="Loading profile"><span class="sk sk-small"></span><span class="sk sk-money"></span><span class="sk sk-line"></span></div>
+  <div class="ui-error" role="alert" data-bind="visible: error, reveal: error"><p data-bind="text: error"></p><button type="button" class="dashboard-secondary" data-bind="click: load">Try again</button></div>
   <!-- ko if: !loading() && !error() -->
-  <article class="profile-card">
-    <div class="profile-avatar-ring" aria-hidden="true"><span data-bind="text: initials"></span></div>
-    <h2 data-bind="text: name"></h2>
-    <p data-bind="text: email"></p>
-    <p class="profile-phone" data-bind="visible: phone, text: phone"></p>
-    <span class="simulation-label" data-bind="visible: simulated">Simulated Environment</span>
-  </article>
-  <!-- ko if: account -->
-  <article class="profile-account">
-    <p class="dash-overline">LINKED ACCOUNT</p>
-    <strong data-bind="text: accountLabel(account().accountType)"></strong>
-    <p data-bind="text: mask(account().accountNumber)"></p>
-    <p>Account balance <b data-bind="text: money(account().balance)"></b></p>
-    <small data-bind="text: account().status === 'ACTIVE' ? 'Active · INR' : account().status"></small>
-  </article>
-  <!-- /ko -->
-  <div class="profile-links">
-    <a href="/send-money">Send money</a>
-    <a href="/transactions">Transactions</a>
-    <a href="/beneficiaries">Beneficiaries</a>
+  <div class="profile-grid">
+    <article class="profile-card">
+      <header class="profile-identity"><div class="profile-avatar-ring" aria-hidden="true"><span data-bind="text: initials"></span></div><div><h2 data-bind="text: name"></h2><span class="profile-status" data-bind="text: status"></span></div></header>
+      <h3>Personal details</h3>
+      <dl class="profile-facts">
+        <div><dt>Full name</dt><dd data-bind="text: name"></dd></div>
+        <div><dt>Email address</dt><dd data-bind="text: email() || 'Not provided'"></dd></div>
+        <div><dt>Mobile number</dt><dd data-bind="text: phone() || 'Not provided'"></dd></div>
+        <div><dt>Linked accounts</dt><dd data-bind="text: accounts().length"></dd></div>
+      </dl>
+    </article>
+    <!-- ko if: account -->
+    <article class="profile-account">
+      <p class="dash-overline">LINKED ACCOUNT</p>
+      <strong data-bind="text: accountLabel(account().accountType)"></strong>
+      <p data-bind="text: mask(account().accountNumber)"></p>
+      <small>Account balance</small><b class="profile-balance" data-bind="text: money(account().balance)"></b>
+      <dl class="profile-facts">
+        <div><dt>Account status</dt><dd data-bind="text: account().status"></dd></div>
+        <div><dt>Currency</dt><dd>Indian rupee · INR</dd></div>
+        <div><dt>Opened on</dt><dd data-bind="text: date(account().createdAt)"></dd></div>
+        <!-- ko with: funds -->
+        <div><dt>Available to send</dt><dd data-bind="text: $parent.money(availableToTransfer)"></dd></div>
+        <div><dt>Reserved for pending payments</dt><dd data-bind="text: $parent.money(reservedBalance)"></dd></div>
+        <div><dt>Minimum balance</dt><dd data-bind="text: $parent.money(minimumBalance)"></dd></div>
+        <!-- /ko -->
+      </dl>
+      <p role="status" data-bind="visible: fundsLoading">Checking available balance…</p>
+      <p role="status" data-bind="visible: fundsError, text: fundsError"></p>
+      <button class="recipient-secondary" data-bind="visible: fundsError, click: loadFunds, disable: fundsLoading">Refresh balance</button>
+    </article>
+    <!-- /ko -->
+    <!-- ko if: !account() --><article class="profile-card"><h3>No linked account</h3><p>Contact your bank to check your account details.</p></article><!-- /ko -->
   </div>
+  <nav class="profile-links" aria-label="Account shortcuts"><a href="/send-money">Send money ↗</a><a href="/transactions">Payment history ↗</a><a href="/beneficiaries">Beneficiaries ↗</a></nav>
+  <p class="send-subtitle">Simulated Environment · No real money is moved.</p>
   <!-- /ko -->
 </section>

@@ -41,10 +41,11 @@
   <link rel="stylesheet" href="css/sportive-theme.css">
   <link rel="stylesheet" href="css/loading-overlay.css">
   <link rel="stylesheet" href="css/page-transitions.css">
+  <link rel="stylesheet" href="css/ui-refinements.css">
 </head>
 <body class="oj-web-applayout-body customer-shell">
   <div id="globalBody">
-    <div class="route-bar" role="progressbar" aria-label="Loading page" data-bind="css: {'is-on': routeBusy}, attr: {'aria-hidden': !routeBusy()}"><i></i></div>
+    <div class="route-bar" role="progressbar" aria-label="Loading page" data-bind="css: {'is-on': routeBusy() && !entryLoaderBusy()}, attr: {'aria-hidden': !routeBusy() || entryLoaderBusy()}"><i></i></div>
     <div class="safepay-route-loader" role="status" aria-label="Loading your SafePay page" data-bind="css: {'is-visible': entryLoaderBusy}, attr: {'aria-hidden': !entryLoaderBusy()}">
       <div class="safepay-loader-content">
         <div class="safepay-loader-scene" aria-hidden="true">
@@ -63,7 +64,7 @@
         <div class="customer-header-tools">
           <button class="dashboard-secondary" data-bind="click: logout, disable: loggingOut"><span class="spin" aria-hidden="true" data-bind="visible: loggingOut"></span><span data-bind="text: loggingOut() ? 'Signing out…' : 'Logout'">Logout</span></button>
           <details class="header-disclosure"><summary aria-label="Notifications"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M5 17h14l-2-3V9a5 5 0 0 0-10 0v5l-2 3ZM10 20h4"/></svg></summary><div class="header-popover"><strong>Payment updates</strong><p>Payments still in a protection window appear on your dashboard with a live timer.</p><a href="/dashboard">View dashboard →</a></div></details>
-          <details class="header-disclosure"><summary aria-label="Profile and menu"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 21v-2a7 7 0 0 1 14 0v2"/></svg><span class="profile-label" data-bind="text: profile() ? profile().name : 'My account'">My account</span><span aria-hidden="true">⌄</span></summary><div class="header-popover"><strong data-bind="text: profile() ? profile().name : 'Your SafePay'"></strong><p data-bind="text: profile() ? profile().email : profileLoading() ? 'Loading your profile…' : 'Profile unavailable. Please refresh to try again.'"></p><a href="/profile">Profile →</a><a href="/dashboard">Dashboard →</a><a href="/transactions">Transactions →</a></div></details>
+          <details class="header-disclosure"><summary aria-label="Profile and menu"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 21v-2a7 7 0 0 1 14 0v2"/></svg><span class="profile-label" data-bind="text: profile() ? profile().name : 'My account'">My account</span><svg class="profile-chevron" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m5 7 5 5 5-5"/></svg></summary><div class="header-popover"><strong data-bind="text: profile() ? profile().name : 'Your SafePay'"></strong><p data-bind="text: profile() ? profile().email : profileLoading() ? 'Loading your profile…' : 'Profile unavailable. Please refresh to try again.'"></p><a href="/profile">Profile →</a><a href="/dashboard">Dashboard →</a><a href="/transactions">Transactions →</a></div></details>
         </div>
       </div>
       <nav class="customer-nav" aria-label="Customer navigation"><div data-bind="foreach: navItems"><a data-bind="attr: {href: '/' + path, 'aria-current': $parent.selection.path() === path ? 'page' : null}"><span aria-hidden="true" data-bind="attr: {class: iconClass}"></span><span data-bind="text: label"></span></a></div></nav>

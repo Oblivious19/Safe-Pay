@@ -206,16 +206,19 @@ test('development server supports review route', async () => {
   const config=await require('../scripts/hooks/before_serve')({}); const req={method:'GET',url:'/send-money/review'};
   config.preMiddleware[0](req,{},()=>{}); assert.equal(req.url,'/index.html');
 });
-test('payment sheet opens after Continue and keeps the step train', async () => {
+test('choosing a recipient opens the sheet directly and retains payment review', async () => {
   const f = fixture(); await f.model.load();
   assert.equal(f.model.sheetOpen(), false);
-  f.model.choose(recipient); await f.model.next();
+  f.model.pick(recipient); await Promise.resolve();
   assert.equal(f.model.step(), 'details'); assert.equal(f.model.sheetOpen(), true);
   const html=fs.readFileSync(path.join(__dirname,'../src/ts/views/send-money.html'),'utf8');
   assert.match(html,/pay-overlay/);
-  assert.match(html,/oj-train/);
+  assert.doesNotMatch(html,/oj-train/);
   assert.match(html,/click: \$parent\.pick/);
-  assert.match(html,/click: next, disable: cannotContinue/);
+  assert.match(html,/Review payment/);
+  assert.match(html,/click: confirm, disable: busy/);
+  assert.match(html,/<footer class="pay-action-bar">/);
+  assert.match(html,/paymentModal: \{open: sheetOpen, close: back\}/);
 });
 test('development server supports profile route', async () => {
   const config=await require('../scripts/hooks/before_serve')({}); const req={method:'GET',url:'/profile'};

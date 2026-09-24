@@ -2,9 +2,9 @@
 <header class="send-flow-header">
   <oj-button chroming="borderless" class="send-back" data-bind="click: back, disable: busy() || attemptLocked(), visible: step() !== 'result'">Back</oj-button>
   <strong>Send Money</strong>
-  <span data-bind="text: step() === 'result' ? 'Payment status' : step() === 'review' ? '3 of 3' : step() === 'details' ? '2 of 3' : '1 of 3'"></span>
+  <span>Choose · Review · Pay</span>
 </header>
-<p class="recipient-error" role="alert" data-bind="visible: error, text: error"></p>
+<p class="recipient-error" role="alert" data-bind="visible: error, text: error, reveal: error"></p>
 <oj-button chroming="outlined" data-bind="visible: error, click: load, disable: loading">Try again</oj-button>
 <div class="dash-skeleton" role="status" aria-label="Loading your recipients and account" data-bind="visible: loading"><span class="sk sk-small"></span><span class="sk sk-money"></span><span class="sk sk-line"></span></div>
 <div class="send-people" data-bind="css: {'is-dimmed': sheetOpen}">
@@ -12,6 +12,8 @@
 <div class="integration-account"><label for="payment-account">Account</label><select id="payment-account" data-bind="options: accounts, optionsText: accountOption, optionsValue: 'accountId', value: selectedAccountId, optionsCaption: 'Select account', valueAllowUnset: true, event: {change: selectAccount}, disable: loading() || busy() || attemptLocked() || !!result()"></select></div>
 
 
+<!-- ko with: funds --><p class="send-available">Available to send <strong data-bind="text: $parent.money(availableToTransfer)"></strong></p><!-- /ko -->
+<details class="payment-more"><summary>Balance details</summary>
 <!-- ko with: funds -->
 <dl class="send-review-details" aria-label="Available funds">
   <div><dt>Account balance</dt><dd data-bind="text:$parent.money(balance)"></dd></div>
@@ -20,24 +22,23 @@
   <div><dt>Available for a new payment</dt><dd><strong data-bind="text:$parent.money(availableToTransfer)"></strong></dd></div>
 </dl>
 <!-- /ko -->
-<p role="status" class="send-subtitle" data-bind="visible:fundsError,text:fundsError"></p>
+<p role="status" class="send-subtitle" data-bind="visible:fundsError,text:fundsError, reveal: fundsError"></p>
 <button type="button" class="recipient-secondary" data-bind="click:refreshFunds,disable:busy">Refresh available funds</button>
-
-<p class="send-subtitle">Tap a person to open the payment sheet. Choose one of your saved recipients.</p>
-<oj-train id="send-train" class="send-train" aria-label="Send money steps" data-bind="attr: {'selected-step': trainStep}" steps="[[trainSteps]]"></oj-train>
+</details>
+<div class="send-list-heading"><h2>Recipients</h2>
 <a class="recipient-link" href="/beneficiaries?action=add">+ Add Beneficiary</a>
+</div>
 <!-- ko if: !loading() && !error() && !beneficiaries().length --><div class="recipient-empty"><h2>No beneficiaries yet</h2><p>Add someone using their bank details to get started.</p><a class="recipient-secondary" href="/beneficiaries?action=add">Add Beneficiary</a></div><!-- /ko -->
 <div class="send-recipient-list" data-bind="foreach: beneficiaries">
 <button class="send-recipient" data-bind="click: $parent.pick, css: {'is-selected': $parent.selected() === $data}, attr: {'aria-pressed': $parent.selected() === $data}, disable: $parent.busy">
 <oj-avatar size="sm" data-bind="attr: {initials: $parent.initials(beneficiaryName)}"></oj-avatar>
-<span class="send-recipient-copy"><strong data-bind="text: beneficiaryName"></strong><span data-bind="text: $parent.mask(bankAccountNumber)"></span><small data-bind="text: 'IFSC ' + ifsc"></small><small data-bind="text: $parent.added(createdAt)"></small><span class="send-status" data-bind="text: status === 'ACTIVE' ? 'Active' : 'Inactive'"></span><small data-bind="visible: $parent.isNew(createdAt)">New beneficiary — first payments may pause</small></span>
-<span aria-hidden="true" data-bind="text: $parent.selected() === $data ? '✓' : '○'"></span>
+<span class="send-recipient-copy"><strong data-bind="text: beneficiaryName"></strong><span data-bind="text: $parent.mask(bankAccountNumber) + ' · ' + ifsc"></span></span>
+<span aria-hidden="true">↗</span>
 </button></div>
-<button type="button" class="send-continue pay-cta" data-bind="click: next, disable: cannotContinue"><span class="spin" aria-hidden="true" data-bind="visible: busy"></span><span data-bind="text: busy() ? 'Opening…' : 'Continue'"></span></button>
 </div>
-<div class="pay-overlay" data-bind="css: {'is-open': sheetOpen}, attr: {'aria-hidden': !sheetOpen()}">
+<div class="pay-overlay" data-bind="css: {'is-open': sheetOpen}, attr: {'aria-hidden': !sheetOpen()}, paymentModal: {open: sheetOpen, close: back}">
   <button type="button" class="pay-backdrop" data-bind="click: back, disable: busy() || (attemptLocked() && !canLeave())" aria-label="Close payment sheet"></button>
-  <div class="pay-sheet" role="dialog" aria-modal="true" aria-labelledby="pay-sheet-title" data-bind="css: {'is-review': step() === 'review', 'is-status': step() === 'result'}">
+  <div class="pay-sheet" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="pay-sheet-title" data-bind="css: {'is-review': step() === 'review', 'is-status': step() === 'result'}">
     <span class="pay-glow" aria-hidden="true"><span class="pay-orb"></span><span class="pay-orb pay-orb-two"></span></span>
     <div class="pay-sheet-toolbar">
     <header class="pay-sheet-head">
@@ -46,12 +47,9 @@
       <span data-bind="text: step() === 'result' ? 'Status' : step() === 'review' ? 'Review' : 'Amount'"></span>
     </header>
     <div class="pay-steps" aria-hidden="true" data-bind="foreach: payPips"><i data-bind="css: {on: $data}"></i></div>
-      <!-- ko if: step() === 'result' && isProtected() && !isSettling() -->
-      <button type="button" class="send-continue pay-cta protect-cancel" data-bind="click: cancelPayment, disable: !canCancel()"><span class="spin" aria-hidden="true" data-bind="visible: busy"></span><span data-bind="text: busy() ? 'Cancelling…' : 'Cancel this payment'"></span></button>
-      <!-- /ko -->
     </div>
     <!-- ko if: step() === 'details' -->
-    <div class="pay-panel">
+    <div class="pay-panel" data-bind="reveal: true">
     <!-- ko with: selected -->
     <div class="pay-person"><span class="pay-face" data-bind="text: $parent.initials(beneficiaryName)"></span><div><strong data-bind="text: beneficiaryName"></strong><small data-bind="text: $parent.mask(bankAccountNumber) + ' · ' + ifsc"></small></div></div>
     <!-- /ko -->
@@ -61,25 +59,27 @@
     <p id="amount-error" class="recipient-field-error pay-amount-error" data-bind="text: amountMessage"></p>
     <p id="amount-preview" class="send-amount-preview" data-bind="text: amountPreview"></p>
     <div class="pay-chips" role="group" aria-label="Suggested amounts"><!-- ko foreach: quickAmounts --><button type="button" class="pay-chip" data-bind="click: function(){ $parent.useAmount($data); }, text: '₹' + $data, css: {'is-on': $parent.amount() === $data}, disable: $parent.busy"></button><!-- /ko --></div>
-    <label class="pay-note-label" for="payment-purpose">What’s it for? <span class="send-optional">(optional)</span></label>
+    <details class="payment-more"><summary>Add a note (optional)</summary>
+    <label class="pay-note-label" for="payment-purpose">What’s it for?</label>
     <input id="payment-purpose" class="send-note" maxlength="255" placeholder="Add a note" data-bind="textInput: purpose, disable: busy, attr: {'aria-invalid': !!purposeError()}">
     <p id="purpose-error" class="recipient-field-error" data-bind="text: purposeError"></p>
+    </details>
     <!-- ko with: account --><p class="pay-from">From <span data-bind="text: (accountType === 'SAVINGS' ? 'Savings' : 'Current') + ' ' + $parent.mask(accountNumber)"></span> · <span data-bind="text: $parent.money(balance)"></span></p><!-- /ko -->
     <!-- ko with: funds --><p class="pay-from">Available for a new payment: <strong data-bind="text:$parent.money(availableToTransfer)"></strong> · Reserved: <span data-bind="text:$parent.money(reservedBalance)"></span></p><!-- /ko -->
-    <button type="submit" class="send-continue pay-cta pay-shimmer" data-bind="disable: busy() || loading() || !account() || !!error() || !amountReady()"><span class="spin" aria-hidden="true" data-bind="visible: busy"></span><span data-bind="text: busy() ? 'Checking…' : 'Continue'"></span></button>
+    <button type="submit" class="send-continue pay-cta pay-shimmer" data-bind="disable: busy() || loading() || !account() || !!error() || !amountReady()"><span class="spin" aria-hidden="true" data-bind="visible: busy"></span><span data-bind="text: busy() ? 'Checking…' : 'Review payment'"></span></button>
     <p class="send-subtitle">Next, review your payment details. Nothing is sent until you confirm.</p>
     <p role="status" class="recipient-success" data-bind="visible: notice, text: notice"></p>
     </form>
     </div>
     <!-- /ko -->
     <!-- ko if: step() === 'review' -->
-    <div class="pay-panel">
+    <div class="pay-panel" data-bind="reveal: true">
     <!-- ko with: selected -->
     <div class="pay-person"><span class="pay-face" data-bind="text: $parent.initials(beneficiaryName)"></span><div><strong data-bind="text: beneficiaryName"></strong><small data-bind="text: $parent.mask(bankAccountNumber)"></small></div></div>
     <!-- /ko -->
     <p class="pay-pay-label">Paying</p>
     <p class="send-review-amount" data-bind="text: amountPreview"></p>
-    <h3>Purpose / customer note</h3><p class="pay-note-line" style="white-space:pre-wrap;overflow-wrap:anywhere" data-bind="text: purpose().trim() ? purpose() : 'No note added'"></p><!-- ko with: funds --><p class="pay-from">Available for a new payment: <strong data-bind="text:$parent.money(availableToTransfer)"></strong><br>Already reserved: <span data-bind="text:$parent.money(reservedBalance)"></span></p><!-- /ko -->
+    <!-- ko if: purpose().trim() --><p class="pay-note-line" data-bind="text: purpose"></p><!-- /ko -->
     <!-- ko with: account -->
     <p class="pay-from">From <span data-bind="text: (accountType === 'SAVINGS' ? 'Savings' : 'Current') + ' ' + $parent.mask(accountNumber)"></span></p>
     <!-- /ko -->
@@ -91,8 +91,7 @@
     </div>
     <!-- /ko -->
     
-    <oj-messages id="send-review-messages" messages="[[paymentMessages]]" display="general"></oj-messages>
-    <p role="alert" class="recipient-error" data-bind="visible: paymentError, text: paymentError"></p>
+    <p role="alert" class="recipient-error" data-bind="visible: paymentError, text: paymentError, reveal: paymentError"></p>
     
     <button type="button" class="send-continue pay-cta pay-shimmer" data-bind="click: confirm, disable: busy"><span class="spin" aria-hidden="true" data-bind="visible: busy"></span><span data-bind="text: busy() ? 'Processing…' : attemptLocked() ? 'Retry same payment' : 'Confirm & Pay'"></span></button>
     
@@ -102,7 +101,7 @@
     </div>
     <!-- /ko -->
     <!-- ko if: step() === 'result' && result() -->
-    <div class="pay-panel protect-stage">
+    <div class="pay-panel protect-stage" data-bind="reveal: true">
       <h2 data-bind="text: resultTitle"></h2>
       <span class="pay-tone" data-bind="css: riskTone, text: riskBadge"></span>
       <!-- ko if: sheetKind() === 'short' -->
@@ -161,11 +160,11 @@
       <!-- ko with: result -->
       <p class="send-review-amount" data-bind="text: $parent.money(amount)"></p>
       <div class="pay-person"><div><strong data-bind="text: beneficiaryName"></strong><p data-bind="text: $parent.mask(beneficiaryBankAccountNumber || '')"></p></div></div>
-      <dl class="send-review-details">
+      <details class="payment-more"><summary>Payment details</summary><dl class="send-review-details">
         <div><dt>Reference</dt><dd data-bind="text: transactionRef || transactionId"></dd></div>
         <div><dt>Status</dt><dd data-bind="text: $parent.statusText"></dd></div>
         <div><dt>Pause</dt><dd data-bind="text: $parent.pauseLabel"></dd></div>
-      </dl>
+      </dl></details>
       <!-- /ko -->
       <!-- ko if: showReasons -->
       <section class="protect-why" aria-label="Why SafePay decided this">
@@ -176,12 +175,18 @@
       <!-- /ko -->
 
       
-    <oj-messages id="send-result-messages" messages="[[paymentMessages]]" display="general"></oj-messages>
-    <p role="alert" class="recipient-error" data-bind="visible: paymentError, text: paymentError"></p>
+    <p role="alert" class="recipient-error" data-bind="visible: paymentError, text: paymentError, reveal: paymentError"></p>
     <button type="button" class="pay-ghost" data-bind="click: refreshResult, disable: refreshing() || busy()"><span class="spin" aria-hidden="true" data-bind="visible: refreshing"></span><span data-bind="text: refreshing() ? 'Checking…' : 'Refresh status'"></span></button>
-    <a class="recipient-link" href="/transactions">View transactions</a>
-    <button type="button" class="send-continue pay-cta" data-bind="click: leave, visible: canLeave">Done</button>
     </div>
+    <!-- /ko -->
+    <!-- ko if: step() === 'result' && result() -->
+    <footer class="pay-action-bar">
+      <!-- ko if: isProtected() && !isSettling() -->
+      <button type="button" class="pay-cta protect-cancel" data-bind="click: cancelPayment, disable: !canCancel()"><span data-bind="text: busy() ? 'Cancelling…' : 'Cancel this payment'"></span></button>
+      <!-- /ko -->
+      <!-- ko if: isHold() --><p class="hold-action-note">Awaiting administrator review. You can close this receipt and check Transactions for updates.</p><!-- /ko -->
+      <div class="pay-action-links"><a class="recipient-link" href="/transactions">View transactions</a><button type="button" class="recipient-secondary" data-bind="click: leave, disable: !canLeave(), text: isProtected() || isHold() ? 'Close receipt' : 'Done'"></button></div>
+    </footer>
     <!-- /ko -->
   </div>
 </div>

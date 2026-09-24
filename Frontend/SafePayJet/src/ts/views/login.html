@@ -30,9 +30,9 @@
         <p id="login-password-error" class="login-inline-error" aria-live="polite" data-bind="text: passwordError, visible: passwordError"></p>
       </div>
       <!-- /ko -->
-      <div class="login-message" role="alert" data-bind="visible: error, text: error"></div>
+      <div class="login-message" role="alert" data-bind="visible: error, text: error, reveal: error"></div>
       <oj-button class="login-submit" chroming="callToAction" type="submit" data-bind="disable: submitting"><span class="spin" aria-hidden="true" data-bind="visible: submitting"></span><span data-bind="text: submitting() ? 'Signing in…' : 'Login'"></span></oj-button>
-      <p class="login-progress load-row" role="status" data-bind="visible: submitting"><span class="spin" aria-hidden="true"></span><span>Please wait while we sign you in.</span></p>
+      <p class="send-off-screen" role="status" data-bind="text: submitting() ? 'Signing in. Please wait.' : ''"></p>
     </form>
     <button class="onboarding-secondary" type="button" data-bind="click: switchMode, disable: submitting, text: mode() !== 'email' ? 'Use email and password instead' : 'Use mobile number and password instead'"></button>
     <div class="login-registration"><span>New to SafePay?</span> <a href="/register">Create an account</a></div>

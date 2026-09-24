@@ -10,6 +10,7 @@ import Context = require("ojs/ojcontext");
 import { armAudio } from "./utils/chime";
 import "ojs/ojknockout";
 import "ojs/ojmodule-element";
+import "./utils/uiAttention";
 
 interface RouteDetail { label: string; }
 class RootViewModel {

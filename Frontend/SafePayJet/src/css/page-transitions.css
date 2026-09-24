@@ -22,7 +22,7 @@
   .safepay-placeholder
 ) {
   transform-origin: 50% 16%;
-  animation: safepay-page-arrive 340ms var(--safepay-page-ease) both;
+  animation: safepay-page-arrive 240ms var(--safepay-page-ease) backwards;
 }
 
 /* Stagger the largest dashboard surfaces without replacing their own local
@@ -77,7 +77,7 @@
 
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: none;
   }
 }
 

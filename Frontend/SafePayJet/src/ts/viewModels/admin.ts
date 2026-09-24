@@ -92,7 +92,7 @@ class AdminViewModel {
     const items = [
       { label: "All recorded volume", value: row.totalAmount, color: "#244f59" },
       { label: "Settled volume", value: row.settledAmount, color: "#12675f" },
-      { label: "Still on hold", value: this.heldAmount(), color: "#b23c3c" }
+      ...(!this.holdsError() ? [{ label: "Currently on hold", value: this.heldAmount(), color: "#b23c3c" }] : [])
     ];
     const peak = Math.max(1, ...items.map((item) => item.value));
     return items.map((item) => ({ ...item, pct: Math.round((item.value / peak) * 100) }));
@@ -106,10 +106,35 @@ class AdminViewModel {
       value: row.summary.totalTransactions,
       settled: row.summary.settledTransactions,
       holds: row.summary.hardHolds,
-      height: row.summary.totalTransactions ? Math.max(8, Math.round((row.summary.totalTransactions / peak) * 140)) : 3,
+      height: row.summary.totalTransactions ? Math.max(8, Math.round((row.summary.totalTransactions / peak) * 140)) : 0,
       settledPct: row.summary.totalTransactions
         ? Math.round((row.summary.settledTransactions / row.summary.totalTransactions) * 100) : 0
     }));
+  });
+  dailyAmounts = ko.pureComputed(() => {
+    const rows = this.chartDays();
+    const peak = Math.max(1, ...rows.map(row => Math.max(row.summary.totalAmount, row.summary.settledAmount)));
+    const start = Date.parse(this.loadedFrom() || rows[0]?.date || this.from());
+    const end = Date.parse(this.loadedTo() || rows[rows.length - 1]?.date || this.to());
+    const point = (value: number, index: number): string => `${end > start ? 10 + (Date.parse(rows[index].date) - start) * 580 / (end - start) : 300},${160 - value / peak * 140}`;
+    return {
+      total: rows.map((row, i) => point(row.summary.totalAmount, i)).join(' '),
+      settled: rows.map((row, i) => point(row.summary.settledAmount, i)).join(' '),
+      totalAmount: rows.reduce((sum, row) => sum + row.summary.totalAmount, 0),
+      settledAmount: rows.reduce((sum, row) => sum + row.summary.settledAmount, 0),
+      peak,
+      hasTrend: rows.length > 1
+    };
+  });
+  holdAmountBands = ko.pureComputed(() => {
+    const rows = this.pendingHolds();
+    const bands = [
+      { label: 'Up to ₹2 lakh', value: rows.filter(row => row.amount <= 200000).length },
+      { label: '₹2–5 lakh', value: rows.filter(row => row.amount > 200000 && row.amount <= 500000).length },
+      { label: 'Above ₹5 lakh', value: rows.filter(row => row.amount > 500000).length }
+    ];
+    const peak = Math.max(1, ...bands.map(band => band.value));
+    return bands.map(band => ({ ...band, pct: Math.round(band.value / peak * 100) }));
   });
   donutStyle = ko.pureComputed(() => {
     const row = this.summary();

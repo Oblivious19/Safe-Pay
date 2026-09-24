@@ -64,4 +64,9 @@ test('dashboard charts render outcome bars, daily columns and a hold snapshot',a
   assert.equal(f.model.ledger().length,1);
   assert.equal(f.model.people().length,1);
   assert.equal(f.model.riskBars().find(item=>item.label==='Very high').value,1);
+  assert.equal(f.model.dailyAmounts().totalAmount,900000);
+  assert.equal(f.model.dailyAmounts().settledAmount,10000);
+  assert.equal(f.model.dailyAmounts().hasTrend,true);
+  assert.equal(f.model.holdAmountBands()[0].value,1);
+  assert.equal(f.model.holdAmountBands()[1].value,0);
 });
