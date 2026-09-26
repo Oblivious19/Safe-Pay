@@ -6,14 +6,15 @@ const vm = require('node:vm');
 const ts = require('typescript');
 const ko = require('knockout');
 
-function loadProtection() {
-  const source = fs.readFileSync(path.join(__dirname, '../src/ts/utils/protection.ts'), 'utf8');
+function loadProtection(file = 'utils/protection.ts') {
+  const source = fs.readFileSync(path.join(__dirname, '../src/ts/', file), 'utf8');
   const code = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2021 } }).outputText;
   const module = { exports: {} };
   vm.runInNewContext('(function(require,module,exports){' + code + '\n})')(() => ({}), module, module.exports);
   return module.exports;
 }
 const p = loadProtection();
+const categories = loadProtection('constants/paymentCategories.ts');
 
 test('status and tier labels stay human', () => {
   assert.equal(p.statusLabel('PROTECTED'), 'Protected — you can still cancel');
@@ -54,6 +55,72 @@ test('progress kind follows state and pause length', () => {
   assert.equal(p.progressKind({ state: 'CANCELLED' }), 'cancelled');
 });
 
+test('hard holds can be cancelled without a timer only with server permission', () => {
+  const tx = {state:'HARD_HOLD',canCancel:true,protectionSeconds:0};
+  assert.equal(p.canCancelPayment(tx,Date.now()),true);
+  assert.equal(p.canCancelPayment(tx,Date.now()+86400000),true);
+  for (const canCancel of [false,undefined]) assert.equal(p.canCancelPayment({...tx,canCancel},Date.now()),false);
+  for (const state of ['SETTLED','CANCELLED','CREATED']) assert.equal(p.canCancelPayment({...tx,state},Date.now()),false);
+  assert.equal(p.canCancelPayment({...tx,direction:'CREDIT'},Date.now()),false);
+});
+
+test('payment cards have no manual Refresh status action', () => {
+  for(const name of ['send-money','transactions','dashboard']) {
+    const html=fs.readFileSync(path.join(__dirname,'../src/ts/views',name+'.html'),'utf8');
+    assert.doesNotMatch(html,/Refresh status|click:\s*(?:refreshResult|refreshDetail)/i);
+  }
+  const html=fs.readFileSync(path.join(__dirname,'../src/ts/views/send-money.html'),'utf8');
+  assert.match(html,/isProtected\(\).*\|\| isHold\(\)/);
+});
+
+test('medium and high risk share the same gauge with their actual remaining time',()=>{
+  const now=100000;
+  for(const [riskTier,protectionSeconds,remaining] of [['MEDIUM',10,5],['HIGH',30,15]]) {
+    const tx={state:'PROTECTED',riskTier,protectionSeconds,protectionDeadline:now+remaining*1000};
+    const gauge=p.paymentGauge(tx,now);
+    assert.equal(gauge.mode,'timed');
+    assert.equal(gauge.label,p.formatCountdown(remaining));
+    assert.equal(gauge.offset,p.FLUX_ARC/2);
+  }
+});
+
+test('very high risk waits for administrator review, never an invented countdown',()=>{
+  const tx={state:'HARD_HOLD',riskTier:'VERY_HIGH',protectionSeconds:0};
+  const gauge=p.paymentGauge(tx,Date.now());
+  assert.equal(gauge.mode,'waiting');assert.equal(gauge.label,'Awaiting review');
+  assert.match(gauge.caption,/No timed release/);
+  assert.equal(p.paymentGauge(tx,Date.now()+86400000).label,'Awaiting review');
+});
+
+test('elapsed or missing protection deadline waits for server status instead of settling locally',()=>{
+  for(const protectionDeadline of [undefined,100]) {
+    const tx={state:'PROTECTED',riskTier:'HIGH',protectionSeconds:60,protectionDeadline};
+    const gauge=p.paymentGauge(tx,200);
+    assert.equal(gauge.mode,'waiting');assert.equal(gauge.label,'Checking status');
+    assert.equal(tx.state,'PROTECTED');assert.doesNotMatch(gauge.label,/0:00|Settled/);
+  }
+});
+
+test('all settled tiers share the completed semicircle and final states do not animate',()=>{
+  for(const riskTier of ['LOW','MEDIUM','HIGH','VERY_HIGH']) {
+    const gauge=p.paymentGauge({state:'SETTLED',riskTier},Date.now());
+    assert.equal(gauge.mode,'settled');assert.equal(gauge.offset,0);assert.equal(gauge.label,'Settled');
+  }
+  assert.equal(p.paymentGauge({state:'CANCELLED'},0).label,'Cancelled');
+  assert.equal(p.paymentGauge({state:'REJECTED'},0).label,'Not approved');
+  assert.equal(p.paymentGauge({state:'REJECTED'},0).mode,'stopped');
+  assert.equal(p.paymentGauge(null,0).mode,'waiting');
+});
+
+test('payment template uses a common semicircle instead of tier-specific bars or rings',()=>{
+  const html=fs.readFileSync(path.join(__dirname,'../src/ts/views/send-money.html'),'utf8');
+  assert.match(html,/css: 'gauge-' \+ gauge\(\)\.mode/);
+  assert.match(html,/payment-arc-value/);
+  assert.doesNotMatch(html,/long-track|hold-pulse|done-burst|cancel-track|oj-progress-circle|sheetKind/);
+  const admin=fs.readFileSync(path.join(__dirname,'../src/ts/views/admin.html'),'utf8');
+  assert.match(admin,/admin-hold-review/);assert.match(admin,/<p class="admin-review-amount"/);
+});
+
 test('transactions show session email without using it as caller identity', async () => {
   const profile = ko.observable({ email: 'current@example.test' });
   const calls = [], module = { exports: {} };
@@ -61,7 +128,7 @@ test('transactions show session email without using it as caller identity', asyn
   const code = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2021 } }).outputText;
   const imports = {
     knockout: ko, '../appController': { default: { profile } }, '../accUtils': { announce() {} },
-    '../services/types': {}, '../utils/protection': p, '../services/apiError': {},
+    '../constants/paymentCategories': categories, '../services/types': {}, '../utils/protection': p, '../services/apiError': {},
     '../utils/chime': { armAudio() {}, chimeForPayment() {}, chimeIfSettled() {}, rememberSettled() {}, playChime() {}, startRing() {}, stopRing() {} },
     '../services/transactionService': { transactionService: { list: async (...args) => { calls.push(args); return []; } }, newIdempotencyKey: () => 'k' },
     './verifyCall': { VerifyCallModel: class { open = ko.observable(false); ring() {} dispose() {} } },
@@ -119,7 +186,7 @@ test('a loaded list is kept even if receipt bookkeeping throws', async () => {
   const row = { transactionId: 1, state: 'SETTLED', amount: 111111, beneficiaryName: 'Rohan Gupta', createdAt: '2026-09-16T19:10:22.000Z', riskTier: 'VERY_HIGH' };
   const imports = {
     knockout: ko, '../appController': { default: { profile } }, '../accUtils': { announce() {} },
-    '../services/types': {}, '../utils/protection': p, '../services/apiError': {},
+    '../constants/paymentCategories': categories, '../services/types': {}, '../utils/protection': p, '../services/apiError': {},
     '../utils/chime': { armAudio() {}, chimeForPayment() {}, chimeIfSettled() {}, rememberSettled() { throw new Error('chime'); }, playChime() {}, startRing() {}, stopRing() {} },
     '../services/transactionService': { transactionService: { list: async () => [row] }, newIdempotencyKey: () => 'k' },
     './verifyCall': { VerifyCallModel: class { open = ko.observable(false); ring() {} dispose() {} } },
@@ -146,7 +213,7 @@ test('cancelling a protected payment plays the cancel chime', async () => {
   const cancelled = { ...protectedRow, state: 'CANCELLED', cancelledAt: new Date().toISOString() };
   const imports = {
     knockout: ko, '../appController': { default: { profile } }, '../accUtils': { announce() {} },
-    '../services/types': {}, '../utils/protection': p, '../services/apiError': {},
+    '../constants/paymentCategories': categories, '../services/types': {}, '../utils/protection': p, '../services/apiError': {},
     '../utils/chime': {
       armAudio() { heard.push('arm'); },
       chimeForPayment(tx) { if (tx && tx.state === 'CANCELLED') heard.push('off'); },

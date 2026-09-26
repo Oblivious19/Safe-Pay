@@ -4,13 +4,12 @@ import { accountService, AccountFunds } from "../services/accountService";
 import { Account, PaymentTransaction, TransactionRequest } from "../services/types";
 import { transactionService, newIdempotencyKey } from "../services/transactionService";
 import { ApiError } from "../services/apiError";
+import { PAYMENT_CATEGORIES, PaymentCategory, categoryApplies, categoryLabel, categoryProblem } from "../constants/paymentCategories";
 import {
-  arcOffset as fluxArcOffset, canCancelPayment, CHECK_PHASES, explainReasons, fluxLetters,
-  formatCountdown, isInFlight, parseExpiry, phaseFor, progressKind, progressValue,
-  PROTECTION_PHASES, remainingFor, remainingSeconds, resultTitle, riskClass, statusLabel, tierLabel, tierRisk
+  canCancelPayment, explainReasons, formatCountdown, isInFlight, needsVerification,
+  paymentGauge, progressValue, remainingFor, resultTitle, riskClass, statusLabel, tierLabel, tierRisk
 } from "../utils/protection";
 import { armAudio, chimeForPayment } from "../utils/chime";
-import "ojs/ojprogress-circle";
 import "ojs/ojdialog";
 import "ojs/ojbutton";
 import "ojs/ojtrain";
@@ -19,6 +18,8 @@ import "ojs/ojavatar";
 import "ojs/ojmessages";
 
 interface FlowRouter { go(route: { path: string; params?: { step: string } }): Promise<unknown>; }
+// UI demonstration only. Never sent to the API or persisted; not payment security.
+const SIMULATED_S_PIN = "123456";
 class SendMoneyViewModel {
   step = ko.observable("beneficiary");
   beneficiaries = ko.observableArray<Beneficiary>([]);
@@ -30,27 +31,48 @@ class SendMoneyViewModel {
   account = ko.observable<Account | null>(null);
   funds = ko.observable<AccountFunds | null>(null);
   fundsError = ko.observable("");
-  fundsExpanded = ko.observable(false);
   private fundsGeneration = 0;
   amount = ko.observable("");
   purpose = ko.observable("");
+  readonly categoryOptions = PAYMENT_CATEGORIES;
+  category = ko.observable<PaymentCategory | undefined>();
+  categoryError = ko.observable("");
+  highValue = ko.pureComputed(() => categoryApplies(this.amount()));
+  othersCategory = ko.pureComputed(() => this.highValue() && this.category() === "OTHERS");
+  categoryLabel = categoryLabel;
+  reviewCategory = ko.pureComputed(() => this.pinOpen() || this.attemptLocked() ? this.attempt?.body.category : this.category());
+  private amountSubscription: ko.Subscription;
   amountError = ko.observable("");
   purposeError = ko.observable("");
   error = ko.observable("");
   notice = ko.observable("");
   loading = ko.observable(false);
   busy = ko.observable(false);
+  private stageTimer?: ReturnType<typeof setTimeout>;
+  private cancelStage?: () => void;
+  private pauseBeforePayment(): Promise<boolean> {
+    return new Promise(resolve => {
+      this.cancelStage = () => resolve(false);
+      this.stageTimer = setTimeout(() => {
+        this.cancelStage = undefined; this.stageTimer = undefined;
+        resolve(this.alive);
+      }, 1000);
+    });
+  }
   paymentError = ko.observable("");
+  pinOpen = ko.observable(false);
+  sPin = ko.observable("");
+  pinError = ko.observable("");
+  pinAmount = ko.pureComputed(() => this.pinOpen() || this.attemptLocked() ? this.money(Number(this.attempt?.body.amount || 0)) : this.amountPreview());
   result = ko.observable<PaymentTransaction | null>(null);
   attemptLocked = ko.observable(false);
   refreshing = ko.observable(false);
   cancelOpen = ko.observable(false);
   now = ko.observable(Date.now());
-  processing = ko.observable(0);
   trainSteps = [
     { id: "beneficiary", label: "Recipient" },
     { id: "details", label: "Amount" },
-    { id: "review", label: "Review" },
+    { id: "review", label: "S PIN" },
     { id: "result", label: "Status" }
   ];
   paymentMessages = ko.pureComputed(() => this.paymentError()
@@ -63,7 +85,9 @@ class SendMoneyViewModel {
   private attempt?: { key: string; body: TransactionRequest };
   private cancelKey?: string;
   private timer?: ReturnType<typeof setInterval>;
-  private processTimer?: ReturnType<typeof setInterval>;
+  private balanceTimer?: ReturnType<typeof setInterval>;
+  private balancesRefreshing = false;
+  private onFocus = (): void => { void this.refreshBalances(); };
   private lastPoll = 0;
 
 
@@ -86,19 +110,14 @@ class SendMoneyViewModel {
   isProtected = ko.pureComputed(() => this.result()?.state === "PROTECTED");
   isSettling = ko.pureComputed(() => this.isProtected() && Number.isFinite(this.remaining()) && this.remaining() <= 0);
   isHold = ko.pureComputed(() => this.result()?.state === "HARD_HOLD");
+  needsCall = ko.pureComputed(() => needsVerification(this.result()));
   isSettled = ko.pureComputed(() => this.result()?.state === "SETTLED");
   isCancelled = ko.pureComputed(() => this.result()?.state === "CANCELLED");
   // An instant settle has nothing to explain; pauses and holds still show their reasons.
   showReasons = ko.pureComputed(() => this.reasons().length > 0
     && !(this.isSettled() && !(this.result()?.protectionSeconds || 0)));
   riskTone = ko.pureComputed(() => this.result() ? riskClass(this.result() as PaymentTransaction) : "risk-neutral");
-  fluxPhase = ko.pureComputed(() => this.isProtected()
-    ? phaseFor(this.progressValue(), PROTECTION_PHASES)
-    : phaseFor(this.processing(), CHECK_PHASES));
-  fluxChars = ko.pureComputed(() => fluxLetters(this.fluxPhase()));
-  arcOffset = ko.pureComputed(() => fluxArcOffset(this.progressValue()));
-  fluxPercent = ko.pureComputed(() => `${this.isProtected() ? this.progressValue() : this.processing()}%`);
-  showProcessFlux = ko.pureComputed(() => this.busy() && this.attemptLocked() && !this.result());
+  gauge = ko.pureComputed(() => paymentGauge(this.result(), this.now()));
   private alive = true;
   private initialStep: string | undefined;
   canContinue = ko.pureComputed(() => !!this.selected() && this.account()?.status === "ACTIVE" && !this.loading() && !this.busy() && !this.error());
@@ -106,11 +125,6 @@ class SendMoneyViewModel {
   sheetOpen = ko.pureComputed(() => this.step() !== "beneficiary");
   /** After a payment is placed, tapping the dimmed page should close the receipt. */
   canLeave = ko.pureComputed(() => this.step() === "result" && !!this.result() && !this.busy());
-  sheetKind = ko.pureComputed(() => progressKind(this.result(), this.showProcessFlux()));
-  longTicks = ko.pureComputed(() => {
-    const filled = this.progressValue();
-    return Array.from({ length: 12 }, (_, index) => ((index + 1) * 100) / 12 <= filled + 0.5);
-  });
   quickAmounts = ["500", "1000", "2000", "5000"];
   mask = (value: string): string => value.length > 4 ? "•••• " + value.slice(-4) : "••••";
   money = (value: number): string => new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value);
@@ -129,8 +143,18 @@ class SendMoneyViewModel {
   isNew = (date: string): boolean => { const age = Date.now() - new Date(date).getTime(); return age >= 0 && age < 86400000; };
   added = (date: string): string => Number.isNaN(new Date(date).getTime()) ? "Added date unavailable" : "Added " + new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", year: "numeric" }).format(new Date(date));
   initials = (name: string): string => (name || "?").slice(0, 1).toUpperCase();
-  constructor(private context: { router: FlowRouter; params?: { step?: string } }) { this.initialStep = context.params?.step; }
+  constructor(private context: { router: FlowRouter; params?: { step?: string } }) {
+    this.initialStep = context.params?.step;
+    this.amountSubscription = this.amount.subscribe(value => {
+      this.amountError("");
+      if (!this.attemptLocked() && !this.pinOpen() && !categoryApplies(value)) {
+        this.category(undefined); this.categoryError("");
+      }
+    });
+  }
+  clearCategoryError = (): void => { this.categoryError(""); this.purposeError(""); };
   parametersChanged(params: { step?: string }): void {
+    this.closePin();
     if (this.result()) {
       this.step("result");
       if (params.step !== "result") void this.context.router.go({ path: "send-money", params: { step: "result" } });
@@ -139,6 +163,7 @@ class SendMoneyViewModel {
     if (this.attemptLocked()) {
       this.step("review");
       if (params.step !== "review") void this.context.router.go({ path: "send-money", params: { step: "review" } });
+      else if (!this.busy()) void this.confirm();
       return;
     }
     let target = "beneficiary";
@@ -149,16 +174,18 @@ class SendMoneyViewModel {
     this.step(target);
     if (params.step !== this.step()) void this.context.router.go({ path: "send-money", params: { step: this.step() } });
     this.notice("");
+    // Keep existing review URLs compatible, but show S PIN without a review card.
+    if (target === "review" && !this.busy()) void this.confirm();
   }
   load = async (): Promise<void> => {
-    if (this.loading() || this.attemptLocked() || this.result()) return;
+    if (this.loading() || this.attemptLocked() || this.result() || this.pinOpen()) return;
     this.loading(true); this.error(""); this.selected(null); this.beneficiaries([]); this.account(null);
     try {
       const [beneficiaries, account] = await Promise.all([beneficiaryService.list(), accountService.list()]);
       if (!this.alive) return;
       this.allBeneficiaries=beneficiaries;this.accounts(account);
       const chosen=account.find(a=>a.accountId===this.selectedAccountId()) || account.find(a=>a.status==="ACTIVE") || account[0];
-      this.selectedAccountId(chosen?.accountId || null);this.selectAccount();
+      this.selectedAccountId(chosen?.accountId || null);await this.selectAccount();
       if(!chosen)this.error("No account is linked to your profile yet.");
     } catch (error) {
       if (!this.alive) return;
@@ -168,36 +195,71 @@ class SendMoneyViewModel {
       this.error(error instanceof ApiError && [400, 401, 403, 404].includes(error.status) ? error.message : "We couldn’t load your payment details. Please try again.");
     } finally { if (this.alive) this.loading(false); }
   };
-  selectAccount = (): void => {
-    if(this.attemptLocked() || this.result())return;
+  selectAccount = async (): Promise<void> => {
+    if(this.attemptLocked() || this.result() || this.pinOpen())return;
     const account=this.accounts().find(a=>a.accountId===this.selectedAccountId());
-    this.account(account||null);this.selected(null);this.funds(null);this.fundsExpanded(false);void this.refreshFunds();
+    this.account(account||null);this.selected(null);this.funds(null);
     this.beneficiaries(this.allBeneficiaries.filter(b=>b.accountId===account?.accountId && b.status==="ACTIVE"));
+    await this.refreshFunds();
   };
-  toggleFunds = (): void => this.fundsExpanded(!this.fundsExpanded());
-  refreshFunds = async (): Promise<void> => {
+  refreshFunds = async (): Promise<boolean> => {
     const id=this.account()?.accountId;const generation=++this.fundsGeneration;this.fundsError("");
-    if(!id){this.funds(null);return;}
-    try{const funds=await accountService.funds(id);if(this.alive && generation===this.fundsGeneration && this.account()?.accountId===id)this.funds(funds);}
-    catch(error){if(this.alive && generation===this.fundsGeneration){this.funds(null);this.fundsError("Available funds could not be refreshed. The server will check your balance when you confirm.");}}
+    if(!id){this.funds(null);return false;}
+    try{const funds=await accountService.funds(id);if(this.alive && generation===this.fundsGeneration && this.account()?.accountId===id){
+      if (funds?.accountId !== id || ![funds.balance, funds.reservedBalance, funds.availableToTransfer].every(Number.isFinite) || funds.availableToTransfer < 0) throw new Error("Invalid funds response");
+      this.funds(funds);
+      if (this.amountError()) this.amountError(this.amountProblem());
+      if(this.account()!.balance!==funds.balance){
+        const updated={...this.account()!,balance:funds.balance};this.account(updated);
+        this.accounts(this.accounts().map(a=>a.accountId===id?updated:a));
+      }
+      return true;
+    }}
+    catch(error){if(this.alive && generation===this.fundsGeneration){
+      this.funds(null);this.fundsError("We couldn’t check your current balance. Please retry before continuing.");
+      if(error instanceof ApiError && error.status===401) { this.closePin(); this.stopPolling(); window.location.replace("/login?reason=session-expired"); }
+    }}
+    return false;
   };
-  choose = (beneficiary: Beneficiary): void => { if (!this.loading() && !this.busy()) this.selected(beneficiary); };
+  refreshBalances = async (): Promise<void> => {
+    if(!this.alive || this.balancesRefreshing || this.loading() || this.busy() || document.visibilityState === "hidden")return;
+    this.balancesRefreshing=true;
+    try {
+      const accounts=await accountService.list();if(!this.alive || this.busy())return;
+      this.accounts(accounts);
+      this.account(accounts.find(a=>a.accountId===this.selectedAccountId()) || null);
+      await this.refreshFunds();
+    } catch(error) {
+      if(this.alive){
+        if(error instanceof ApiError && error.status===401){this.closePin();this.stopPolling();window.location.replace("/login?reason=session-expired");}
+        this.fundsError("Balances could not be refreshed. Please refresh before sending another payment.");
+      }
+    } finally {this.balancesRefreshing=false;}
+  };
+  choose = (beneficiary: Beneficiary): void => { if (!this.loading() && !this.busy() && !this.pinOpen() && !this.attemptLocked()) this.selected(beneficiary); };
   pick = (beneficiary: Beneficiary): void => {
     this.choose(beneficiary);
     void this.next();
   };
   useAmount = (value: string): void => {
-    if (this.busy()) return;
+    if (this.busy() || this.pinOpen() || this.attemptLocked()) return;
     this.amount(value);
     this.amountError("");
   };
   next = async (): Promise<void> => {
     if (!this.canContinue()) return;
     this.busy(true);
-    try { await this.context.router.go({ path: "send-money", params: { step: "details" } }); }
+    try {
+      await this.context.router.go({ path: "send-money", params: { step: "details" } });
+    }
     finally { if (this.alive) this.busy(false); }
   };
   back = async (): Promise<void> => {
+    if (this.pinOpen() && !this.busy() && !this.attemptLocked()) {
+      this.closePin();
+      await this.context.router.go({ path: "send-money", params: { step: "details" } });
+      return;
+    }
     if (this.canLeave()) { await this.leave(); return; }
     if (this.busy() || this.attemptLocked()) return;
     await this.context.router.go(this.step() === "review"
@@ -208,6 +270,7 @@ class SendMoneyViewModel {
   leave = async (): Promise<void> => {
     if (!this.canLeave()) return;
     this.stopPolling();
+    this.closePin();
     this.result(null);
     this.attempt = undefined;
     this.attemptLocked(false);
@@ -215,6 +278,7 @@ class SendMoneyViewModel {
     this.paymentError("");
     this.amount("");
     this.purpose("");
+    this.category(undefined); this.categoryError("");
     
     this.selected(null);
     await this.load();
@@ -227,16 +291,23 @@ class SendMoneyViewModel {
       return "Enter a positive amount in rupees, digits only, up to 2 decimal places.";
     }
     const amount = Number(value);
-    const balance = this.account()?.balance;
-    if (typeof balance === "number" && amount > balance) {
-      return `That is more than the ${this.money(balance)} account balance.`;
+    const funds = this.funds();
+    if (!funds || funds.accountId !== this.account()?.accountId || this.fundsError() || !Number.isFinite(funds.availableToTransfer)) {
+      return "Please wait for your current balance, or retry the balance check.";
+    }
+    if (amount > funds.availableToTransfer) {
+      return `Insufficient balance. Your current balance is ${this.money(funds.availableToTransfer)}. Enter this amount or less.`;
     }
     return "";
   }
   private validateDetails(): boolean {
     this.amountError(this.amountProblem()); this.purposeError("");
+    this.categoryError(categoryProblem(this.amount(), this.highValue() ? this.category() : undefined));
     if (this.purpose().length > 255) this.purposeError("Keep your note to 255 characters or fewer.");
-    return !this.amountError() && !this.purposeError();
+    if (this.othersCategory() && (!this.purpose().trim() || this.purpose().trim().length > 140)) {
+      this.purposeError("Others requires a purpose of 1–140 characters.");
+    }
+    return !this.amountError() && !this.purposeError() && !this.categoryError();
   }
   continueDetails = async (): Promise<void> => {
     if (this.busy() || this.loading()) return;
@@ -244,75 +315,106 @@ class SendMoneyViewModel {
     const valid = this.validateDetails();
     if (!this.selected()) { this.parametersChanged({ step: "beneficiary" }); return; }
     if (!valid) {
-      document.getElementById(this.amountError() ? "payment-amount" : "payment-purpose")?.focus(); return;
+      document.getElementById(this.amountError() ? "payment-amount" : this.categoryError() ? "payment-category" : this.othersCategory() ? "payment-category-purpose" : "payment-purpose")?.focus(); return;
     }
     if (!this.account() || this.error()) return;
     this.busy(true);
     try {
-      await this.refreshFunds();
+      const refreshed = await this.refreshFunds();
+      if (!this.alive) return;
+      if (!refreshed || !this.validateDetails()) {
+        this.amountError(this.amountProblem());
+        document.getElementById("payment-amount")?.focus(); return;
+      }
       await this.context.router.go({ path: "send-money", params: { step: "review" } });
     } finally { if (this.alive) this.busy(false); }
+    // Opening S PIN does not submit; only its explicit Continue & Pay does.
+    await this.confirm();
   };
   private showPaymentError(error: unknown): void {
     if (error instanceof ApiError && error.status === 401) {
+      this.closePin();
       this.result(null); this.stopPolling();
       window.location.replace("/login?reason=session-expired");
     }
-    this.paymentError(error instanceof ApiError && [400, 403, 404, 409, 500].includes(error.status)
+    this.paymentError(error instanceof ApiError && [400, 403, 404, 409].includes(error.status)
       ? error.message : "We couldn’t confirm the payment status. Check Transactions before starting another payment. You can retry this unchanged request here safely.");
   }
   private acceptResult(value: PaymentTransaction): void {
     if (!value || !Number.isSafeInteger(value.transactionId) || value.transactionId <= 0 || typeof value.state !== "string" || !Number.isFinite(value.amount)) {
       throw new ApiError(200, "Invalid payment response", "response");
     }
+    const changed=this.result()?.state!==value.state || this.result()?.transactionId!==value.transactionId;
     this.result(value); this.now(Date.now());
+    if(changed)void this.refreshBalances();
     if (!isInFlight(value.state)) this.stopPolling();
     chimeForPayment(value);
   }
   confirm = async (): Promise<void> => {
-    if (this.busy() || this.loading() || this.result() || this.step() !== "review") return;
+    if (!this.alive || this.busy() || this.loading() || this.pinOpen() || this.result() || this.step() !== "review") return;
     this.paymentError("");
     if (!this.attempt) {
+      this.busy(true);
+      let refreshed: boolean;
+      try {
+        refreshed = await this.refreshFunds();
+      }
+      finally { if (this.alive) this.busy(false); }
+      if (!this.alive || this.step() !== "review") return;
+      if (!refreshed) { this.paymentError(this.fundsError() || "Please retry the balance check before paying."); return; }
       if (!this.validateDetails() || !this.selected() || !this.account() || this.account()!.status !== "ACTIVE" || this.selected()!.accountId !== this.account()!.accountId) {
-        this.paymentError(this.amountError() || this.purposeError() || "Choose a beneficiary and source account before paying."); return;
+        this.paymentError(this.amountError() || this.categoryError() || this.purposeError() || "Choose a beneficiary and source account before paying."); return;
       }
       if (new TextEncoder().encode(this.purpose()).length > 255) {
         this.paymentError("Keep your note to 255 UTF-8 bytes or fewer."); return;
       }
       this.attempt = { key: newIdempotencyKey(), body: {
         fromAccountId: this.account()!.accountId, beneficiaryId: this.selected()!.beneficiaryId,
-        amount: this.amount().trim(), purpose: this.purpose()
+        amount: this.amount().trim(), purpose: this.othersCategory() ? this.purpose().trim() : this.purpose(),
+        ...(this.highValue() ? { category: this.category() } : {})
       } };
     }
-    this.busy(true); this.attemptLocked(true); this.startProcessFlux();
+    this.sPin(""); this.pinError(""); this.pinOpen(true);
+  };
+  closePin = (): void => {
+    this.pinOpen(false); this.sPin(""); this.pinError("");
+    // An uncertain submitted payment must retain its original payload and retry key.
+    if (!this.attemptLocked()) this.attempt = undefined;
+  };
+  onPinInput = (_: unknown, event: Event): void => {
+    if (!this.pinOpen() || this.busy()) return;
+    this.sPin((event.target as HTMLInputElement).value); this.pinError("");
+    // Typing never authorizes payment; the user must submit Continue & Pay.
+  };
+  submitPin = async (): Promise<void> => {
+    if (!this.alive || !this.pinOpen() || this.busy() || this.loading() || !this.attempt || this.step() !== "review" || this.result()) return;
+    if (!/^[0-9]{6}$/.test(this.sPin())) { this.pinError("Enter a six-digit S PIN."); return; }
+    if (this.sPin() !== SIMULATED_S_PIN) { this.pinError("Incorrect S PIN. Please try again."); return; }
+    this.sPin(""); this.pinError("");
+    await this.submitPayment();
+  };
+  private async submitPayment(): Promise<void> {
+    if (!this.attempt || this.busy() || !this.alive) return;
+    this.busy(true); this.attemptLocked(true);
     armAudio();
     try {
+      if (!await this.pauseBeforePayment()) return;
       const response = await transactionService.create(this.attempt.body, this.attempt.key);
       if (!this.alive) return;
       this.acceptResult(response);
+      this.pinOpen(false);
       await this.context.router.go({ path: "send-money", params: { step: "result" } });
       this.startPolling();
     } catch (error) {
       if (this.alive) {
+        this.pinOpen(false);
         if (error instanceof ApiError && [400, 403, 404].includes(error.status)) {
           this.attempt = undefined; this.attemptLocked(false);
         }
         this.showPaymentError(error);
       }
     }
-    finally { this.stopProcessFlux(); if (this.alive) this.busy(false); }
-  };
-  private startProcessFlux(): void {
-    this.stopProcessFlux(); this.processing(8);
-    this.processTimer = setInterval(() => {
-      const next = this.processing() + 6;
-      this.processing(next >= 88 ? 88 : next);
-    }, 140);
-  }
-  private stopProcessFlux(): void {
-    if (this.processTimer) clearInterval(this.processTimer);
-    this.processTimer = undefined;
-    this.processing(this.result() ? 100 : 0);
+    finally { if (this.alive) { this.busy(false); if (this.result()) void this.refreshBalances(); } }
   }
   refreshResult = async (): Promise<void> => {
     const current = this.result();
@@ -321,7 +423,13 @@ class SendMoneyViewModel {
     try {
       const response = await transactionService.get(current.transactionId);
       if (this.alive) { this.acceptResult(response); this.paymentError(""); if (!this.timer) this.startPolling(); }
-    } catch (error) { if (this.alive) { this.stopPolling(); this.showPaymentError(error); } }
+    } catch (error) {
+      if (this.alive) {
+        // A temporary network failure must not leave the receipt stuck without a refresh button.
+        if (error instanceof ApiError && error.status === 401) this.showPaymentError(error);
+        else this.paymentError("We couldn’t update this payment just now. We’ll retry automatically; its last confirmed status is shown.");
+      }
+    }
     finally { if (this.alive) this.refreshing(false); }
   };
   requestCancel = (): void => { if (this.canCancel()) { armAudio(); this.cancelOpen(true); } };
@@ -344,7 +452,7 @@ class SendMoneyViewModel {
       const response = await transactionService.cancel(current.transactionId, this.cancelKey);
       if (this.alive) this.acceptResult(response);
     } catch (error) { if (this.alive) this.showPaymentError(error); }
-    finally { if (this.alive) this.busy(false); }
+    finally { if (this.alive) { this.busy(false); if (this.result()) void this.refreshBalances(); } }
   };
   private startPolling(): void {
     this.stopPolling(); this.lastPoll = Date.now();
@@ -356,10 +464,13 @@ class SendMoneyViewModel {
   }
   private stopPolling(): void { if (this.timer) clearInterval(this.timer); this.timer = undefined; }
   connected(): void {
+    this.alive=true;
+    window.addEventListener?.("focus",this.onFocus);
+    this.balanceTimer=setInterval(()=>void this.refreshBalances(),3000);
     document.title = "Send Money | SafePay";
     this.parametersChanged({ step: this.initialStep });
     void this.load();
   }
-  disconnected(): void { this.alive = false;    this.stopPolling(); this.stopProcessFlux(); this.result(null); this.attempt = undefined; this.selected(null); this.account(null); this.beneficiaries([]); this.amount(""); this.purpose("");  }
+  disconnected(): void { this.alive = false; if (this.stageTimer !== undefined) clearTimeout(this.stageTimer); this.cancelStage?.(); this.cancelStage = undefined; this.closePin(); this.amountSubscription.dispose(); this.category(undefined); this.categoryError(""); this.fundsGeneration++; if(this.balanceTimer)clearInterval(this.balanceTimer);window.removeEventListener?.("focus",this.onFocus); this.stopPolling(); this.result(null); this.attempt = undefined; this.selected(null); this.account(null); this.beneficiaries([]); this.amount(""); this.purpose("");  }
 }
 export = SendMoneyViewModel;

@@ -9,7 +9,7 @@ public record VerifiedTransactionResponse(Long transactionId, String transaction
         String beneficiaryBankAccountNumber, String beneficiaryIfsc, String state, String riskTier,
         String riskReason, int protectionSeconds, LocalDateTime protectionExpiresAt,
         LocalDateTime createdAt, LocalDateTime settledAt, LocalDateTime cancelledAt, LocalDateTime verifiedAt,
-        Long protectionRemainingMillis, boolean canCancel) {
+        Long protectionRemainingMillis, boolean canCancel, PaymentCategory category) {
     public static VerifiedTransactionResponse from(TransactionDb transaction) {
         var beneficiary = transaction.getBeneficiary();
         return new VerifiedTransactionResponse(transaction.getTransactionId(), transaction.getTransactionRef(),
@@ -18,6 +18,6 @@ public record VerifiedTransactionResponse(Long transactionId, String transaction
                 beneficiary.getIfsc(), transaction.getState().name(), transaction.getRiskTier().name(),
                 transaction.getRiskReason(), transaction.getProtectionSeconds(), transaction.getProtectionExpiresAt(),
                 transaction.getCreatedAt(), transaction.getSettledAt(), transaction.getCancelledAt(), transaction.getVerifiedAt(),
-                null, false);
+                null, false, transaction.getCategory());
     }
 }

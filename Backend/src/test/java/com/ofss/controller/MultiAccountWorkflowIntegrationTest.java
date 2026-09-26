@@ -121,7 +121,7 @@ class MultiAccountWorkflowIntegrationTest {
 
         // Old clients without an account selection still target the lowest owned ID.
         JsonNode defaultBeneficiary = owner.call("POST", "/api/beneficiaries", Map.of(
-                "beneficiaryName", "Default recipient", "bankAccountNumber", "999888777", "ifsc", "SBIN0001234"), 201);
+                "beneficiaryName", "Default recipient", "bankAccountNumber", "999888777", "ifsc", "SBIN0001234", "externalConfirmed", true), 201);
         assertEquals(firstId, defaultBeneficiary.path("accountId").asLong());
         String selectedBeneficiaryPath = "/api/beneficiaries/" + beneficiaryIds.get(1);
         owner.call("DELETE", selectedBeneficiaryPath, null, 204);
@@ -146,11 +146,13 @@ class MultiAccountWorkflowIntegrationTest {
     }
 
     private Map<String, Object> beneficiary(Long accountId) {
-        return Map.of("accountId", accountId, "beneficiaryName", "Same recipient", "bankAccountNumber", "123456789012", "ifsc", "HDFC0001234");
+        return Map.of("accountId", accountId, "beneficiaryName", "Same recipient", "bankAccountNumber", "123456789012", "ifsc", "HDFC0001234", "externalConfirmed", true);
     }
 
     private Map<String, Object> payment(Long accountId, Long beneficiaryId, String amount) {
-        return Map.of("fromAccountId", accountId, "beneficiaryId", beneficiaryId, "amount", amount, "purpose", "Multi account test");
+        Map<String, Object> body = new java.util.HashMap<>(Map.of("fromAccountId", accountId, "beneficiaryId", beneficiaryId, "amount", amount, "purpose", "Multi account test"));
+        if (new BigDecimal(amount).compareTo(new BigDecimal("100000")) > 0) body.put("category", "MEDICAL");
+        return body;
     }
 
     private void assertBalance(Client client, Long accountId, String expected) throws Exception {

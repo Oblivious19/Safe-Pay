@@ -58,8 +58,7 @@ public class BeneficiaryServiceImpl implements BeneficiaryService {
         if (matched.getUser().getUserId().equals(callerId)) {
             throw new TransactionValidationException(409, "You cannot add your own SafePay account as a beneficiary");
         }
-        boolean nameMatches = normalize(matched.getUser().getName()).equals(normalize(request.beneficiaryName()));
-        if (!nameMatches) {
+        if (!normalize(matched.getUser().getName()).equals(normalize(request.beneficiaryName()))) {
             throw new TransactionValidationException(409,
                     "This account number belongs to a SafePay customer, but the recipient name does not match");
         }

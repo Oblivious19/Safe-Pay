@@ -3,7 +3,7 @@ import { ApiError, resourceId } from "./apiError";
 
 export interface Beneficiary {
   beneficiaryId: number; beneficiaryName: string; bankAccountNumber: string;
-  ifsc: string; bankName: string; status: string; createdAt: string; accountId: number;
+  ifsc: string; status: string; createdAt: string; accountId: number;
 }
 export interface BeneficiaryInput { accountId?: number; beneficiaryName: string; bankAccountNumber: string; ifsc: string; externalConfirmed?: boolean; }
 export function validateBeneficiary(input: BeneficiaryInput): Partial<Record<keyof BeneficiaryInput, string>> {
@@ -13,7 +13,7 @@ export function validateBeneficiary(input: BeneficiaryInput): Partial<Record<key
   if (!/^[0-9]{1,30}$/.test(input.bankAccountNumber.trim()))
     errors.bankAccountNumber = "Enter a bank account number with 1–30 digits.";
   if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(input.ifsc.trim().toUpperCase()))
-    errors.ifsc = "Invalid IFSC code.";
+    errors.ifsc = "Enter an 11-character IFSC: four letters, 0, then six letters or digits.";
   return errors;
 }
 function path(id: number): string {
@@ -33,7 +33,7 @@ export const beneficiaryService = {
   create(input: BeneficiaryInput): Promise<Beneficiary> {
     const errors = validateBeneficiary(input);
     if (Object.keys(errors).length) throw new ApiError(400, Object.values(errors)[0]!, "validation");
-    const body = { ...(input.accountId !== undefined ? {accountId: resourceId(input.accountId)} : {}), beneficiaryName: input.beneficiaryName.trim(), bankAccountNumber: input.bankAccountNumber.trim(), ifsc: input.ifsc.trim().toUpperCase(), externalConfirmed: input.externalConfirmed === true };
+    const body = { ...(input.accountId !== undefined ? {accountId: resourceId(input.accountId)} : {}), beneficiaryName: input.beneficiaryName.trim(), bankAccountNumber: input.bankAccountNumber.trim(), ifsc: input.ifsc.trim().toUpperCase(), ...(input.externalConfirmed === true ? {externalConfirmed: true} : {}) };
     return apiClient.request("/api/beneficiaries", { method: "POST", csrf: true, body });
   },
   deactivate(id: number): Promise<void> {

@@ -19,13 +19,11 @@ public class AdminApprovalService {
     private final TransactionDao transactions;
     private final AuditLogDao audits;
     private final CurrentSessionService sessions;
-    private final InternalPaymentRecipientResolver recipients;
 
     public AdminApprovalService(VerificationRepository verifications, AccountDao accounts,
             TransactionDao transactions, AuditLogDao audits, CurrentSessionService sessions) {
         this.verifications = verifications; this.accounts = accounts; this.transactions = transactions;
         this.audits = audits; this.sessions = sessions;
-        this.recipients = new InternalPaymentRecipientResolver(accounts);
     }
 
     private void requireAdmin(LoginPrincipal caller) {
@@ -38,7 +36,7 @@ public class AdminApprovalService {
     public List<AdminApprovalRequestView> pending(LoginPrincipal caller) {
         requireAdmin(caller);
         // The transaction is the durable notification; it survives logout and server restarts.
-        return verifications.findByStateOrderByCreatedAtAscTransactionIdAsc(TransactionState.HARD_HOLD)
+        return verifications.findPendingByCategoryPriority()
                 .stream().map(AdminApprovalRequestView::from).toList();
     }
 
@@ -51,9 +49,9 @@ public class AdminApprovalService {
         }
         Long accountId = verifications.accountId(id)
                 .orElseThrow(() -> new ResourceNotFoundExcp("Transaction not found"));
-        // All money writers use this source-account lock. Read the payment only after acquiring it.
-        Account account = accounts.findForSettlement(accountId)
-                .orElseThrow(() -> new ResourceNotFoundExcp("Account not found"));
+        Long receiverId = accounts.findPaymentRecipientId(id).orElse(null);
+        // Lock both accounts in a stable order before reading payment state.
+        Account account = TransferBalances.lockPair(accounts, accountId, receiverId);
         AuditLog receipt = audits.findByRequestKey(key).orElse(null);
         TransactionDb transaction = verifications.findByTransactionId(id)
                 .orElseThrow(() -> new ResourceNotFoundExcp("Transaction not found"));
@@ -82,17 +80,20 @@ public class AdminApprovalService {
                 || account.getBalance().subtract(pending).signum() < 0) {
             throw new TransactionValidationException(409, "Available funds must cover all held payments");
         }
-        BigDecimal remaining = account.getBalance().subtract(transaction.getAmount());
         if (verifications.settleVerified(id, transaction.getVersion(), key) != 1) {
             throw new TransactionValidationException(409, "Payment changed concurrently; refresh before retrying");
         }
         // The conditional update clears the persistence context, but the DB lock remains held.
         Account locked = accounts.findForSettlement(accountId)
                 .orElseThrow(() -> new ResourceNotFoundExcp("Account not found"));
-        locked.setBalance(remaining); accounts.save(locked);
-        creditInternalRecipient(transaction, transaction.getAmount());
+        Account receiver = receiverId == null ? null : TransferBalances.lock(accounts, receiverId);
         TransactionDb settled = verifications.findByTransactionId(id)
                 .orElseThrow(() -> new ResourceNotFoundExcp("Transaction not found"));
+        TransferBalances.move(accounts, locked, receiver, transaction.getAmount(), settled.getSettledAt());
+        if (receiver != null) {
+            settled.setToAccount(receiver);
+            verifications.save(settled);
+        }
         AuditLog audit = new AuditLog();
         audit.setTransactionId(id); audit.setUserId(caller.userId()); audit.setRequestKey(key);
         audit.setAction(ACTION); audit.setOldState(TransactionState.HARD_HOLD.name());
@@ -137,17 +138,5 @@ public class AdminApprovalService {
         audit.setOldState(TransactionState.HARD_HOLD.name()); audit.setNewState(TransactionState.CANCELLED.name());
         audit.setCreatedAt(declined.getCancelledAt()); audits.saveAndFlush(audit);
         return VerifiedTransactionResponse.from(declined);
-    }
-
-    private void creditInternalRecipient(TransactionDb transaction, BigDecimal amount) {
-        recipients.recipientAccountId(transaction.getBeneficiary()).ifPresent(recipientId -> {
-            Account recipient = accounts.findForSettlement(recipientId)
-                    .orElseThrow(() -> new ResourceNotFoundExcp("Recipient account not found"));
-            if (recipient.getStatus() != AccountStatus.ACTIVE) {
-                throw new TransactionValidationException(409, "Recipient SafePay account must be ACTIVE");
-            }
-            recipient.setBalance(recipient.getBalance().add(amount));
-            accounts.save(recipient);
-        });
     }
 }

@@ -13,6 +13,22 @@ export class AdminUsersModel {
   error = ko.observable("");
   noAccount = ko.observable(false);
   private generation = 0;
+  private poll?: ReturnType<typeof setInterval>;
+  private refreshing=false;
+  private alive=true;
+
+  startLive():void { if(!this.poll)this.poll=setInterval(()=>void this.refreshBalances(),3000); }
+  refreshBalances=async():Promise<void>=>{
+    const user=this.selected();const generation=this.generation;
+    if(!user || !this.alive || this.loading() || this.refreshing || this.forbidden() || document.visibilityState==="hidden")return;
+    this.refreshing=true;
+    try {
+      const accounts=await adminUserService.accounts(user.userId);
+      if(!this.alive || generation!==this.generation)return;
+      this.accounts(accounts);this.selectAccount();this.noAccount(!accounts.length);this.error("");
+    } catch(error) {if(this.alive && generation===this.generation)this.fail(error);}
+    finally {this.refreshing=false;}
+  };
 
   accountLabel = (a: AdminAccount): string => a.accountType + " •••• " + a.accountNumber.slice(-4) + " · " + a.status;
   money = (value: string): string => {
@@ -69,6 +85,7 @@ export class AdminUsersModel {
     this.account(this.accounts().find(a => a.accountId === this.selectedAccountId()) || null);
   };
   disconnected(): void {
+    this.alive=false;if(this.poll)clearInterval(this.poll);
     this.generation++; this.users([]); this.selected(null); this.clearAccounts(); this.loading(false);
   }
 }

@@ -38,7 +38,7 @@ class TransactionTimeContractTest {
         TransactionDb transaction = new TransactionDb(); transaction.setTransactionId(id);
         transaction.setFromAccount(account); transaction.setBeneficiary(beneficiary);
         transaction.setAmount(new BigDecimal("20000.00")); transaction.setRiskTier(RiskTier.MEDIUM);
-        transaction.setState(state); transaction.setProtectionExpiresAt(expiry); transaction.setCreatedAt(databaseNow);
+        transaction.setState(state); transaction.setProtectionExpiresAt(expiry);
         return transaction;
     }
 
@@ -83,7 +83,7 @@ class TransactionTimeContractTest {
     }
 
     @ParameterizedTest
-    @EnumSource(value = TransactionState.class, names = {"CREATED", "AUTHORIZED", "RISK_ASSESSED", "SETTLED", "CANCELLED", "HARD_HOLD"})
+    @EnumSource(value = TransactionState.class, names = {"CREATED", "AUTHORIZED", "RISK_ASSESSED", "SETTLED", "CANCELLED"})
     void otherStatesNeverGetATimerOrCancellationEvenWithHistoricalExpiry(TransactionState state) {
         when(service.getTransaction(1L, caller.email())).thenReturn(payment(1, 20, state, databaseNow.plusDays(1)));
         var response = controller.getTransaction(1L, caller);
@@ -98,6 +98,17 @@ class TransactionTimeContractTest {
         var response = controller.getTransaction(1L, caller);
         assertNull(response.get("protectionRemainingMillis"));
         assertEquals(false, response.get("canCancel"));
+        verify(service, never()).currentDatabaseTime(anyLong());
+    }
+
+    @Test
+    void hardHoldAllowsCancellationWithoutAClockOrCountdown() {
+        for (LocalDateTime expiry : new LocalDateTime[] {null, databaseNow.minusDays(1)}) {
+            when(service.getTransaction(1L, caller.email())).thenReturn(payment(1, 20, TransactionState.HARD_HOLD, expiry));
+            var response = controller.getTransaction(1L, caller);
+            assertEquals(true, response.get("canCancel"));
+            assertNull(response.get("protectionRemainingMillis"));
+        }
         verify(service, never()).currentDatabaseTime(anyLong());
     }
 
@@ -119,11 +130,11 @@ class TransactionTimeContractTest {
     @Test
     void createCancelAndVerificationResponsesUseTheSameAdditionalFields() {
         var pending = payment(1, 20, TransactionState.PROTECTED, databaseNow.plusSeconds(10));
-        when(service.initiate(20L, 501L, pending.getAmount(), "rent", "create-key", 103L)).thenReturn(pending);
+        when(service.initiate(20L, 501L, pending.getAmount(), "rent", "create-key", 103L, null)).thenReturn(pending);
+        when(service.currentDatabaseTime(20L)).thenReturn(databaseNow);
         var created = controller.initiate("create-key", new TransactionRequest(20L, 501L, pending.getAmount(), "rent"), caller);
         assertEquals(10000L, created.get("protectionRemainingMillis"));
         assertEquals(true, created.get("canCancel"));
-        verify(service, never()).currentDatabaseTime(20L);
         var cancelled = payment(1, 20, TransactionState.CANCELLED, pending.getProtectionExpiresAt());
         when(service.cancel(1L, "cancel-key", caller.email())).thenReturn(cancelled);
         var cancelResponse = controller.cancel(1L, "cancel-key", caller);
@@ -132,6 +143,6 @@ class TransactionTimeContractTest {
         var verified = VerifiedTransactionResponse.from(payment(2, 20, TransactionState.SETTLED, null));
         assertNull(verified.protectionRemainingMillis());
         assertFalse(verified.canCancel());
-        verify(service, never()).currentDatabaseTime(anyLong());
+        verify(service, times(1)).currentDatabaseTime(anyLong());
     }
 }

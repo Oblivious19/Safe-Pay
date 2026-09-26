@@ -93,25 +93,6 @@ class AdminApprovalServiceTest {
     }
 
     @Test
-    void adminApprovedInternalPaymentCreditsTheMatchingSafePayRecipient() {
-        payment.getBeneficiary().setBeneficiaryName("Subir Das");
-        payment.getBeneficiary().setBankAccountNumber("999999999999");
-        payment.getBeneficiary().setIfsc("HDFC0001234");
-        User recipientUser = new User(); recipientUser.setUserId(8L); recipientUser.setName("Subir Das");
-        Account recipient = new Account(); recipient.setAccountId(12L); recipient.setUser(recipientUser);
-        recipient.setAccountNumber("999999999999"); recipient.setStatus(AccountStatus.ACTIVE);
-        recipient.setBalance(new BigDecimal("2500.00"));
-        when(accounts.findByAccountNumber("999999999999")).thenReturn(Optional.of(recipient));
-        when(accounts.findForSettlement(12L)).thenReturn(Optional.of(recipient));
-
-        service.approve(21L, admin, "verify-1");
-
-        assertEquals(new BigDecimal("30000.00"), account.getBalance());
-        assertEquals(new BigDecimal("12500.00"), recipient.getBalance());
-        verify(accounts).save(recipient);
-    }
-
-    @Test
     void sameKeyReplaysWithoutAnotherDebitOrAuditEvenIfBalanceChanged() {
         service.approve(21L, admin, "verify-1");
         AuditLog receipt = new AuditLog(); receipt.setAction("ADMIN_APPROVED_SETTLED");
@@ -166,7 +147,7 @@ class AdminApprovalServiceTest {
     }
 
     @Test
-    void settlementRejectsWhenPendingPaymentsExceedTheBalance() {
+    void settlementKeepsAllPendingPaymentsCovered() {
         when(transactions.pendingAmount(eq(11L), anyList())).thenReturn(new BigDecimal("40000.01"));
         assertThrows(TransactionValidationException.class, () -> service.approve(21L, admin, "verify-1"));
         verify(verifications, never()).settleVerified(anyLong(), anyLong(), anyString());

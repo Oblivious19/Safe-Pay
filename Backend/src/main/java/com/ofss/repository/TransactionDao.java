@@ -2,7 +2,6 @@ package com.ofss.repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Collection;
 import java.util.Optional;
 import java.math.BigDecimal;
 
@@ -13,15 +12,32 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import com.ofss.beans.RiskTier;
 
 import com.ofss.beans.TransactionDb;
 import com.ofss.beans.TransactionState;
+import com.ofss.beans.RiskTier;
+import com.ofss.beans.PaymentCategory;
 
 public interface TransactionDao extends JpaRepository<TransactionDb, Long> {
-    @EntityGraph(attributePaths = { "fromAccount", "fromAccount.user", "beneficiary" })
-    @Query("select t from TransactionDb t where (:state is null or t.state = :state) and (:risk is null or t.riskTier = :risk) and (:query is null or lower(t.fromAccount.user.name) like lower(concat('%', :query, '%')) or lower(t.fromAccount.user.email) like lower(concat('%', :query, '%')) or lower(t.transactionRef) like lower(concat('%', :query, '%')))")
-    Page<TransactionDb> findAdminTransactions(@Param("state") TransactionState state, @Param("risk") RiskTier risk, @Param("query") String query, Pageable pageable);
+    // Explicit escape avoids Hibernate's empty ESCAPE clause becoming NULL in Oracle-mode tests.
+    @EntityGraph(attributePaths = {"fromAccount", "fromAccount.user", "beneficiary"})
+    @Query("select t from TransactionDb t where (:state is null or t.state = :state) "
+            + "and (:risk is null or t.riskTier = :risk) and (:category is null or t.category = :category) "
+            + "and (:fromTime is null or t.createdAt >= :fromTime) and (:toTime is null or t.createdAt < :toTime) "
+            + "and (:query is null or lower(t.fromAccount.user.name) like concat('%', :query, '%') escape '!' "
+            + "or lower(t.fromAccount.user.email) like concat('%', :query, '%') escape '!' "
+            + "or lower(t.transactionRef) like concat('%', :query, '%') escape '!')")
+    Page<TransactionDb> findAdminTransactions(@Param("state") TransactionState state,
+            @Param("risk") RiskTier risk, @Param("category") PaymentCategory category,
+            @Param("query") String query, @Param("fromTime") LocalDateTime fromTime,
+            @Param("toTime") LocalDateTime toTime, Pageable pageable);
+    @EntityGraph(attributePaths = {"fromAccount", "fromAccount.user", "beneficiary", "toAccount", "toAccount.user"})
+    @Query("select t from TransactionDb t where t.toAccount.user.email = :email and t.state = 'SETTLED'")
+    List<TransactionDb> findReceivedTransactions(@Param("email") String email);
+
+    @EntityGraph(attributePaths = {"fromAccount", "fromAccount.user", "beneficiary", "toAccount", "toAccount.user"})
+    @Query("select t from TransactionDb t where t.transactionId = :id and t.toAccount.user.email = :email and t.state = 'SETTLED'")
+    Optional<TransactionDb> findReceivedTransaction(@Param("id") Long id, @Param("email") String email);
     @Query("select count(t) from TransactionDb t where t.fromAccount.user.userId = :userId "
             + "and t.beneficiary.beneficiaryId = :beneficiaryId and t.state = 'SETTLED'")
     long settledPaymentsToBeneficiary(@Param("userId") Long userId, @Param("beneficiaryId") Long beneficiaryId);
@@ -31,13 +47,13 @@ public interface TransactionDao extends JpaRepository<TransactionDb, Long> {
     List<BigDecimal> recentSettledAmounts(@Param("userId") Long userId,
             @Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
-    @EntityGraph(attributePaths = { "fromAccount", "fromAccount.user", "beneficiary" })
+    @EntityGraph(attributePaths = { "fromAccount", "fromAccount.user", "beneficiary", "toAccount", "toAccount.user" })
     Optional<TransactionDb> findByIdempotencyKey(String idempotencyKey);
     Optional<TransactionDb> findByCancelIdempotencyKey(String cancelIdempotencyKey);
     @Override
-    @EntityGraph(attributePaths = { "fromAccount", "fromAccount.user", "beneficiary" })
+    @EntityGraph(attributePaths = { "fromAccount", "fromAccount.user", "beneficiary", "toAccount", "toAccount.user" })
     Optional<TransactionDb> findById(Long id);
-    @EntityGraph(attributePaths = { "fromAccount", "fromAccount.user", "beneficiary" })
+    @EntityGraph(attributePaths = { "fromAccount", "fromAccount.user", "beneficiary", "toAccount", "toAccount.user" })
     Optional<TransactionDb> findByTransactionIdAndFromAccountUserEmail(Long transactionId, String email);
 
     @Query("select t.fromAccount.accountId from TransactionDb t where t.transactionId = :id "
@@ -54,14 +70,11 @@ public interface TransactionDao extends JpaRepository<TransactionDb, Long> {
             + "and t.protectionExpiresAt <= local datetime order by t.fromAccount.accountId, t.transactionId")
     List<Long> findExpiredTransactionIds();
 
-    @EntityGraph(attributePaths = { "fromAccount", "fromAccount.user", "beneficiary" })
+    @EntityGraph(attributePaths = { "fromAccount", "fromAccount.user", "beneficiary", "toAccount", "toAccount.user" })
     List<TransactionDb> findByFromAccountUserEmail(String email);
 
-    @EntityGraph(attributePaths = { "fromAccount", "fromAccount.user", "beneficiary" })
+    @EntityGraph(attributePaths = { "fromAccount", "fromAccount.user", "beneficiary", "toAccount", "toAccount.user" })
     List<TransactionDb> findByFromAccountUserEmailAndState(String email, TransactionState state);
-
-    @EntityGraph(attributePaths = { "fromAccount", "fromAccount.user", "beneficiary" })
-    List<TransactionDb> findByBeneficiaryBankAccountNumberIn(Collection<String> accountNumbers);
     List<TransactionDb> findByStateAndProtectionExpiresAtLessThanEqual(TransactionState state, LocalDateTime time);
     boolean existsByFromAccountAccountId(Long accountId);
 
@@ -75,6 +88,12 @@ public interface TransactionDao extends JpaRepository<TransactionDb, Long> {
             + "where t.transactionId = :id and t.version = :version and t.state = 'PROTECTED' "
             + "and t.protectionExpiresAt > local datetime")
     int cancelProtected(@Param("id") Long id, @Param("version") Long version, @Param("key") String key);
+
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("update TransactionDb t set t.state = 'CANCELLED', t.cancelledAt = local datetime, "
+            + "t.cancelIdempotencyKey = :key, t.version = t.version + 1 "
+            + "where t.transactionId = :id and t.version = :version and t.state = 'HARD_HOLD'")
+    int cancelHeld(@Param("id") Long id, @Param("version") Long version, @Param("key") String key);
 
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("update TransactionDb t set t.state = 'SETTLED', t.settledAt = local datetime, "

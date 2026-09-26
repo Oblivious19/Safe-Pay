@@ -24,7 +24,6 @@ class TransactionPreRiskStageTest {
     private TransactionServiceImpl service;
     private User user;
     private Account account;
-    private Account recipient;
     private Beneficiary beneficiary;
 
     @BeforeEach
@@ -32,20 +31,14 @@ class TransactionPreRiskStageTest {
         users = mock(UserDao.class); accounts = mock(AccountDao.class);
         beneficiaries = mock(BeneficiaryDao.class); transactions = mock(TransactionDao.class);
         audits = mock(AuditLogDao.class); risk = spy(new RiskAssessmentEngine());
-        user = new User(); user.setUserId(103L); user.setName("Sender"); user.setEmail("owner@example.com");
+        user = new User(); user.setUserId(103L); user.setEmail("owner@example.com");
         Role role = new Role(); role.setRoleName("CUSTOMER"); user.setRole(role);
         account = new Account(); account.setAccountId(1000001L); account.setUser(user);
         account.setBalance(new BigDecimal("200000.00"));
-        User recipientUser = new User(); recipientUser.setUserId(104L); recipientUser.setName("Recipient"); recipientUser.setEmail("recipient@example.com");
-        recipient = new Account(); recipient.setAccountId(1000002L); recipient.setUser(recipientUser);
-        recipient.setAccountNumber("999999999999"); recipient.setBalance(BigDecimal.ZERO); recipient.setStatus(AccountStatus.ACTIVE);
         beneficiary = new Beneficiary(); beneficiary.setBeneficiaryId(2001L); beneficiary.setAccount(account);
-        beneficiary.setBeneficiaryName("Recipient"); beneficiary.setBankAccountNumber("999999999999"); beneficiary.setIfsc("HDFC0001234");
         beneficiary.setStatus("ACTIVE");
         when(users.findById(103L)).thenReturn(Optional.of(user));
         when(accounts.findForTransaction(1000001L, 103L)).thenReturn(Optional.of(account));
-        when(accounts.findByAccountNumber("999999999999")).thenReturn(Optional.of(recipient));
-        when(accounts.findForSettlement(1000002L)).thenReturn(Optional.of(recipient));
         when(beneficiaries.findByBeneficiaryIdAndAccountUserUserId(2001L, 103L)).thenReturn(Optional.of(beneficiary));
         when(transactions.pendingAmount(eq(1000001L), anyList())).thenReturn(BigDecimal.ZERO);
         when(transactions.currentDatabaseTime(1000001L)).thenReturn(java.time.LocalDateTime.of(2026, 9, 15, 12, 0));
@@ -57,7 +50,7 @@ class TransactionPreRiskStageTest {
     @ParameterizedTest
     @ValueSource(strings = {"missingUser", "nonCustomer", "suspended", "inactive", "locked", "foreignAccount",
             "blockedAccount", "closedAccount", "foreignBeneficiary", "inactiveBeneficiary", "zero", "negative",
-            "fraction", "overflow", "nullAmount", "purpose", "unicodePurpose", "key", "blankKey", "balance", "pending"})
+            "fraction", "overflow", "nullAmount", "purpose", "unicodePurpose", "key", "blankKey", "balance", "overdraft", "pending"})
     void rejectionAlwaysHappensBeforeRiskOrAnyWrite(String scenario) {
         BigDecimal amount = new BigDecimal("5000");
         String purpose = "Demo";
@@ -83,9 +76,10 @@ class TransactionPreRiskStageTest {
             case "key" -> key = "X".repeat(101);
             case "blankKey" -> key = " ";
             case "balance" -> account.setBalance(new BigDecimal("4000"));
+            case "overdraft" -> account.setBalance(new BigDecimal("4999.99"));
             case "pending" -> {
                 account.setBalance(new BigDecimal("20000"));
-                when(transactions.pendingAmount(eq(1000001L), anyList())).thenReturn(new BigDecimal("16000"));
+                when(transactions.pendingAmount(eq(1000001L), anyList())).thenReturn(new BigDecimal("15000.01"));
             }
         }
         BigDecimal requested = amount;
@@ -103,7 +97,8 @@ class TransactionPreRiskStageTest {
             "50001,HIGH,PROTECTED", "100001,VERY_HIGH,HARD_HOLD"})
     void successfulRequestUsesAmountRangesAndCorrectState(String value, RiskTier tier, TransactionState state) {
         BigDecimal amount = new BigDecimal(value);
-        TransactionDb result = service.initiate(1000001L, 2001L, amount, "Demo", "test-key", 103L);
+        TransactionDb result = service.initiate(1000001L, 2001L, amount, "Demo", "test-key", 103L,
+                PaymentCategory.appliesTo(amount) ? PaymentCategory.MEDICAL : null);
         assertEquals(tier, result.getRiskTier());
         assertEquals(state, result.getState());
         assertTrue(result.getTransactionRef().length() <= 50);
@@ -123,68 +118,49 @@ class TransactionPreRiskStageTest {
                 account.getBalance());
     }
 
+    @ParameterizedTest
+    @org.junit.jupiter.params.provider.EnumSource(PaymentCategory.class)
+    void everyCategoryIsSavedWithoutChangingTheRiskDecision(PaymentCategory category) {
+        var result = service.initiate(1000001L, 2001L, new BigDecimal("100000.01"), "  Medical supplies  ", "category-key", 103L, category);
+        assertEquals(category, result.getCategory());
+        assertEquals(TransactionState.HARD_HOLD, result.getState());
+        assertEquals(RiskTier.VERY_HIGH, result.getRiskTier());
+        assertEquals(category == PaymentCategory.OTHERS ? "Medical supplies" : "  Medical supplies  ", result.getPurpose());
+    }
+
     @Test
-    void entireAvailableBalanceAfterPendingAmountsIsAccepted() {
-        account.setBalance(new BigDecimal("25000.00"));
+    void categoryValidationPrecedesRiskAndWrites() {
+        assertThrows(IllegalArgumentException.class, () -> service.initiate(1000001L, 2001L, new BigDecimal("100000.01"), "Demo", "a", 103L, null));
+        assertThrows(IllegalArgumentException.class, () -> service.initiate(1000001L, 2001L, new BigDecimal("100000"), "Demo", "b", 103L, PaymentCategory.MEDICAL));
+        for (String purpose : new String[]{null, "", "   ", "x".repeat(141)}) {
+            assertThrows(IllegalArgumentException.class, () -> service.initiate(1000001L, 2001L, new BigDecimal("100000.01"), purpose, "c", 103L, PaymentCategory.OTHERS));
+        }
+        verifyNoInteractions(risk, audits);
+        verify(transactions, never()).save(any());
+    }
+
+    @Test
+    void categoryIsPartOfTheImmutableRetryPayloadAndLegacyNullCanReplay() {
+        var amount = new BigDecimal("100000.01");
+        var original = service.initiate(1000001L, 2001L, amount, "Demo", "category-key", 103L, PaymentCategory.MEDICAL);
+        when(transactions.findByIdempotencyKey("category-key")).thenReturn(Optional.of(original));
+        clearInvocations(risk, audits, transactions);
+        assertSame(original, service.initiate(1000001L, 2001L, amount, "Demo", "category-key", 103L, PaymentCategory.MEDICAL));
+        var error = assertThrows(TransactionValidationException.class, () -> service.initiate(1000001L, 2001L, amount, "Demo", "category-key", 103L, PaymentCategory.LOAN));
+        assertEquals(409, error.getStatus());
+        original.setCategory(null); // Historical payment created before the category feature.
+        assertSame(original, service.initiate(1000001L, 2001L, amount, "Demo", "category-key", 103L, null));
+        verifyNoInteractions(risk, audits);
+        verify(transactions, never()).save(any());
+    }
+
+    @Test
+    void zeroUnreservedBalanceAfterPaymentIsAccepted() {
+        account.setBalance(new BigDecimal("20000.00"));
         when(transactions.pendingAmount(eq(1000001L), anyList())).thenReturn(new BigDecimal("15000.00"));
-        service.initiate(1000001L, 2001L, new BigDecimal("10000.00"), "X".repeat(255), "K".repeat(100), 103L);
+        service.initiate(1000001L, 2001L, new BigDecimal("5000.00"), "X".repeat(255), "K".repeat(100), 103L);
         assertEquals(new BigDecimal("15000.00"), account.getBalance());
-        verify(risk).assessAmount(new BigDecimal("10000.00"));
-    }
-
-    @Test
-    void lowRiskExternalPaymentSettlesImmediatelyWithoutAnInternalRecipientCredit() {
-        beneficiary.setBeneficiaryName("External Recipient"); beneficiary.setBankAccountNumber("888888888888");
-        beneficiary.setIfsc("HDFC0001234");
-        when(accounts.findByAccountNumber("888888888888")).thenReturn(Optional.empty());
-
-        TransactionDb result = service.initiate(1000001L, 2001L, new BigDecimal("501.00"),
-                "External payment", "external-low", 103L);
-
-        assertEquals(TransactionState.SETTLED, result.getState());
-        assertEquals(0, result.getProtectionSeconds());
-        assertNull(result.getProtectionExpiresAt());
-        assertEquals(new BigDecimal("199499.00"), account.getBalance());
-        verify(accounts).save(account);
-    }
-
-    @Test
-    void settledInternalPaymentAppearsAsACreditOnlyForTheMatchedRecipient() {
-        TransactionDb incoming = new TransactionDb(); incoming.setTransactionId(31L); incoming.setState(TransactionState.SETTLED);
-        incoming.setFromAccount(account); incoming.setBeneficiary(beneficiary);
-        TransactionDb nameMismatch = new TransactionDb(); nameMismatch.setTransactionId(32L); nameMismatch.setState(TransactionState.SETTLED);
-        nameMismatch.setFromAccount(account);
-        Beneficiary wrongRecipient = new Beneficiary(); wrongRecipient.setBeneficiaryName("Someone Else");
-        wrongRecipient.setBankAccountNumber("999999999999"); nameMismatch.setBeneficiary(wrongRecipient);
-        when(transactions.findByFromAccountUserEmail("recipient@example.com")).thenReturn(List.of());
-        when(accounts.findByUserEmail("recipient@example.com")).thenReturn(List.of(recipient));
-        when(transactions.findByBeneficiaryBankAccountNumberIn(anyCollection())).thenReturn(List.of(incoming, nameMismatch));
-
-        List<TransactionDb> history = service.getTransactions(null, "recipient@example.com");
-
-        assertEquals(1, history.size());
-        assertSame(incoming, history.get(0));
-        assertEquals("CREDIT", incoming.getDirection());
-        assertEquals("Sender", incoming.getCounterpartyName());
-    }
-
-    @Test
-    void immediateInternalPaymentDebitsSenderAndCreditsMatchingSafePayRecipient() {
-        User recipientUser = new User(); recipientUser.setUserId(104L); recipientUser.setName("Subir Das");
-        Account recipient = new Account(); recipient.setAccountId(1000002L); recipient.setUser(recipientUser);
-        recipient.setAccountNumber("999999999999"); recipient.setStatus(AccountStatus.ACTIVE);
-        recipient.setBalance(new BigDecimal("10000.00"));
-        beneficiary.setBeneficiaryName("Subir Das"); beneficiary.setBankAccountNumber("999999999999");
-        beneficiary.setIfsc("HDFC0001234");
-        when(accounts.findByAccountNumber("999999999999")).thenReturn(Optional.of(recipient));
-        when(accounts.findForSettlement(1000002L)).thenReturn(Optional.of(recipient));
-
-        service.initiate(1000001L, 2001L, new BigDecimal("5000.00"), "Internal payment", "internal-credit", 103L);
-
-        assertEquals(new BigDecimal("195000.00"), account.getBalance());
-        assertEquals(new BigDecimal("15000.00"), recipient.getBalance());
-        verify(accounts).save(account);
-        verify(accounts).save(recipient);
+        verify(risk).assessAmount(new BigDecimal("5000.00"));
     }
 
     @Test

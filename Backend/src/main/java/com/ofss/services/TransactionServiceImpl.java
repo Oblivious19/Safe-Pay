@@ -3,9 +3,6 @@ package com.ofss.services;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
-import java.util.Set;
 import java.util.UUID;
 import java.util.Objects;
 import java.nio.charset.StandardCharsets;
@@ -24,6 +21,7 @@ import com.ofss.beans.AssessmentRiskTier;
 import com.ofss.beans.RiskTier;
 import com.ofss.beans.TransactionDb;
 import com.ofss.beans.TransactionState;
+import com.ofss.beans.PaymentCategory;
 import com.ofss.excp.TransactionValidationException;
 import com.ofss.excp.InvalidStateTransitionException;
 import com.ofss.excp.ResourceNotFoundExcp;
@@ -41,7 +39,6 @@ public class TransactionServiceImpl implements TransactionService {
     private final AuditLogDao auditLogDao;
     private final RiskAssessmentEngine riskEngine;
     private final ExpiredTransactionSettlementService settlements;
-    private final InternalPaymentRecipientResolver recipients;
 
     @Autowired
     public TransactionServiceImpl(TransactionDao transactionDao, AccountDao accountDao,
@@ -59,16 +56,26 @@ public class TransactionServiceImpl implements TransactionService {
         this.auditLogDao = auditLogDao;
         this.riskEngine = riskEngine;
         this.settlements = settlements;
-        this.recipients = new InternalPaymentRecipientResolver(accountDao);
+    }
+
+    /** Keep existing internal callers inside the same transactional boundary. */
+    @Override
+    @Transactional
+    public TransactionDb initiate(Long accountId, Long beneficiaryId, BigDecimal amount, String purpose,
+            String idempotencyKey, Long callerId) {
+        return initiate(accountId, beneficiaryId, amount, purpose, idempotencyKey, callerId, null);
     }
 
     @Override
     @Transactional
     public TransactionDb initiate(Long accountId, Long beneficiaryId, BigDecimal amount, String purpose,
-            String idempotencyKey, Long callerId) {
+            String idempotencyKey, Long callerId, PaymentCategory category) {
+        // Normalize only the new category-specific note, not historical uncategorized requests.
+        if (category == PaymentCategory.OTHERS && purpose != null) purpose = purpose.trim();
         validator.validateRequest(accountId, beneficiaryId, amount, purpose, idempotencyKey);
         validator.requireCustomer(callerId);
-        Account account = validator.requireOwnedAccount(accountId, callerId);
+        Long receiverId = accountDao.findRecipientId(beneficiaryId, accountId, callerId).orElse(null);
+        Account account = validator.requireOwnedAccount(accountId, callerId, receiverId);
         TransactionDb existing = transactionDao.findByIdempotencyKey(idempotencyKey).orElse(null);
         if (existing != null) {
             if (!existing.getFromAccount().getUserId().equals(callerId)) {
@@ -76,13 +83,18 @@ public class TransactionServiceImpl implements TransactionService {
             }
             if (!Objects.equals(existing.getFromAccount().getAccountId(), accountId)
                     || !Objects.equals(existing.getBeneficiary().getBeneficiaryId(), beneficiaryId)
-                    || existing.getAmount().compareTo(amount) != 0 || !Objects.equals(existing.getPurpose(), purpose)) {
+                    || existing.getAmount().compareTo(amount) != 0 || !Objects.equals(existing.getPurpose(), purpose)
+                    || existing.getCategory() != category) {
                 throw new TransactionValidationException(409, "Idempotency-Key was already used for a different request");
             }
             // Replay has no new debit: do not apply today's balance/eligibility to a past transaction.
             return existing;
         }
+        // Historical idempotency replays above remain valid without invented metadata.
+        PaymentCategory.requireForNewPayment(amount, category, purpose);
         Beneficiary beneficiary = validator.validateNewTransfer(account, beneficiaryId, callerId, amount);
+        Account receiver = receiverId == null ? null : TransferBalances.lock(accountDao, receiverId);
+        TransferBalances.validateReceiver(account, receiver, amount);
 
         // The approved policy classifies only the validated amount. Context/history
         // must neither raise the tier nor prevent an otherwise valid assessment.
@@ -93,17 +105,18 @@ public class TransactionServiceImpl implements TransactionService {
         transaction.setTransactionRef("TXN-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
         transaction.setIdempotencyKey(idempotencyKey);
         transaction.setFromAccount(account);
+        transaction.setToAccount(receiver);
         transaction.setBeneficiary(beneficiary);
         transaction.setAmount(amount);
         transaction.setPurpose(purpose);
+        transaction.setCategory(category);
         transaction.setCreatedAt(now);
         transaction.setState(TransactionState.CREATED);
 
         transition(transaction, TransactionState.AUTHORIZED);
         transaction.setAuthorizedAt(now);
         transaction.setRiskTier(RiskTier.valueOf(assessment.riskTier().name()));
-        int protectionSeconds = assessment.protectionDurationSeconds();
-        transaction.setProtectionSeconds(protectionSeconds);
+        transaction.setProtectionSeconds(assessment.protectionDurationSeconds());
         transaction.setAuthenticationRequired(assessment.authenticationRequired());
         transaction.setRiskReason(assessment.reason());
         transition(transaction, TransactionState.RISK_ASSESSED);
@@ -112,14 +125,12 @@ public class TransactionServiceImpl implements TransactionService {
             transition(transaction, TransactionState.SETTLED);
             transaction.setSettledAt(now);
             transaction.setReleasedAt(now);
-            account.setBalance(account.getBalance().subtract(amount));
-            accountDao.save(account);
-            creditInternalRecipient(beneficiary, amount);
+            TransferBalances.move(accountDao, account, receiver, amount, now);
         } else if (assessment.authenticationRequired()) {
             transition(transaction, TransactionState.HARD_HOLD);
         } else {
             transition(transaction, TransactionState.PROTECTED);
-            transaction.setProtectionExpiresAt(now.plusSeconds(protectionSeconds));
+            transaction.setProtectionExpiresAt(now.plusSeconds(assessment.protectionDurationSeconds()));
         }
 
         TransactionDb saved = transactionDao.save(transaction);
@@ -131,39 +142,21 @@ public class TransactionServiceImpl implements TransactionService {
     @Transactional(readOnly = true)
     public TransactionDb getTransaction(Long transactionId, String email) {
         return transactionDao.findByTransactionIdAndFromAccountUserEmail(transactionId, email)
+                .or(() -> transactionDao.findReceivedTransaction(transactionId, email))
                 .orElseThrow(() -> new ResourceNotFoundExcp("Transaction not found"));
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<TransactionDb> getTransactions(String state, String email) {
-        TransactionState requestedState = state == null || state.isBlank() ? null : TransactionState.valueOf(state);
-        List<TransactionDb> outgoing = requestedState == null
-                ? transactionDao.findByFromAccountUserEmail(email)
-                : transactionDao.findByFromAccountUserEmailAndState(email, requestedState);
-        List<TransactionDb> history = new ArrayList<>(outgoing);
-        for (TransactionDb payment : outgoing) {
-            payment.setDirection("DEBIT");
-            payment.setCounterpartyName(payment.getBeneficiary().getBeneficiaryName());
+        if (state == null || state.isBlank()) {
+            return java.util.stream.Stream.concat(transactionDao.findByFromAccountUserEmail(email).stream(),
+                    transactionDao.findReceivedTransactions(email).stream()).distinct().toList();
         }
-
-        List<Account> destinationAccounts = accountDao.findByUserEmail(email);
-        if (destinationAccounts == null || destinationAccounts.isEmpty()) return history;
-        Set<Long> destinationAccountIds = new LinkedHashSet<>();
-        Set<String> destinationNumbers = new LinkedHashSet<>();
-        for (Account destination : destinationAccounts) {
-            destinationAccountIds.add(destination.getAccountId());
-            destinationNumbers.add(destination.getAccountNumber());
-        }
-        for (TransactionDb payment : transactionDao.findByBeneficiaryBankAccountNumberIn(destinationNumbers)) {
-            // A credit only exists once the recipient balance was actually increased.
-            if (payment.getState() != TransactionState.SETTLED || payment.getFromAccount().getUser().getEmail().equalsIgnoreCase(email)) continue;
-            if (recipients.recipientAccountId(payment.getBeneficiary()).filter(destinationAccountIds::contains).isEmpty()) continue;
-            payment.setDirection("CREDIT");
-            payment.setCounterpartyName(payment.getFromAccount().getUser().getName());
-            history.add(payment);
-        }
-        return history;
+        TransactionState selected = TransactionState.valueOf(state);
+        return java.util.stream.Stream.concat(transactionDao.findByFromAccountUserEmailAndState(email, selected).stream(),
+                selected == TransactionState.SETTLED ? transactionDao.findReceivedTransactions(email).stream()
+                        : java.util.stream.Stream.empty()).distinct().toList();
     }
 
     @Override
@@ -185,19 +178,27 @@ public class TransactionServiceImpl implements TransactionService {
         if (transaction.getState() == TransactionState.CANCELLED) {
             return transaction;
         }
-        LocalDateTime now = Objects.requireNonNull(transactionDao.currentDatabaseTime(accountId),
-                "Database time is unavailable");
-        if (transaction.getState() != TransactionState.PROTECTED || transaction.getProtectionExpiresAt() == null
-                || !now.isBefore(transaction.getProtectionExpiresAt())) {
-            throw new InvalidStateTransitionException("Only an active protected transaction can be cancelled");
+        TransactionState previousState = transaction.getState();
+        int changed;
+        if (previousState == TransactionState.HARD_HOLD) {
+            // The source-account lock is shared with admin approval. Only one decision can win.
+            changed = transactionDao.cancelHeld(transactionId, transaction.getVersion(), idempotencyKey);
+        } else if (previousState == TransactionState.PROTECTED) {
+            LocalDateTime now = Objects.requireNonNull(transactionDao.currentDatabaseTime(accountId),
+                    "Database time is unavailable");
+            if (transaction.getProtectionExpiresAt() == null || !now.isBefore(transaction.getProtectionExpiresAt())) {
+                throw new InvalidStateTransitionException("The protection window has ended. This payment can no longer be cancelled");
+            }
+            changed = transactionDao.cancelProtected(transactionId, transaction.getVersion(), idempotencyKey);
+        } else {
+            throw new InvalidStateTransitionException("Only a payment still in protection or awaiting administrator approval can be cancelled");
         }
-        int changed = transactionDao.cancelProtected(transactionId, transaction.getVersion(), idempotencyKey);
         if (changed == 0) {
             throw new InvalidStateTransitionException("Transaction was already changed by another request");
         }
         TransactionDb saved = getTransaction(transactionId, email);
         writeAudit(saved, saved.getFromAccount().getUserId(), "TRANSACTION_CANCELLED",
-                TransactionState.PROTECTED.name(), TransactionState.CANCELLED.name());
+                previousState.name(), TransactionState.CANCELLED.name());
         return saved;
     }
 
@@ -242,17 +243,5 @@ public class TransactionServiceImpl implements TransactionService {
         audit.setNewState(newState);
         audit.setCreatedAt(LocalDateTime.now());
         auditLogDao.save(audit);
-    }
-
-    private void creditInternalRecipient(Beneficiary beneficiary, BigDecimal amount) {
-        recipients.recipientAccountId(beneficiary).ifPresent(recipientId -> {
-            Account recipient = accountDao.findForSettlement(recipientId)
-                    .orElseThrow(() -> new ResourceNotFoundExcp("Recipient account not found"));
-            if (recipient.getStatus() != com.ofss.beans.AccountStatus.ACTIVE) {
-                throw new TransactionValidationException(409, "Recipient SafePay account must be ACTIVE");
-            }
-            recipient.setBalance(recipient.getBalance().add(amount));
-            accountDao.save(recipient);
-        });
     }
 }

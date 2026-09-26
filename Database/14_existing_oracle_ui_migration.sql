@@ -207,8 +207,8 @@ BEGIN
     'Legacy email whitespace/phone format needs explicit review');
   require_count(q'[SELECT COUNT(*) FROM (SELECT phone FROM users GROUP BY phone HAVING COUNT(*)>1)]', 0,
     'Duplicate phone');
-  require_count('SELECT COUNT(*) FROM account WHERE balance < 5000 OR balance IS NULL', 0,
-    'Legacy account balance violates the retained minimum');
+  require_count('SELECT COUNT(*) FROM account WHERE balance < 0 OR balance IS NULL', 0,
+    'Legacy account balance must be non-negative and not null');
   require_count(q'[SELECT COUNT(*) FROM transaction_db WHERE state<>'SETTLED' OR amount<=0
     OR amount IS NULL OR settled_at IS NULL OR TRIM(risk_reason) IS NULL]', 0,
     'Transactions changed or contain unsupported pending/history values');

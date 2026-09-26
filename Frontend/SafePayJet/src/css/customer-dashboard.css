@@ -253,10 +253,11 @@
   border: 1px solid rgb(255 255 255 / 12%);
   border-radius: 30px;
   background:
-    radial-gradient(circle at 86% 12%, rgb(183 216 90 / 30%), transparent 24%),
-    linear-gradient(135deg, #0a2116 0%, #173d2b 50%, #255842 100%);
+    radial-gradient(ellipse at 22% 0%, rgb(215 255 233 / 10%), transparent 52%),
+    radial-gradient(circle at 86% 12%, rgb(183 216 90 / 25%), transparent 24%),
+    linear-gradient(135deg, #0b2920 0%, #174638 50%, #245b4c 100%);
   color: #fbfff8;
-  box-shadow: 0 22px 44px rgb(10 33 22 / 18%);
+  box-shadow: inset 0 1px 0 rgb(220 255 240 / 16%), 0 22px 44px rgb(10 33 22 / 18%);
   isolation: isolate;
 }
 
@@ -332,7 +333,7 @@
   overflow-wrap: anywhere;
 }
 
-.balance-account { display: flex; flex-wrap: wrap; gap: 12px; color: rgb(244 255 237 / 83%); font-size: 13px; }
+.balance-account { display: flex; flex-wrap: wrap; gap: 12px; color: rgb(244 255 237 / 83%); font-size: 14px; }
 .account-mask { color: #d9ebc9; letter-spacing: .14em; }
 
 .balance-foot {
@@ -501,7 +502,8 @@
 .pending-payment > div { min-width: 0; flex: 1; }
 .pending-payment strong { color: currentColor; font-size: 13px; font-weight: 800; }
 .pending-payment p { margin: 4px 0; color: var(--sp-muted-strong); font-size: 12px; overflow-wrap: anywhere; }
-.pending-payment small { color: var(--sp-muted); font-size: 11px; line-height: 1.55; }
+.pending-payment small { color: var(--sp-muted-strong); font-size: 11px; line-height: 1.55; }
+.pending-payment .flux-bar > i { background:linear-gradient(90deg, #3d804c, var(--sp-lime)); transition:none; }
 .pending-payment .dashboard-text-link { color: currentColor !important; }
 
 /* Empty, loading, dialog and footer ------------------------------------- */
@@ -648,3 +650,40 @@
 @media (prefers-reduced-motion: reduce) {
   .customer-shell *, .customer-shell *::before, .customer-shell *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
 }
+
+
+/* Preserve the balance card footprint after removing its explanatory copy. */
+.customer-dashboard .balance-panel { display:flex; flex-direction:column; min-height:330px; }
+.customer-dashboard .balance-panel .balance-foot { margin-top:auto; padding-top:20px; font-size:14px; }
+.customer-dashboard .balance-panel .balance-account { margin-bottom:28px; }
+
+
+/* The original Oracle glyphs, scoped to these two dashboard shortcuts only. */
+@font-face {
+  font-family:"SafePayDashboardIcons";
+  src:url("https://static.oracle.com/cdn/fnd/gallery/2404.0.0/images/iconfont/ojuxIconFont_Rg.woff2") format("woff2");
+  font-weight:400;
+  font-style:normal;
+  font-display:block;
+}
+.dashboard-quick .oj-ux-ico-contact-group::before,
+.dashboard-quick .oj-ux-ico-list::before {
+  font-family:"SafePayDashboardIcons";
+  font-style:normal;
+  font-weight:400;
+  font-variant:normal;
+  line-height:1;
+  letter-spacing:normal;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+}
+.dashboard-quick .oj-ux-ico-contact-group::before { content:"\f1fa"; }
+.dashboard-quick .oj-ux-ico-list::before { content:"\f2ce"; }
+.balance-panel .balance-held {
+  display:inline-flex; align-items:center; gap:10px; flex:none;
+  padding:9px 14px; border:1px solid rgb(223 240 201 / 36%); border-radius:999px;
+  background:rgb(226 250 235 / 8%); color:#dff0c9;
+  box-shadow:inset 0 1px 0 rgb(255 255 255 / 8%);
+  font-size:12px; font-weight:700; line-height:1.3;
+}
+.balance-held strong { color:#fbfff8; font-size:15px; font-variant-numeric:tabular-nums; }

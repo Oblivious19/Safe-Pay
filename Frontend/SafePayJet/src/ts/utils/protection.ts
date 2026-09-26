@@ -36,8 +36,9 @@ export function remainingFor(tx: PaymentTransaction | null | undefined, now: num
   return typeof tx?.protectionDeadline === "number" ? Math.max(0,Math.ceil((tx.protectionDeadline-now)/1000)) : NaN;
 }
 export function canCancelPayment(tx: PaymentTransaction | null | undefined, now: number): boolean {
-  if (!tx || tx.state !== "PROTECTED") return false;
-  return tx.canCancel === true && remainingFor(tx,now) > 0;
+  if (!tx || tx.canCancel !== true || tx.direction === "CREDIT") return false;
+  if (tx.state === "HARD_HOLD") return true;
+  return tx.state === "PROTECTED" && remainingFor(tx,now) > 0;
 }
 
 export function statusLabel(state: string): string {
@@ -140,6 +141,43 @@ export function arcOffset(progress: number): number {
   return FLUX_ARC * (1 - value / 100);
 }
 
+/** Presentation only: one semicircle for every risk tier, driven by server state. */
+export function paymentGauge(tx: PaymentTransaction | null | undefined, now: number): {
+  mode: "timed" | "waiting" | "settled" | "stopped";
+  label: string; caption: string; offset: number;
+} {
+  if (tx?.state === "SETTLED") return {
+    mode: "settled", label: "Settled", offset: 0,
+    caption: (tx.protectionSeconds || 0) > 0
+      ? "Payment complete. The protection window has ended."
+      : "Payment complete. No protection pause was needed."
+  };
+  if (tx?.state === "CANCELLED" || tx?.state === "REJECTED") return {
+    mode: "stopped", label: tx.state === "CANCELLED" ? "Cancelled" : "Not approved", offset: 0,
+    caption: tx.state === "CANCELLED"
+      ? "Payment cancelled. Your money stayed in your account."
+      : "Payment not approved. No money was sent."
+  };
+  if (tx?.state === "HARD_HOLD") return {
+    mode: "waiting", label: "Awaiting review", offset: FLUX_ARC,
+    caption: "Awaiting admin approval. You can cancel before approval. No timed release."
+  };
+  if (tx?.state === "PROTECTED") {
+    const remaining = remainingFor(tx, now);
+    if (Number.isFinite(remaining) && remaining > 0) return {
+      mode: "timed", label: formatCountdown(remaining), offset: arcOffset(progressValue(tx, now)),
+      caption: "Your payment is paused. You can cancel until the timer ends."
+    };
+    return {
+      mode: "waiting", label: "Checking status", offset: FLUX_ARC,
+      caption: Number.isFinite(remaining)
+        ? "Pause ended. Confirming your payment status."
+        : "Timer unavailable. Checking your payment status."
+    };
+  }
+  return { mode: "waiting", label: "Processing", offset: FLUX_ARC, caption: "Checking this payment before it can settle." };
+}
+
 export type ProgressKind = "idle" | "check" | "short" | "long" | "hold" | "done" | "cancelled";
 
 export function progressKind(tx?: PaymentTransaction | null, checking = false): ProgressKind {
@@ -148,6 +186,6 @@ export function progressKind(tx?: PaymentTransaction | null, checking = false): 
   if (tx.state === "CANCELLED" || tx.state === "REJECTED") return "cancelled";
   if (tx.state === "SETTLED") return "done";
   if (tx.state === "HARD_HOLD") return "hold";
-  if (tx.state === "PROTECTED") return (tx.protectionSeconds || 0) >= 60 ? "long" : "short";
+  if (tx.state === "PROTECTED") return tx.riskTier === "HIGH" || (tx.protectionSeconds || 0) >= 30 ? "long" : "short";
   return "check";
 }

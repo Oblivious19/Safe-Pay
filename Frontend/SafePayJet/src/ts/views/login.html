@@ -1,5 +1,9 @@
-<section class="login-page" aria-labelledby="login-title">
-  <div class="login-brand customer-brand" aria-label="SafePay"><span class="customer-logo" aria-hidden="true">S<span>✓</span></span>SafePay<span class="brand-dot" aria-hidden="true">.</span></div>
+<section class="login-page login-split" aria-labelledby="login-title">
+  <div class="login-story">
+  <div class="login-brand customer-brand safepay-brand" aria-label="SafePay"><img class="brand-shield" src="css/images/safepay-brand-shield.png" width="48" height="48" alt=""><b class="brand-wordmark">SafePay<span class="brand-dot" aria-hidden="true">.</span></b></div>
+    <h2 class="login-story-title"><span>A little more</span><span>control.</span><span>A lot more</span><span>confidence.</span></h2>
+    <p class="login-story-copy">Your money, with a moment to<br class="login-desktop-break"> think. Welcome to SafePay.</p>
+  </div>
   <div class="login-card">
     <div class="login-emblem" aria-hidden="true"><svg width="26" height="30" viewBox="0 0 26 30" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M13 2 23 6v8c0 7-10 13-10 13S3 21 3 14V6L13 2Z"/><path d="m8 14 3 3 7-7"/></svg></div>
     <p class="login-overline">A LITTLE MORE PEACE OF MIND</p>
@@ -30,13 +34,11 @@
         <p id="login-password-error" class="login-inline-error" aria-live="polite" data-bind="text: passwordError, visible: passwordError"></p>
       </div>
       <!-- /ko -->
-      <div class="login-message" role="alert" data-bind="visible: error, text: error"></div>
+      <div class="login-message" role="alert" data-bind="visible: error, text: error, reveal: error"></div>
       <oj-button class="login-submit" chroming="callToAction" type="submit" data-bind="disable: submitting"><span class="spin" aria-hidden="true" data-bind="visible: submitting"></span><span data-bind="text: submitting() ? 'Signing in…' : 'Login'"></span></oj-button>
-      <p class="login-progress load-row" role="status" data-bind="visible: submitting"><span class="spin" aria-hidden="true"></span><span>Please wait while we sign you in.</span></p>
+      <p class="send-off-screen" role="status" data-bind="text: submitting() ? 'Signing in. Please wait.' : ''"></p>
     </form>
     <button class="onboarding-secondary" type="button" data-bind="click: switchMode, disable: submitting, text: mode() !== 'email' ? 'Use email and password instead' : 'Use mobile number and password instead'"></button>
     <div class="login-registration"><span>New to SafePay?</span> <a href="/register">Create an account</a></div>
   </div>
-  <div class="login-simulation"><span aria-hidden="true">◇</span> Simulated Environment</div>
-  <p class="login-footnote">A little more control. A little more confidence.</p>
 </section>

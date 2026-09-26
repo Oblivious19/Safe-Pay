@@ -59,6 +59,14 @@ public class TransactionPreRiskValidator {
                 .orElseThrow(() -> new ResourceNotFoundExcp("Account not found"));
     }
 
+    public Account requireOwnedAccount(Long accountId, Long callerId, Long receiverId) {
+        // receiverId is resolved through an owned beneficiary before any lock is taken.
+        if (receiverId != null && receiverId < accountId) TransferBalances.lock(accounts, receiverId);
+        Account source = requireOwnedAccount(accountId, callerId);
+        if (receiverId != null && receiverId > accountId) TransferBalances.lock(accounts, receiverId);
+        return source;
+    }
+
     public Beneficiary validateNewTransfer(Account account, Long beneficiaryId, Long callerId, BigDecimal amount) {
         if (account.getStatus() != AccountStatus.ACTIVE) {
             throw new TransactionValidationException(409, "Source account must be ACTIVE");

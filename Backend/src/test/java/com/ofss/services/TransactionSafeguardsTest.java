@@ -58,6 +58,28 @@ class TransactionSafeguardsTest {
         verifyNoInteractions(audits);
     }
 
+    @Test void hardHoldCancellationAuditsTheActualStateWithoutRequiringATimer() {
+        payment.setState(TransactionState.HARD_HOLD); payment.setProtectionExpiresAt(null);
+        TransactionDb saved = new TransactionDb(); saved.setTransactionId(3L); saved.setFromAccount(account);
+        saved.setState(TransactionState.CANCELLED); saved.setCancelIdempotencyKey("cancel-hold"); saved.setCancelledAt(now);
+        when(transactions.findByTransactionIdAndFromAccountUserEmail(3L, "owner@example.com"))
+                .thenReturn(Optional.of(payment), Optional.of(saved));
+        when(transactions.cancelHeld(3L, 0L, "cancel-hold")).thenReturn(1);
+        assertSame(saved, service.cancel(3L, "cancel-hold", "owner@example.com"));
+        verify(transactions, never()).currentDatabaseTime(anyLong());
+        verify(transactions, never()).cancelProtected(anyLong(), anyLong(), anyString());
+        verify(accounts, never()).save(any());
+        verify(audits).save(argThat(a -> "HARD_HOLD".equals(a.getOldState())
+                && "CANCELLED".equals(a.getNewState()) && Long.valueOf(1).equals(a.getUserId())));
+    }
+
+    @Test void racingHardHoldUpdateCannotWriteACancellationAudit() {
+        payment.setState(TransactionState.HARD_HOLD);
+        when(transactions.cancelHeld(3L, 0L, "cancel-hold")).thenReturn(0);
+        assertThrows(InvalidStateTransitionException.class, () -> service.cancel(3L, "cancel-hold", "owner@example.com"));
+        verifyNoInteractions(audits);
+    }
+
     @Test void keyReusedForDifferentCancellationIsConflict() {
         TransactionDb other = new TransactionDb(); other.setTransactionId(99L);
         when(transactions.findByCancelIdempotencyKey("cancel-1")).thenReturn(Optional.of(other));
@@ -101,26 +123,7 @@ class TransactionSafeguardsTest {
         verify(audits).save(argThat(a -> a.getNewState().equals("SETTLED")));
     }
 
-    @Test void timedInternalPaymentDebitsSenderAndCreditsRecipientOnce() {
-        payment.setProtectionExpiresAt(now);
-        Beneficiary beneficiary = new Beneficiary(); beneficiary.setBeneficiaryName("Subir Das");
-        beneficiary.setBankAccountNumber("999999999999"); beneficiary.setIfsc("HDFC0001234"); payment.setBeneficiary(beneficiary);
-        User recipientUser = new User(); recipientUser.setUserId(4L); recipientUser.setName("Subir Das");
-        Account recipient = new Account(); recipient.setAccountId(5L); recipient.setUser(recipientUser);
-        recipient.setAccountNumber("999999999999"); recipient.setStatus(AccountStatus.ACTIVE);
-        recipient.setBalance(new BigDecimal("2000.00"));
-        when(accounts.findByAccountNumber("999999999999")).thenReturn(Optional.of(recipient));
-        when(accounts.findForSettlement(5L)).thenReturn(Optional.of(recipient));
-        when(transactions.pendingAmount(eq(2L), anyList())).thenReturn(new BigDecimal("10000.00"));
-        when(transactions.settleProtected(3L, 0L)).thenReturn(1);
-
-        assertTrue(new ExpiredTransactionSettlementService(transactions, accounts, audits).settle(3L));
-        assertEquals(new BigDecimal("20000.00"), account.getBalance());
-        assertEquals(new BigDecimal("12000.00"), recipient.getBalance());
-        verify(accounts).save(account); verify(accounts).save(recipient);
-    }
-
-    @Test void settlementCannotConsumeMinimumOrOtherReservations() {
+    @Test void settlementCannotOverdrawOtherReservations() {
         payment.setProtectionExpiresAt(now);
         when(transactions.pendingAmount(eq(2L), anyList())).thenReturn(new BigDecimal("30000.01"));
         assertThrows(InsufficientBalanceException.class,

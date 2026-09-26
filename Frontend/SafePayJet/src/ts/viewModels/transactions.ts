@@ -1,11 +1,12 @@
 import * as ko from "knockout";
 import app from "../appController";
 import * as AccUtils from "../accUtils";
-import { PaymentTransaction, TransactionState } from "../services/types";
+import { PaymentTransaction } from "../services/types";
 import { transactionService, newIdempotencyKey } from "../services/transactionService";
 import { ApiError } from "../services/apiError";
+import { categoryLabel } from "../constants/paymentCategories";
 import {
-  canCancelPayment, explainReasons, formatCountdown, parseExpiry, progressValue,
+  canCancelPayment, explainReasons, formatCountdown, needsVerification, parseExpiry, progressValue,
   remainingFor, remainingSeconds, resultTitle, riskClass, statusLabel, tierLabel
 } from "../utils/protection";
 import { armAudio, chimeForPayment, chimeIfSettled, rememberSettled } from "../utils/chime";
@@ -14,15 +15,33 @@ import "ojs/ojbutton";
 import "ojs/ojavatar";
 import "ojs/ojdrawerpopup";
 
-type TransactionSort = "NEWEST" | "OLDEST" | "AMOUNT_HIGH" | "AMOUNT_LOW";
-
 class TransactionsViewModel {
+  categoryLabel = categoryLabel;
   signedInEmail = ko.pureComputed(() => app.profile()?.email || "");
   transactions = ko.observableArray<PaymentTransaction>([]);
-  statusFilter = ko.observable<TransactionState | "">("");
-  sortBy = ko.observable<TransactionSort>("NEWEST");
   loading = ko.observable(false);
   error = ko.observable("");
+  detailError = ko.observable("");
+  query = ko.observable("");
+  filter = ko.observable("all");
+  page = ko.observable(1);
+  pageReveal = ko.observable(0);
+  readonly pageSize = 8;
+  filtered = ko.pureComputed(() => {
+    const query = this.query().trim().toLowerCase();
+    return this.transactions().filter(tx => {
+      const state = this.filter();
+      const matches = state === "all" || (state === "pending" ? ["PROTECTED", "HARD_HOLD", "CREATED", "AUTHORIZED", "RISK_ASSESSED"].includes(tx.state) : state === "cancelled" ? ["CANCELLED", "REJECTED"].includes(tx.state) : tx.state === "SETTLED");
+      return matches && (!query || [tx.counterpartyName, tx.beneficiaryName, tx.transactionRef, tx.purpose, String(tx.amount)].some(value => (value || "").toLowerCase().includes(query)));
+    }).slice().sort((a,b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+  });
+  pageCount = ko.pureComputed(() => Math.max(1, Math.ceil(this.filtered().length / this.pageSize)));
+  currentPage = ko.pureComputed(() => Math.min(this.page(), this.pageCount()));
+  displayedTransactions = ko.pureComputed(() => this.filtered().slice((this.currentPage() - 1) * this.pageSize, this.currentPage() * this.pageSize));
+  pageLabel = ko.pureComputed(() => `Page ${this.currentPage()} of ${this.pageCount()} · ${this.filtered().length} payments`);
+  previousPage = (): void => { this.page(Math.max(1, this.currentPage() - 1)); this.pageReveal(this.pageReveal() + 1); };
+  nextPage = (): void => { this.page(Math.min(this.pageCount(), this.currentPage() + 1)); this.pageReveal(this.pageReveal() + 1); };
+  private filters = [this.query.subscribe(() => this.page(1)), this.filter.subscribe(() => this.page(1))];
   now = ko.observable(Date.now());
   selected = ko.observable<PaymentTransaction | null>(null);
   detailOpen = ko.observable(false);
@@ -30,24 +49,11 @@ class TransactionsViewModel {
   cancelTarget = ko.observable<PaymentTransaction | null>(null);
   busy = ko.observable(false);
   private alive=true;private revision=0;private polling=false;
+  private sessionEnded=false;
   private tick?: ReturnType<typeof setInterval>;
   private poll?: ReturnType<typeof setInterval>;
   private cancelKeys = new Map<number, string>();
   pendingCount = ko.pureComputed(() => this.transactions().filter((t) => t.state === "PROTECTED" || t.state === "HARD_HOLD").length);
-  displayedTransactions = ko.pureComputed(() => {
-    const rows = this.transactions().slice();
-    const timestamp = (row: PaymentTransaction): number => {
-      const value = Date.parse(row.createdAt || "");
-      return Number.isFinite(value) ? value : 0;
-    };
-    const amount = (row: PaymentTransaction): number => Number.isFinite(Number(row.amount)) ? Number(row.amount) : 0;
-    switch (this.sortBy()) {
-      case "OLDEST": return rows.sort((left, right) => timestamp(left) - timestamp(right));
-      case "AMOUNT_HIGH": return rows.sort((left, right) => amount(right) - amount(left) || timestamp(right) - timestamp(left));
-      case "AMOUNT_LOW": return rows.sort((left, right) => amount(left) - amount(right) || timestamp(right) - timestamp(left));
-      default: return rows.sort((left, right) => timestamp(right) - timestamp(left));
-    }
-  });
   selectedTitle = ko.pureComputed(() => resultTitle(this.selected(), remainingFor(this.selected(), this.now())));
   selectedReasons = ko.pureComputed(() => explainReasons(this.selected()?.riskReason));
   selectedCountdown = ko.pureComputed(() => {
@@ -63,7 +69,7 @@ class TransactionsViewModel {
     if(this.loading())return;const revision=++this.revision;
     this.loading(true); this.error("");
     try {
-      const list = await transactionService.list(this.statusFilter() || undefined);
+      const list = await transactionService.list();
       if(!this.alive || revision!==this.revision)return;
       if (!Array.isArray(list)) throw new Error("list");
       this.transactions(list);
@@ -78,10 +84,12 @@ class TransactionsViewModel {
     } catch { /* keep the list */ }
   };
 
-  private message(error: unknown): string {
-    if(error instanceof ApiError && error.status===401){this.stopLive();this.transactions([]);this.selected(null);window.location.replace("/login?reason=session-expired");}
-    if (error instanceof ApiError && [400, 401, 403, 404, 409].includes(error.status)) return error.message;
-    return "Could not load transactions.";
+  private message(error: unknown, action = "load"): string {
+    if(error instanceof ApiError && error.status===401){this.sessionEnded=true;this.stopLive();this.transactions([]);this.selected(null);this.detailOpen(false);window.location.replace("/login?reason=session-expired");return "Your session has ended. Please sign in again to see your payments.";}
+    if (error instanceof ApiError && error.status === 403) return "We couldn’t access this payment. Refresh your session or contact your bank if this continues.";
+    if (error instanceof ApiError && error.status === 404) return "This payment is no longer available. Refresh your history to see the latest records.";
+    if (error instanceof ApiError && error.status === 409) return "The payment status has changed. It will update automatically to show whether it settled or was cancelled.";
+    return action === "cancel" ? "We couldn’t confirm the cancellation. We’ll check the status automatically; the payment may already have settled." : "Your payment history is temporarily unavailable. Check your connection; we’ll try again automatically. Your existing payments are unchanged.";
   }
 
   private stopLive(): void {
@@ -92,34 +100,33 @@ class TransactionsViewModel {
 
   private startLive(): void {
     this.stopLive();
+    if(this.sessionEnded || !this.alive)return;
     this.now(Date.now());
-    if (!this.pendingCount()) return;
     this.tick = setInterval(() => this.now(Date.now()), 1000);
     this.poll = setInterval(() => void this.refresh(), 3000);
   }
 
   private async refresh(): Promise<void> {
-    if(this.polling || this.loading() || this.busy())return;const revision=this.revision;this.polling=true;
+    if(!this.alive || this.polling || this.loading() || this.busy() || document.visibilityState === "hidden")return;const revision=this.revision;this.polling=true;
     try {
-      const list = await transactionService.list(this.statusFilter() || undefined);
+      const list = await transactionService.list();
       if (!this.alive || revision!==this.revision || !Array.isArray(list)) return;
-      this.transactions(list);
+      this.transactions(list); this.error(""); this.detailError("");
       for (const row of list) chimeIfSettled(row);
       const selected = this.selected();
       if (selected) this.selected(list.find((row) => row.transactionId === selected.transactionId) || selected);
-      if (!this.pendingCount()) this.stopLive();
-    } catch(e) {if(this.alive && revision===this.revision)this.error(this.message(e));}
+    } catch(e) {if(this.alive && revision===this.revision){const message=this.message(e);if(this.detailOpen())this.detailError(message);else this.error(message);}}
     finally{this.polling=false;}
   }
 
-  openDetail = (tx: PaymentTransaction): void => { this.selected(tx); this.detailOpen(true); };
-  closeDetail = (): void => { this.detailOpen(false); };
-  changeStatusFilter = (_: unknown, event: Event): void => {
-    this.statusFilter((event.target as HTMLSelectElement).value as TransactionState | "");
-    void this.load();
-  };
-  changeSort = (_: unknown, event: Event): void => {
-    this.sortBy((event.target as HTMLSelectElement).value as TransactionSort);
+  openDetail = (tx: PaymentTransaction): void => { this.detailError(""); this.selected(tx); this.detailOpen(true); };
+  closeDetail = (): void => { this.detailOpen(false); this.detailError(""); };
+  refreshDetail = async (): Promise<void> => {
+    const tx = this.selected(); if (!tx || this.busy()) return;
+    this.busy(true); this.detailError("");
+    try { const current = await transactionService.get(tx.transactionId); if (this.alive) this.replaceRow(current); }
+    catch(e) { if(this.alive) this.detailError(this.message(e)); }
+    finally { if(this.alive) this.busy(false); }
   };
 
   requestCancel = (tx: PaymentTransaction): void => {
@@ -136,15 +143,18 @@ class TransactionsViewModel {
   };
 
   cancel = async (transaction: PaymentTransaction): Promise<void> => {
-    this.error(""); this.busy(true);
+    if(this.busy())return;
+    this.error(""); this.detailError(""); this.busy(true);
     try {
       const current = await transactionService.get(transaction.transactionId);
+      if(!this.alive)return;
       this.replaceRow(current);
       if (!canCancelPayment(current, Date.now())) return;
       let key = this.cancelKeys.get(current.transactionId);
       if (!key) { key = newIdempotencyKey(); this.cancelKeys.set(current.transactionId, key); }
-      this.replaceRow(await transactionService.cancel(current.transactionId, key));
-    } catch (error) { this.error(error instanceof ApiError ? error.message : "Could not cancel transaction."); }
+      const cancelled = await transactionService.cancel(current.transactionId, key);
+      if(this.alive)this.replaceRow(cancelled);
+    } catch (error) { if(this.alive){const message=this.message(error,"cancel"); if(this.detailOpen())this.detailError(message);else this.error(message);} }
     finally { this.busy(false); }
   };
 
@@ -153,10 +163,16 @@ class TransactionsViewModel {
     if (this.selected()?.transactionId === row.transactionId) this.selected(row);
     if (row.state === "CANCELLED" || row.state === "REJECTED") chimeForPayment(row);
     else chimeIfSettled(row);
-    if (!this.pendingCount()) this.stopLive();
   }
 
   canCancel = (transaction: PaymentTransaction): boolean => canCancelPayment(transaction, this.now()) && !this.busy();
+  isCredit = (tx: PaymentTransaction): boolean => tx.direction === "CREDIT";
+  displayName = (tx: PaymentTransaction): string => tx.counterpartyName || tx.beneficiaryName || tx.transactionRef;
+  directionLabel = (tx: PaymentTransaction): string => this.isCredit(tx) ? "Incoming · credit" : "Outgoing · debit";
+  directionClass = (tx: PaymentTransaction): string => this.isCredit(tx) ? "money-in" : "money-out";
+  directionArrow = (tx: PaymentTransaction): string => this.isCredit(tx) ? "↙" : "↗";
+  signedAmount = (tx: PaymentTransaction): string => (tx.state === "SETTLED" ? this.isCredit(tx) ? "+ " : "− " : "") + this.formatMoney(tx.amount);
+  needsCall = (transaction: PaymentTransaction): boolean => needsVerification(transaction);
   fluxPercent = (tx: PaymentTransaction): string => { this.now(); return `${progressValue(tx, this.now())}%`; };
   countdownText = (tx: PaymentTransaction): string => {
     this.now();
@@ -168,9 +184,6 @@ class TransactionsViewModel {
   };
   formatMoney = (amount: number): string =>
     new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number.isFinite(amount) ? amount : 0);
-  counterpartyName = (transaction: PaymentTransaction): string => transaction.counterpartyName || transaction.beneficiaryName || transaction.transactionRef;
-  directionLabel = (transaction: PaymentTransaction): string => transaction.direction === "CREDIT" ? "Received" : "Sent";
-  signedAmount = (transaction: PaymentTransaction): string => `${transaction.direction === "CREDIT" ? "+" : "−"}${this.formatMoney(transaction.amount)}`;
   formatDate = (value: string): string => {
     if (!value) return "—";
     const date = new Date(value);
@@ -186,6 +199,6 @@ class TransactionsViewModel {
   riskClass = (t: PaymentTransaction): string => riskClass(t);
   initials = (name: string): string => (name || "?").slice(0, 1).toUpperCase();
   connected(): void { AccUtils.announce("Transactions page loaded."); document.title = "Transactions | SafePay"; void this.load(); }
-  disconnected(): void { this.alive=false;this.revision++;this.transactions([]);this.selected(null);this.stopLive();  }
+  disconnected(): void { this.alive=false;this.revision++;this.transactions([]);this.selected(null);this.stopLive();this.filters.forEach(subscription=>subscription.dispose()); }
 }
 export = TransactionsViewModel;

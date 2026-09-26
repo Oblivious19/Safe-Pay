@@ -11,8 +11,11 @@ public record BeneficiaryRequest(
         @NotBlank @Size(max = 100) String beneficiaryName,
         @NotBlank @Pattern(regexp = "[0-9]{1,30}") String bankAccountNumber,
         @NotBlank @Pattern(regexp = "[A-Z]{4}0[A-Z0-9]{6}") String ifsc,
-        boolean externalConfirmed,
-        @Positive Long accountId) {
+        @Positive Long accountId,
+        boolean externalConfirmed) {
+    public BeneficiaryRequest(String beneficiaryName, String bankAccountNumber, String ifsc, Long accountId) {
+        this(beneficiaryName, bankAccountNumber, ifsc, accountId, false);
+    }
     public BeneficiaryRequest {
         beneficiaryName = beneficiaryName == null ? null : beneficiaryName.strip();
         bankAccountNumber = bankAccountNumber == null ? null : bankAccountNumber.strip();
@@ -21,6 +24,6 @@ public record BeneficiaryRequest(
 
     @JsonAnySetter
     public void rejectExtraField(String name, Object value) {
-        throw new IllegalArgumentException("Only beneficiaryName, bankAccountNumber, ifsc, externalConfirmed and accountId may be supplied");
+        throw new IllegalArgumentException("Only beneficiaryName, bankAccountNumber, ifsc, accountId and externalConfirmed may be supplied");
     }
 }

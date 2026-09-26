@@ -1,12 +1,13 @@
 import * as ko from "knockout";
 import { adminHoldService } from "../services/adminHoldService";
-import { adminReportService, AdminBookRow, AdminUserSnapshot, AdminTransactionPage } from "../services/adminReportService";
+import { adminReportService, AdminBookRow, AdminUserSnapshot, AdminTransactionPage, AdminTransactionFilters } from "../services/adminReportService";
 import { ApiError } from "../services/apiError";
 import { authService } from "../services/authService";
 import { AdminUsersModel } from "./adminUsers";
 import { AdminHoldsModel } from "./adminHolds";
 import { DailyTransactionSummary, HeldPayment, TransactionSummary } from "../services/types";
 import { statusLabel, tierRisk } from "../utils/protection";
+import { categoryLabel, orderedPayments, PAYMENT_CATEGORIES } from "../constants/paymentCategories";
 
 const isoDate = (date: Date): string => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 const daysAgo = (n: number): string => {
@@ -16,6 +17,43 @@ const daysAgo = (n: number): string => {
 };
 
 class AdminViewModel {
+  transactionsOnly = ko.observable(false);
+  transactionPage = ko.observable<AdminTransactionPage | null>(null);
+  transactionLoading = ko.observable(false);
+  transactionError = ko.observable("");
+  transactionState = ko.observable(""); transactionRisk = ko.observable("");
+  transactionCategory = ko.observable(""); transactionQuery = ko.observable("");
+  transactionFrom = ko.observable(""); transactionTo = ko.observable("");
+  categoryOptions = PAYMENT_CATEGORIES;
+  private transactionRevision = 0;
+  private appliedFilters: AdminTransactionFilters = {};
+  applyTransactionFilters = (): void => {
+    if (this.transactionLoading()) return;
+    this.appliedFilters = {state: this.transactionState(), risk: this.transactionRisk(), category: this.transactionCategory(),
+      query: this.transactionQuery(), from: this.transactionFrom(), to: this.transactionTo()};
+    void this.loadTransactions(0);
+  };
+  resetTransactionFilters = (): void => {
+    if (this.transactionLoading()) return;
+    this.transactionState(""); this.transactionRisk(""); this.transactionCategory(""); this.transactionQuery("");
+    this.transactionFrom(""); this.transactionTo(""); this.applyTransactionFilters();
+  };
+  loadTransactions = async (page = 0): Promise<void> => {
+    if (this.transactionLoading() || page < 0) return;
+    const revision = ++this.transactionRevision;
+    this.transactionLoading(true); this.transactionError(""); this.forbidden(false); this.transactionPage(null);
+    try {
+      const result = await adminReportService.transactions(this.appliedFilters, page);
+      if (revision === this.transactionRevision) this.transactionPage(result);
+    } catch (e) {
+      if (revision !== this.transactionRevision) return;
+      if (e instanceof ApiError && e.status === 401) window.location.replace("/admin/login");
+      else if (e instanceof ApiError && e.status === 403) this.forbidden(true);
+      else this.transactionError(e instanceof ApiError && e.status === 400 ? e.message : "Transactions are unavailable right now. Please try again.");
+    } finally { if (revision === this.transactionRevision) this.transactionLoading(false); }
+  };
+  previousTransactions = (): void => { const p = this.transactionPage(); if (p && p.page > 0) void this.loadTransactions(p.page - 1); };
+  nextTransactions = (): void => { const p = this.transactionPage(); if (p && p.page + 1 < p.totalPages) void this.loadTransactions(p.page + 1); };
   usersPage = ko.observable<AdminUsersModel | null>(null);
   holdsPage = ko.observable<AdminHoldsModel | null>(null);
   summary = ko.observable<TransactionSummary | null>(null);
@@ -23,8 +61,6 @@ class AdminViewModel {
   holds = ko.observableArray<HeldPayment>([]);
   ledger = ko.observableArray<AdminBookRow>([]);
   people = ko.observableArray<AdminUserSnapshot>([]);
-  transactionPage=ko.observable<AdminTransactionPage|null>(null);transactionState=ko.observable("");transactionRisk=ko.observable("");transactionQuery=ko.observable("");transactionLoading=ko.observable(false);
-  transactionsOnly=ko.observable(false);
   directoryError=ko.observable("");holdsError=ko.observable("");
   loading = ko.observable(false); signingOut = ko.observable(false);
   forbidden = ko.observable(false); error = ko.observable("");
@@ -43,7 +79,8 @@ class AdminViewModel {
   shortDate = (value: string): string => new Intl.DateTimeFormat("en-IN", {
     day: "numeric", month: "short"
   }).format(new Date(value + "T00:00:00"));
-  pendingHolds = ko.pureComputed(() => this.holds().filter((row) => row.decision === "PENDING"));
+  categoryLabel = categoryLabel;
+  pendingHolds = ko.pureComputed(() => orderedPayments(this.holds().filter((row) => row.decision === "PENDING")));
   decidedHolds = ko.pureComputed(() => this.holds().filter((row) => row.decision !== "PENDING"));
   heldAmount = ko.pureComputed(() => this.pendingHolds().reduce((total, row) => total + (Number(row.amount) || 0), 0));
   settleRate = ko.pureComputed(() => this.share(this.summary()?.settledTransactions));
@@ -94,7 +131,7 @@ class AdminViewModel {
     const items = [
       { label: "All recorded volume", value: row.totalAmount, color: "#244f59" },
       { label: "Settled volume", value: row.settledAmount, color: "#12675f" },
-      { label: "Still on hold", value: this.heldAmount(), color: "#b23c3c" }
+      ...(!this.holdsError() ? [{ label: "Currently on hold", value: this.heldAmount(), color: "#b23c3c" }] : [])
     ];
     const peak = Math.max(1, ...items.map((item) => item.value));
     return items.map((item) => ({ ...item, pct: Math.round((item.value / peak) * 100) }));
@@ -108,10 +145,20 @@ class AdminViewModel {
       value: row.summary.totalTransactions,
       settled: row.summary.settledTransactions,
       holds: row.summary.hardHolds,
-      height: row.summary.totalTransactions ? Math.max(8, Math.round((row.summary.totalTransactions / peak) * 140)) : 3,
+      height: row.summary.totalTransactions ? Math.max(8, Math.round((row.summary.totalTransactions / peak) * 140)) : 0,
       settledPct: row.summary.totalTransactions
         ? Math.round((row.summary.settledTransactions / row.summary.totalTransactions) * 100) : 0
     }));
+  });
+  holdAmountBands = ko.pureComputed(() => {
+    const rows = this.pendingHolds();
+    const bands = [
+      { label: 'Up to ₹2 lakh', value: rows.filter(row => row.amount <= 200000).length },
+      { label: '₹2–5 lakh', value: rows.filter(row => row.amount > 200000 && row.amount <= 500000).length },
+      { label: 'Above ₹5 lakh', value: rows.filter(row => row.amount > 500000).length }
+    ];
+    const peak = Math.max(1, ...bands.map(band => band.value));
+    return bands.map(band => ({ ...band, pct: Math.round(band.value / peak * 100) }));
   });
   donutStyle = ko.pureComputed(() => {
     const row = this.summary();
@@ -154,11 +201,10 @@ class AdminViewModel {
       this.loadedFrom(from); this.loadedTo(to);
       this.daily(daily.slice().sort((a, b) => b.date.localeCompare(a.date)));
       this.summary(summary);
-      void this.loadTransactions(0);
       this.updated(new Date().toLocaleTimeString("en-IN"));
       try {
         const holds = await adminHoldService.list();
-        if (generation === this.generation) this.holds(holds.slice().sort((a, b) => b.createdAt.localeCompare(a.createdAt)));
+        if (generation === this.generation) this.holds(holds);
       } catch { if (generation === this.generation) {this.holds([]);this.holdsError("Held payments could not be loaded. Refresh to retry.");} }
       try {
         const book = await adminReportService.book();
@@ -175,8 +221,6 @@ class AdminViewModel {
       else this.error("Reports are unavailable right now. Please try again.");
     } finally { if (generation === this.generation) this.loading(false); }
   };
-  loadTransactions=async(page=0):Promise<void>=>{if(this.transactionLoading())return;this.transactionLoading(true);try{this.transactionPage(await adminReportService.transactions(this.transactionState(),this.transactionRisk(),this.transactionQuery(),page));}catch{this.directoryError("Transactions could not be loaded.");}finally{this.transactionLoading(false);}};
-  applyTransactionFilters=():void=>{void this.loadTransactions(0);};
   logout = async (): Promise<void> => {
     if (this.signingOut()) return;
     this.signingOut(true);
@@ -189,23 +233,27 @@ class AdminViewModel {
     }
   };
   parametersChanged(params:{page?:string}):void{
-    this.generation++;this.usersPage()?.disconnected();this.holdsPage()?.disconnected();this.usersPage(null);this.holdsPage(null);this.transactionsOnly(false);this.loading(false);
+    this.transactionRevision++; this.transactionsOnly(false); this.transactionPage(null); this.transactionLoading(false);
+    this.generation++;this.usersPage()?.disconnected();this.holdsPage()?.disconnected();this.usersPage(null);this.holdsPage(null);this.loading(false);
     this.context.params=params;this.connected();
   }
   connected(): void {
+    if (this.context.params?.page === "transactions") {
+      this.transactionsOnly(true); document.title = "All transactions | SafePay"; this.applyTransactionFilters(); return;
+    }
     if (this.context.params?.page === "users") {
       const model = new AdminUsersModel(); this.usersPage(model);
-      document.title = "Admin users | SafePay"; void model.load(); return;
+      document.title = "Admin users | SafePay"; model.startLive(); void model.load(); return;
     }
     if (this.context.params?.page === "holds") {
       const model = new AdminHoldsModel(); this.holdsPage(model);
       document.title = "Held payments | SafePay"; void model.load(); return;
     }
-    if (this.context.params?.page === "transactions") { this.transactionsOnly(true); document.title="Transactions | SafePay"; void this.loadTransactions(0); return; }
     if (this.context.params?.page !== "dashboard") { window.location.replace("/login?admin=1&reason=session-expired"); return; }
     document.title = "Admin dashboard | SafePay"; void this.load();
   }
   disconnected(): void {
+    this.transactionRevision++; this.transactionPage(null); this.transactionLoading(false);
     this.generation++; this.summary(null); this.daily([]); this.holds([]); this.ledger([]); this.people([]);
     this.usersPage()?.disconnected(); this.holdsPage()?.disconnected();
   }

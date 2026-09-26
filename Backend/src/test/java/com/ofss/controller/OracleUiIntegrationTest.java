@@ -62,7 +62,7 @@ class OracleUiIntegrationTest {
         accounts.saveAndFlush(funded);
         JsonNode beneficiary = call("POST", "/api/beneficiaries", Map.of("accountId", accountId,
                 "beneficiaryName", "Oracle check recipient", "bankAccountNumber", "123456789012",
-                "ifsc", "SBIN0001234"), 201, null);
+                "ifsc", "SBIN0001234", "externalConfirmed", true), 201, null);
         Map<String,Object> payment = Map.of("fromAccountId", accountId, "beneficiaryId",
                 beneficiary.path("beneficiaryId").asLong(), "amount", "5000.00", "purpose", "Oracle rollback check");
         JsonNode transaction = call("POST", "/api/transactions", payment, 200, token);

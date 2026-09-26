@@ -1,6 +1,6 @@
 import * as ko from "knockout";
 import * as AccUtils from "../accUtils";
-import { accountService } from "../services/accountService";
+import { accountService, AccountFunds } from "../services/accountService";
 import { transactionService, newIdempotencyKey } from "../services/transactionService";
 import { ApiError } from "../services/apiError";
 import { Account, PaymentTransaction } from "../services/types";
@@ -17,6 +17,10 @@ class DashboardViewModel {
   selectedAccountId = ko.observable<number | null>(null);
   accountOption = (a: Account): string => a.accountType + " •••• " + a.accountNumber.slice(-4) + " · " + a.status;
   account = ko.observable<Account | null>(null);
+  funds = ko.observable<AccountFunds | null>(null);
+  fundsError = ko.observable("");
+  fundsLoading = ko.observable(false);
+  private fundsGeneration = 0;
   transactions = ko.observableArray<PaymentTransaction>([]);
   loading = ko.observable(true);
   sessionExpired = ko.observable(false);
@@ -28,15 +32,33 @@ class DashboardViewModel {
   busy = ko.observable(false);
   now = ko.observable(Date.now());
   private generation = 0;
+  private refreshing = false;
+  private alive = true;
+  private onFocus = (): void => { void this.refreshPending(); };
   private tick?: ReturnType<typeof setInterval>;
   private poll?: ReturnType<typeof setInterval>;
   private cancelKeys = new Map<number, string>();
-  recent = ko.pureComputed(() => [...this.transactions()].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 5));
+  recent = ko.pureComputed(() => this.transactions().filter(t => !this.selectedAccountId() || !t.fromAccountId
+    || t.fromAccountId === this.selectedAccountId() || t.toAccountId === this.selectedAccountId())
+    .slice().sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 5));
   pending = ko.pureComputed(() => this.transactions().filter(t => t.state === "PROTECTED" || t.state === "HARD_HOLD"));
-  canSend = ko.pureComputed(() => !this.loading() && !this.sessionExpired() && this.account()?.status === "ACTIVE" && !this.transactionError());
+  heldPaymentCount = ko.pureComputed<number | null>(() => {
+    if (this.loading() || this.transactionError() || !this.account() || !this.selectedAccountId()) return null;
+    return this.pending().filter(tx => tx.fromAccountId === this.selectedAccountId()).length;
+  });
+  canSend = ko.pureComputed(() => !this.loading() && !this.sessionExpired() && this.account()?.status === "ACTIVE" && !this.transactionError() && !!this.funds() && !this.fundsError());
   formatMoney = (amount: number): string => new Intl.NumberFormat("en-IN", {
     style: "currency", currency: "INR", minimumFractionDigits: 2, maximumFractionDigits: 2
   }).format(amount);
+  // The legacy endpoint lists outgoing payments; only explicit CREDIT records are incoming.
+  isCredit = (tx: PaymentTransaction): boolean => tx.direction === "CREDIT"
+    || (!!tx.toAccountId && tx.toAccountId === this.selectedAccountId() && tx.fromAccountId !== this.selectedAccountId());
+  displayName = (tx: PaymentTransaction): string => this.isCredit(tx)
+    ? tx.senderName || tx.counterpartyName || tx.beneficiaryName : tx.counterpartyName || tx.beneficiaryName;
+  signedAmount = (tx: PaymentTransaction): string =>
+    (tx.state === "SETTLED" ? (this.isCredit(tx) ? "+ " : "− ") : "") + this.formatMoney(tx.amount);
+  amountClass = (tx: PaymentTransaction): string => tx.state !== "SETTLED" ? "" : this.isCredit(tx) ? "amount-credit" : "amount-debit";
+  directionLabel = (tx: PaymentTransaction): string => this.isCredit(tx) ? "Incoming · credit" : "Outgoing · debit";
   maskAccount = (value: string): string => value ? "•••• " + value.slice(-4) : "Account number unavailable";
   accountLabel = (value: string): string => value === "SAVINGS" ? "Savings account" : value === "CURRENT" ? "Current account" : "Your account";
   formatDate = (value: string): string => {
@@ -74,24 +96,33 @@ class DashboardViewModel {
     this.stopLive();
     this.now(Date.now());
     this.tick = setInterval(() => this.now(Date.now()), 1000);
-    this.poll = setInterval(() => { if (this.pending().length) void this.refreshPending(); }, 3000);
+    this.poll = setInterval(() => void this.refreshPending(), 3000);
   }
   private async refreshPending(): Promise<void> {
+    if (!this.alive || this.refreshing || this.loading() || this.busy() || this.sessionExpired() || document.visibilityState === "hidden") return;
     const generation = this.generation;
+    this.refreshing = true;
     try {
-      const list = await transactionService.list();
+      const [list, accounts] = await Promise.all([transactionService.list(), accountService.list()]);
       if (generation !== this.generation || !Array.isArray(list)) return;
       this.transactions(list);
-      const accounts=await accountService.list();
-      if(generation!==this.generation)return;
-      this.accounts(accounts);this.selectAccount();
-      if (!this.pending().length) this.stopLive();
-    } catch { /* Keep the last good pending list; the next tick retries. */ }
+      this.accounts(accounts);this.account(accounts.find(a => a.accountId === this.selectedAccountId()) || null);
+      await this.refreshFunds();
+      if (generation !== this.generation) return;
+      this.accountError(""); this.transactionError("");
+    } catch (error) {
+      if (generation !== this.generation) return;
+      if (error instanceof ApiError && error.status === 401) {
+        this.sessionExpired(true); this.stopLive(); this.account(null); this.accounts([]); this.transactions([]); this.funds(null); this.fundsGeneration++;
+        window.location.replace("/login?reason=session-expired");
+      } else this.transactionError("Live updates are temporarily unavailable. Showing the last loaded balances and payments; retrying automatically.");
+    } finally { this.refreshing = false; }
   }
   load = async (): Promise<void> => {
     const generation = ++this.generation;
     this.stopLive();
     this.loading(true); this.sessionExpired(false); this.account(null); this.transactions([]);
+    this.fundsGeneration++; this.funds(null); this.fundsError("");
     this.accountError(""); this.transactionError(""); this.cancelError("");
     const [account, transactions] = await Promise.allSettled([accountService.list(), transactionService.list()]);
     if (generation !== this.generation) return;
@@ -104,8 +135,10 @@ class DashboardViewModel {
       if (transactions.status === "fulfilled" && Array.isArray(transactions.value)) this.transactions(transactions.value);
       else this.transactionError(this.message(transactions.status === "rejected" ? transactions.reason : null, "transactions"));
     }
+    if (!this.sessionExpired()) await this.refreshFunds();
+    if (!this.alive || generation !== this.generation) return;
     this.loading(false);
-    if (this.pending().length) this.startLive();
+    if (!this.sessionExpired()) this.startLive();
     AccUtils.announce(this.sessionExpired() ? "Please sign in to view your dashboard." : "Dashboard updated.");
   };
   requestCancel = (tx: PaymentTransaction): void => {
@@ -132,14 +165,37 @@ class DashboardViewModel {
     } catch (error) {
       this.cancelError(error instanceof ApiError && [400, 403, 404, 409].includes(error.status)
         ? error.message : "We couldn’t cancel this payment. Refresh and try again.");
-    } finally { this.busy(false); }
+    } finally { this.busy(false); if (this.alive) void this.refreshFunds(); }
   };
   private replaceRow(row: PaymentTransaction): void {
     this.transactions(this.transactions().map((item) => item.transactionId === row.transactionId ? row : item));
-    if (!this.pending().length) this.stopLive();
   }
-  selectAccount = (): void => {this.account(this.accounts().find(a=>a.accountId===this.selectedAccountId()) || null);};
-  connected(): void { document.title = "Dashboard | SafePay"; void this.load(); }
-  disconnected(): void { this.generation++; this.stopLive(); }
+  refreshFunds = async (): Promise<void> => {
+    const id = this.account()?.accountId;
+    const generation = ++this.fundsGeneration;
+    if (this.funds()?.accountId !== id) this.funds(null);
+    this.fundsError(""); this.fundsLoading(!!id);
+    if (!id) return;
+    try {
+      const funds = await accountService.funds(id);
+      if (!this.alive || generation !== this.fundsGeneration || this.account()?.accountId !== id) return;
+      if (funds?.accountId !== id || ![funds.balance, funds.reservedBalance, funds.availableToTransfer].every(Number.isFinite) || funds.availableToTransfer < 0) throw new Error("Invalid funds response");
+      this.funds(funds);
+    } catch (error) {
+      if (!this.alive || generation !== this.fundsGeneration || this.account()?.accountId !== id) return;
+      this.funds(null);
+      this.fundsError("We couldn’t load your current balance. Please try again.");
+      if (error instanceof ApiError && error.status === 401) {
+        this.sessionExpired(true); this.stopLive(); this.account(null); this.accounts([]); this.transactions([]);
+        window.location.replace("/login?reason=session-expired");
+      }
+    } finally { if (generation === this.fundsGeneration) this.fundsLoading(false); }
+  };
+  selectAccount = (): void => {
+    this.account(this.accounts().find(a=>a.accountId===this.selectedAccountId()) || null);
+    this.funds(null); void this.refreshFunds();
+  };
+  connected(): void { this.alive=true; document.title = "Dashboard | SafePay"; window.addEventListener?.("focus",this.onFocus); void this.load(); }
+  disconnected(): void { this.alive=false; this.generation++; this.fundsGeneration++; this.stopLive(); window.removeEventListener?.("focus",this.onFocus); }
 }
 export = DashboardViewModel;

@@ -1,93 +1,56 @@
 <section class="tx-page" aria-labelledby="tx-title" data-bind="attr: {'aria-busy': loading}">
   <header class="tx-heading">
-    <div>
-      <p class="dash-overline">PAYMENT HISTORY</p>
-      <h1 id="tx-title">Transactions</h1>
-      <p class="send-subtitle">Every pause, settlement and cancellation in one place.</p>
-    </div>
-    <oj-button chroming="outlined" data-bind="click: load, disable: loading"><span class="spin" aria-hidden="true" data-bind="visible: loading"></span><span data-bind="text: loading() ? 'Loading…' : 'Refresh'"></span></oj-button>
+    <div><p class="dash-overline">PAYMENT HISTORY</p><h1 id="tx-title">Transactions</h1><p class="send-subtitle">Your payments, at a glance.</p></div>
+    <button class="recipient-secondary" data-bind="click: load, disable: loading, text: loading() ? 'Refreshing…' : 'Refresh'"></button>
   </header>
-  <p class="tx-identity">Signed in as <span data-bind="text: signedInEmail"></span></p>
-  <section class="tx-controls" aria-label="Transaction filters">
-    <label for="transaction-status">Status
-      <select id="transaction-status" data-bind="value: statusFilter, event: { change: changeStatusFilter }, disable: loading">
-        <option value="">All transactions</option>
-        <option value="PROTECTED">Protected</option>
-        <option value="SETTLED">Settled</option>
-        <option value="CANCELLED">Cancelled</option>
-        <option value="HARD_HOLD">Held for review</option>
-      </select>
-    </label>
-    <label for="transaction-sort">Sort by
-      <select id="transaction-sort" data-bind="value: sortBy, event: { change: changeSort }, disable: loading">
-        <option value="NEWEST">Newest first</option>
-        <option value="OLDEST">Oldest first</option>
-        <option value="AMOUNT_HIGH">Amount: high to low</option>
-        <option value="AMOUNT_LOW">Amount: low to high</option>
-      </select>
-    </label>
-  </section>
-  <p class="recipient-error" role="alert" data-bind="visible: error, text: error"></p>
-  <div class="dash-skeleton" role="status" aria-label="Loading your payments" data-bind="visible: loading"><span class="sk sk-small"></span><span class="sk sk-line"></span><span class="sk sk-line"></span><span class="sk sk-line"></span></div>
-  <div class="sk-cards" aria-hidden="true" data-bind="visible: loading"><span class="sk-card"></span><span class="sk-card"></span><span class="sk-card"></span></div>
-  <ul class="tx-list" data-bind="foreach: displayedTransactions">
-    <li class="tx-row" data-bind="click: $parent.openDetail, css: $parent.riskClass($data)">
-      <oj-avatar size="xs" data-bind="attr: {initials: $parent.initials($parent.counterpartyName($data))}"></oj-avatar>
-      <div class="tx-copy">
-        <strong data-bind="text: $parent.counterpartyName($data)"></strong>
-        <small class="tx-direction" data-bind="text: $parent.directionLabel($data), css: direction === 'CREDIT' ? 'is-credit' : 'is-debit'"></small>
-        <span data-bind="text: $parent.formatDate(createdAt)"></span>
-        <div class="flux-bar flux-bar-mini" data-bind="visible: state === 'PROTECTED', style: {'--flux': $parent.fluxPercent($data)}"><i></i></div>
-        <small data-bind="visible: $parent.countdownText($data), text: $parent.countdownText($data)"></small>
-      </div>
-      <div class="tx-meta">
-        <b data-bind="text: $parent.signedAmount($data), css: direction === 'CREDIT' ? 'is-credit' : 'is-debit'"></b>
-        <span class="payment-status" data-bind="text: $parent.statusLabel(state), css: $parent.riskClass($data)"></span>
-        <span class="tx-tier" data-bind="text: $parent.tierLabel(riskTier)"></span>
-        <!-- ko if: $parent.canCancel($data) -->
-        <button type="button" class="tx-row-action" data-bind="click: function(data, event) { event.stopPropagation(); $parent.requestCancel($data); }">Cancel</button>
-        <!-- /ko -->
-      </div>
+  <p class="send-off-screen">Signed in as <span data-bind="text: signedInEmail"></span></p>
+  <div class="tx-toolbar">
+    <label for="tx-search">Find a payment<input id="tx-search" type="search" placeholder="Name, reference or amount" data-bind="textInput: query"></label>
+    <label for="tx-filter">Status<select id="tx-filter" data-bind="value: filter"><option value="all">All payments</option><option value="pending">Pending</option><option value="settled">Settled</option><option value="cancelled">Cancelled / not approved</option></select></label>
+  </div>
+  <div class="ui-error" role="alert" data-bind="visible: error, reveal: error"><strong>We couldn’t update your payments</strong><p data-bind="text: error"></p><button class="recipient-secondary" data-bind="click: load, disable: loading">Try again</button></div>
+  <div class="dash-skeleton" role="status" aria-label="Loading your payments" data-bind="visible: loading"><span class="sk sk-line"></span><span class="sk sk-line"></span><span class="sk sk-line"></span></div>
+  <ul class="tx-list" data-bind="foreach: displayedTransactions, reveal: pageReveal">
+    <li class="tx-row">
+      <button type="button" class="tx-open" data-bind="click: $parent.openDetail, attr: {'aria-label': 'View payment: ' + $parent.displayName($data) + ', ' + $parent.formatMoney(amount) + ', ' + $parent.directionLabel($data) + ', ' + $parent.statusLabel(state)}">
+        <span class="money-direction" aria-hidden="true" data-bind="text: $parent.directionArrow($data), css: $parent.directionClass($data)"></span>
+        <span class="tx-copy"><strong data-bind="text: $parent.displayName($data)"></strong><span data-bind="text: $parent.directionLabel($data)"></span><small data-bind="text: $parent.formatDate(createdAt)"></small><small data-bind="visible: $parent.countdownText($data), text: $parent.countdownText($data)"></small></span>
+        <span class="tx-meta"><b data-bind="text: $parent.signedAmount($data)"></b><span class="payment-status" data-bind="text: $parent.statusLabel(state), css: $parent.riskClass($data)"></span></span>
+      </button>
+      <!-- ko if: $parent.canCancel($data) --><button class="tx-row-action" data-bind="click: $parent.requestCancel">Cancel</button><!-- /ko -->
     </li>
   </ul>
-  <div class="dashboard-empty" data-bind="visible: !loading() && !transactions().length"><span class="state-symbol" aria-hidden="true">⌁</span><h3>No transactions found</h3><p>Your payments will appear here after you send money.</p></div>
-
+  <nav class="tx-pagination" aria-label="Payment history pages" data-bind="visible: filtered().length"><button data-bind="click: previousPage, disable: currentPage() === 1">Previous</button><span role="status" data-bind="text: pageLabel"></span><button data-bind="click: nextPage, disable: currentPage() === pageCount()">Next</button></nav>
+  <div class="dashboard-empty" data-bind="visible: !loading() && !error() && !filtered().length"><h3 data-bind="text: transactions().length ? 'No matching payments' : 'No payments yet'"></h3><p data-bind="text: transactions().length ? 'Try a different name or status.' : 'Your payments will appear here after you send money.'"></p></div>
   <oj-drawer-popup class="tx-drawer" edge="end" opened="{{detailOpen}}" modality="modal">
     <div class="tx-drawer-body">
       <header class="tx-drawer-head"><h2 data-bind="text: selectedTitle"></h2><oj-button chroming="borderless" on-oj-action="[[closeDetail]]">Close</oj-button></header>
-      <!-- ko with: selected -->
-      <p class="send-review-amount" data-bind="text: $parent.formatMoney(amount)"></p>
-      <p class="protect-copy" data-bind="text: $parent.selectedCountdown"></p>
-      <dl class="send-review-details">
-        <div><dt>To</dt><dd data-bind="text: beneficiaryName"></dd></div>
-        <div><dt>Account</dt><dd data-bind="text: $parent.maskAccountNumber(beneficiaryBankAccountNumber) + ' · ' + beneficiaryIfsc"></dd></div>
-        <div><dt>Reference</dt><dd data-bind="text: transactionRef"></dd></div>
-        <div><dt>Purpose</dt><dd data-bind="text: purpose || 'Not provided'"></dd></div>
-        <div><dt>Status</dt><dd data-bind="text: $parent.statusLabel(state)"></dd></div>
-        <div><dt>Pause</dt><dd data-bind="text: $parent.tierLabel(riskTier)"></dd></div>
-        <div data-bind="visible: settledAt"><dt>Settled</dt><dd data-bind="text: $parent.formatDate(settledAt)"></dd></div>
-        <div data-bind="visible: cancelledAt"><dt>Cancelled</dt><dd data-bind="text: $parent.formatDate(cancelledAt)"></dd></div>
-      </dl>
-      <!-- /ko -->
-      <!-- ko if: selectedReasons().length -->
-      <section class="protect-why"><h3>Why SafePay paused this</h3><ul data-bind="foreach: selectedReasons"><li data-bind="text: $data"></li></ul></section>
-      <!-- /ko -->
-      <!-- ko if: selected() && canCancel(selected()) -->
-      <oj-button chroming="solid" class="send-continue" data-bind="click: function() { requestCancel(selected()); }">Cancel this payment</oj-button>
-      <!-- /ko -->
-      <!-- ko if: selected() && selected().state === 'HARD_HOLD' -->
-      <p class="protect-copy">This payment is waiting for administrator approval. Only an administrator can approve and settle it.</p>
-      <!-- /ko -->
+      <div class="tx-detail-content">
+        <div class="ui-error" role="alert" data-bind="visible: detailError, reveal: detailError"><p data-bind="text: detailError"></p></div>
+        <!-- ko with: selected -->
+        <p class="send-review-amount" data-bind="text: $parent.signedAmount($data)"></p>
+        <p class="protect-copy" data-bind="text: $parent.directionLabel($data)"></p>
+        <p class="protect-copy" data-bind="visible: $parent.selectedCountdown, text: $parent.selectedCountdown"></p>
+        <dl class="send-review-details">
+          <div><dt>Recipient / counterparty</dt><dd data-bind="text: $parent.displayName($data) || 'Not provided'"></dd></div>
+          <div><dt>Bank account</dt><dd data-bind="text: $parent.maskAccountNumber($data.counterpartyAccountNumber || beneficiaryBankAccountNumber)"></dd></div>
+          <div><dt>Reference</dt><dd data-bind="text: transactionRef"></dd></div>
+          <div><dt>Status</dt><dd data-bind="text: $parent.statusLabel(state)"></dd></div>
+          <div><dt>Note</dt><dd data-bind="text: purpose || 'No note added'"></dd></div>
+          <!-- ko if: amount > 100000 --><div><dt>Category</dt><dd data-bind="text: $parent.categoryLabel($data.category)"></dd></div><!-- /ko -->
+          <div><dt>Created</dt><dd data-bind="text: $parent.formatDate(createdAt)"></dd></div>
+          <div data-bind="visible: settledAt"><dt>Settled</dt><dd data-bind="text: $parent.formatDate(settledAt)"></dd></div>
+          <div data-bind="visible: cancelledAt"><dt>Cancelled</dt><dd data-bind="text: $parent.formatDate(cancelledAt)"></dd></div>
+        </dl>
+        <!-- ko if: state === 'HARD_HOLD' --><p class="protect-copy">Awaiting administrator approval. You can cancel before approval to keep the amount in your account. Status updates automatically.</p><!-- /ko -->
+        <!-- /ko -->
+        <!-- ko if: selectedReasons().length --><section class="protect-why"><h3>Payment assessment</h3><ul data-bind="foreach: selectedReasons"><li data-bind="text: $data"></li></ul></section><!-- /ko -->
+      </div>
+      <!-- ko if: selected() && canCancel(selected()) --><footer class="tx-detail-actions"><button class="protect-cancel" data-bind="click: function() { requestCancel(selected()); }, disable: busy">Cancel this payment</button></footer><!-- /ko -->
     </div>
   </oj-drawer-popup>
-
-  
-
-  <oj-dialog id="tx-cancel-dialog" class="protect-dialog" dialog-title="Cancel this payment?" cancel-behavior="icon" opened="{{cancelOpen}}">
+  <oj-dialog id="tx-cancel-dialog" class="protect-dialog" dialog-title="Cancel this payment?" cancel-behavior="icon" data-bind="dialogOpen: cancelOpen" on-oj-close="[[closeCancel]]">
     <div slot="body"><p>This payment has not settled yet. Cancelling keeps the amount in your account.</p></div>
-    <div slot="footer">
-      <oj-button chroming="outlined" on-oj-action="[[closeCancel]]">Keep waiting</oj-button>
-      <oj-button chroming="solid" on-oj-action="[[confirmCancel]]">Cancel payment</oj-button>
-    </div>
+    <div slot="footer"><button type="button" class="recipient-secondary" data-bind="click: closeCancel">Keep waiting</button><button type="button" class="protect-cancel" data-bind="click: confirmCancel, disable: busy">Cancel payment</button></div>
   </oj-dialog>
 </section>

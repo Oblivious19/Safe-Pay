@@ -447,3 +447,56 @@ body.customer-shell .login-page.onboarding-page {
   .login-page::before { left: -126px; }
   .login-page::after { right: -72px; }
 }
+
+
+/* Customer login reference: brand story left, existing sign-in form right. */
+body.customer-shell:has(.login-split) #main-content {
+  min-height:100dvh;
+  display:grid;
+  align-items:center;
+  padding:clamp(36px,4vw,78px) clamp(24px,6vw,112px);
+}
+body.customer-shell .login-page.login-split {
+  display:grid;
+  grid-template-columns:minmax(0,.6fr) minmax(0,1fr);
+  align-items:center;
+  gap:clamp(48px,8vw,150px);
+  width:min(100%,1440px);
+  padding:0;
+}
+.login-split .login-story { position:relative; min-width:0; }
+.login-split .login-brand { justify-content:flex-start; margin:0 0 34px; }
+.login-split .login-brand .brand-shield { width:80px; height:96px; }
+.login-split .login-brand .brand-wordmark { font-size:40px; }
+.login-split .login-story-title {
+  margin:0 0 26px; color:var(--login-cream);
+  font-size:clamp(42px,4.1vw,68px); line-height:1.12;
+  font-weight:800; letter-spacing:-.065em;
+}
+.login-split .login-story-title span { display:block; }
+.login-split .login-story-copy {
+  max-width:30ch; margin:0; color:#c4d4c8;
+  font-size:clamp(16px,1.25vw,21px); line-height:1.7;
+}
+.login-split .login-card { width:100%; max-width:660px; min-width:0; padding:clamp(28px,3vw,46px); border-radius:32px; }
+.login-page.login-split::before {
+  width:200px; height:200px; top:8%; left:-84px;
+}
+.login-page.login-split::after {
+  width:110px; height:110px; top:auto; right:auto; bottom:-100px; left:18%;
+}
+@media(max-width:850px) {
+  body.customer-shell:has(.login-split) #main-content { padding:32px 20px 48px; }
+  body.customer-shell .login-page.login-split { grid-template-columns:minmax(0,1fr); gap:30px; max-width:560px; }
+  .login-split .login-brand { margin-bottom:18px; }
+  .login-split .login-brand .brand-shield { width:52px; height:62px; }
+  .login-split .login-brand .brand-wordmark { font-size:30px; }
+  .login-split .login-story-title { font-size:36px; margin-bottom:16px; }
+  .login-split .login-story-title span { display:inline; }
+  .login-split .login-story-title span:not(:last-child)::after { content:" "; }
+  .login-split .login-story-copy { font-size:16px; }
+  .login-desktop-break { display:none; }
+  .login-split .login-card { padding:28px 22px; border-radius:24px; }
+  .login-page.login-split::before { width:150px; height:150px; top:0; left:0; }
+  .login-page.login-split::after { bottom:-34px; left:auto; right:0; width:70px; height:70px; }
+}

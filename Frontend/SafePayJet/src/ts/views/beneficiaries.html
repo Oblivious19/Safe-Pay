@@ -5,20 +5,20 @@
     <div class="recipients-hero-copy">
       <p class="dash-overline">YOUR PAYMENT CONTACTS</p>
       <h1 id="recipients-title">Beneficiaries</h1>
-<label class="integration-account"><input type="checkbox" data-bind="checked: includeInactive, event:{change: changeAccount}, disable: loading() || saving()"> Show inactive beneficiaries</label>
-<div class="integration-account"><label for="beneficiary-account">Account</label><select id="beneficiary-account" data-bind="options: accounts, optionsText: accountOption, optionsValue: 'accountId', value: selectedAccountId, optionsCaption: 'Select account', valueAllowUnset: true, event: {change: changeAccount}, disable: loading() || saving()"></select></div>
+
 
       <p>The people and businesses you save, all in one place.</p>
       <p class="recipients-count" data-bind="visible: !loading()"><span data-bind="text: beneficiaries().length"></span> saved <span data-bind="text: beneficiaries().length === 1 ? 'recipient' : 'recipients'"></span></p>
     </div>
-    <button class="recipient-primary recipient-hero-cta" data-bind="visible: mode() === 'list', click: openAdd, disable: loading"><span aria-hidden="true">＋</span> Add Beneficiary</button>
+    <div class="recipients-hero-tools"><div class="integration-account"><label for="beneficiary-account">From account</label><select id="beneficiary-account" data-bind="options: accounts, optionsText: accountOption, optionsValue: 'accountId', value: selectedAccountId, optionsCaption: 'Select account', valueAllowUnset: true, event: {change: changeAccount}, disable: loading() || saving()"></select></div>
+    <button class="recipient-primary recipient-hero-cta" data-bind="visible: mode() === 'list', click: openAdd, disable: loading"><span aria-hidden="true">＋</span> Add Beneficiary</button></div>
   </header>
-  <p class="recipient-success" role="status" data-bind="visible: success, text: success"></p>
-  <p class="recipient-error" role="alert" data-bind="visible: error, text: error"></p>
-  <div class="recipient-loading load-row" role="status" data-bind="visible: loading"><span class="spin" aria-hidden="true"></span><span>Loading your beneficiaries…</span></div>
-  <div class="sk-cards" aria-hidden="true" data-bind="visible: loading"><span class="sk-card"></span><span class="sk-card"></span><span class="sk-card"></span></div>
+  <p class="recipient-success" role="status" data-bind="visible: success, text: success, reveal: success"></p>
+  <p class="recipient-error" role="alert" data-bind="visible: error, text: error, reveal: error"></p>
+  <div class="recipient-loading load-row" role="status" data-bind="visible: loading() && mode() !== 'add'"><span class="spin" aria-hidden="true"></span><span>Loading your beneficiaries…</span></div>
+  <div class="sk-cards" aria-hidden="true" data-bind="visible: loading() && mode() !== 'add'"><span class="sk-card"></span><span class="sk-card"></span><span class="sk-card"></span></div>
   <!-- ko if: mode() === 'list' -->
-  <div class="recipient-list-tools"><span>Saved recipients</span><button class="recipient-link" data-bind="click: load, disable: loading() || saving()"><span class="spin" aria-hidden="true" data-bind="visible: loading"></span><span data-bind="text: loading() ? 'Refreshing…' : 'Refresh list'"></span></button></div>
+  <div class="recipient-list-tools"><span>Saved recipients</span><label><input type="checkbox" data-bind="checked: includeInactive, event:{change: changeAccount}, disable: loading() || saving()"> Include inactive</label><button class="recipient-link" data-bind="click: load, disable: loading() || saving()"><span class="spin" aria-hidden="true" data-bind="visible: loading"></span><span data-bind="text: loading() ? 'Refreshing…' : 'Refresh list'"></span></button></div>
   <!-- ko if: !loading() && !error() && !beneficiaries().length -->
   <div class="recipient-empty"><span class="recipient-empty-badge" aria-hidden="true">♧</span><h2>Your people, a little closer.</h2><p>No beneficiaries yet. Add someone using their bank account details.</p><button class="recipient-primary" data-bind="click: openAdd, disable: loading">Add your first beneficiary</button></div>
   <!-- /ko -->
@@ -32,9 +32,9 @@
           <p class="recipient-number" data-bind="text: $parent.mask(bankAccountNumber)"></p>
         </div>
       </header>
-      <div class="recipient-badges"><span class="recipient-bank" data-bind="text: bankName + ' · ' + ifsc"></span><span data-bind="text: status === 'ACTIVE' ? 'Active' : 'Inactive'"></span><span class="recipient-new" data-bind="visible: $parent.isNew(createdAt)">New</span></div>
+      <div class="recipient-badges"><span class="recipient-bank" data-bind="text: ifsc"></span><span data-bind="text: status === 'ACTIVE' ? 'Active' : 'Inactive'"></span><span class="recipient-new" data-bind="visible: $parent.isNew(createdAt)">New</span></div>
       <p class="recipient-meta" data-bind="text: $parent.added(createdAt)"></p>
-      <p class="recipient-meta recipient-pause-hint" data-bind="visible: $parent.isNew(createdAt)">First payments to a new recipient may pause before they settle.</p>
+      <p class="recipient-meta recipient-pause-hint" data-bind="visible: $parent.isNew(createdAt)">The payment amount determines whether a protection pause applies.</p>
       <div class="recipient-card-actions">
         <a class="recipient-pay" data-bind="attr: {href: '/send-money', 'aria-label': 'Pay ' + beneficiaryName}">Pay</a>
         <button class="recipient-secondary" data-bind="click: $parent.select, disable: $parent.loading() || $parent.saving(), attr: {'aria-label': 'View details for ' + beneficiaryName}">Details <span aria-hidden="true">↗</span></button>
@@ -43,39 +43,52 @@
   </div>
   <!-- /ko -->
   <!-- ko if: mode() === 'add' -->
-  <div class="recipient-form-card"><button class="recipient-link" data-bind="click: back, disable: saving">← Back to beneficiaries</button><h2>Add a beneficiary</h2><p>Use the recipient’s bank details. Check them carefully before saving.</p>
-    <form novalidate data-bind="submit: function(){ return save(false); }">
+  <div class="recipient-form-card"><button class="recipient-link" data-bind="click: back, disable: saving">← Back to beneficiaries</button><h2 style="outline:none" data-bind="reveal: !loading()">Add a beneficiary</h2><p>Use the recipient’s bank details. Check them carefully before saving.</p>
+    <form novalidate data-bind="submit: save">
       <label for="recipient-beneficiaryName">Beneficiary name</label>
       <input id="recipient-beneficiaryName" autocomplete="off" maxlength="100" required data-bind="textInput: beneficiaryName, disable: saving, attr: {'aria-invalid': !!fieldErrors().beneficiaryName}" aria-describedby="name-error">
       <p class="recipient-field-error" id="name-error" data-bind="text: fieldErrors().beneficiaryName"></p>
+      <label for="recipient-bank">Bank</label>
+      <select id="recipient-bank" required aria-describedby="bank-error" data-bind="options: bankOptions, optionsText: 'label', optionsValue: 'value', optionsCaption: 'Choose bank', value: selectedBank, event: {change: clearBankError}, disable: saving, attr: {'aria-invalid': !!fieldErrors().bank}"></select>
+      <p class="recipient-field-error" id="bank-error" data-bind="text: fieldErrors().bank"></p>
       <label for="recipient-bankAccountNumber">Bank account number</label>
-      <input id="recipient-bankAccountNumber" inputmode="numeric" autocomplete="off" maxlength="30" required data-bind="textInput: bankAccountNumber, disable: saving, attr: {'aria-invalid': !!fieldErrors().bankAccountNumber}" aria-describedby="account-error account-hint">
-      <small id="account-hint">Enter the bank account number, not a SafePay internal account ID.</small>
+      <input id="recipient-bankAccountNumber" inputmode="numeric" autocomplete="off" maxlength="30" required data-bind="textInput: bankAccountNumber, disable: saving, attr: {'aria-invalid': !!fieldErrors().bankAccountNumber}" aria-describedby="account-error">
       <p class="recipient-field-error" id="account-error" data-bind="text: fieldErrors().bankAccountNumber"></p>
       <label for="recipient-ifsc">IFSC</label>
       <input id="recipient-ifsc" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="11" required placeholder="e.g. HDFC0001234" data-bind="textInput: ifsc, disable: saving, attr: {'aria-invalid': !!fieldErrors().ifsc}" aria-describedby="ifsc-error">
       <p class="recipient-field-error" id="ifsc-error" data-bind="text: fieldErrors().ifsc"></p>
-      <button class="recipient-primary" type="submit" data-bind="disable: saving"><span class="spin" aria-hidden="true" data-bind="visible: saving"></span><span data-bind="text: saving() ? 'Saving…' : 'Add Beneficiary'"></span></button>
+      <button class="recipient-primary" type="submit" data-bind="disable: saving() || confirmExternal()"><span class="spin" aria-hidden="true" data-bind="visible: saving"></span><span data-bind="text: saving() ? 'Saving…' : 'Add Beneficiary'"></span></button>
     </form>
-    <div class="recipient-confirm" data-bind="visible: confirmExternal"><h3>This recipient is not verified by SafePay</h3><p>This is a new external beneficiary. Do you want to add them and apply the 60-second receiving cooldown to their payments?</p><button type="button" class="recipient-secondary" data-bind="click: function(){ save(true); }, disable: saving">Yes, add external beneficiary</button><button type="button" class="recipient-link" data-bind="click: function(){ confirmExternal(false); }, disable: saving">No, check details</button></div>
+
   </div>
   <!-- /ko -->
   <!-- ko if: mode() === 'details' -->
-  <div class="recipient-form-card"><button class="recipient-link" data-bind="click: back, disable: loading() || saving()">← Back to beneficiaries</button>
+  <div class="recipient-form-card" data-bind="reveal: true"><button class="recipient-link" data-bind="click: back, disable: loading() || saving()">← Back to beneficiaries</button>
     <!-- ko with: selected -->
     <h2 data-bind="text: beneficiaryName"></h2>
     <dl class="recipient-details"><dt>Bank account</dt><dd data-bind="text: $parent.mask(bankAccountNumber)"></dd><dt>IFSC</dt><dd data-bind="text: ifsc"></dd><dt>Status</dt><dd data-bind="text: status === 'ACTIVE' ? 'Active' : 'Inactive'"></dd><dt>Saved</dt><dd data-bind="text: $parent.added(createdAt)"></dd></dl>
-    <p class="recipient-meta">First payments to a new recipient may pause before they settle.</p>
+    <p class="recipient-meta">The payment amount determines whether a protection pause applies.</p>
     <!-- /ko -->
     <!-- ko if: selected -->
 <button type="button" class="recipient-primary" data-bind="visible: selected().status !== 'ACTIVE', click: reactivate, disable: saving">Reactivate beneficiary</button>
-    <button class="recipient-secondary" data-bind="visible: selected().status === 'ACTIVE' && !confirmDeactivate(), click: function() { confirmDeactivate(true); }, disable: saving">Remove beneficiary</button>
-    <div class="recipient-confirm" data-bind="visible: confirmDeactivate"><h3>Remove this beneficiary?</h3><p>They will be removed from your active list. Existing transaction history is preserved.</p>
-      <button class="recipient-secondary" data-bind="click: deactivate, disable: saving"><span class="spin" aria-hidden="true" data-bind="visible: saving"></span><span data-bind="text: saving() ? 'Removing…' : 'Confirm removal'"></span></button>
+    <button class="recipient-secondary" data-bind="visible: selected().status === 'ACTIVE' && !confirmDeactivate(), click: function() { confirmDeactivate(true); }, disable: saving">Make them Inactive</button>
+    <div class="recipient-confirm" data-bind="visible: confirmDeactivate, reveal: confirmDeactivate"><h3>Deactivate this beneficiary?</h3><p>They will be removed from your active list. Existing transaction history is preserved.</p>
+      <button class="recipient-secondary" data-bind="click: deactivate, disable: saving"><span class="spin" aria-hidden="true" data-bind="visible: saving"></span><span data-bind="text: saving() ? 'Deactivating…' : 'Confirm deactivation'"></span></button>
       <button class="recipient-link" data-bind="click: function() { confirmDeactivate(false); }, disable: saving">Keep beneficiary</button>
     </div>
     <!-- /ko -->
   </div>
   <!-- /ko -->
-  <p class="recipient-footnote">◇ Simulated Environment</p>
+  <oj-dialog id="external-beneficiary-dialog" class="recipient-external-dialog" dialog-title="Check external beneficiary" modality="modal" cancel-behavior="escape" resize-behavior="none" drag-affordance="none" data-bind="dialogOpen: confirmExternal" on-oj-before-close="[[beforeExternalClose]]" on-oj-close="[[clearExternal]]">
+    <div slot="body" class="recipient-external-body">
+      <h3>This recipient is not verified by SafePay</h3>
+      <p>Check their bank details before adding them as an external beneficiary.</p>
+      <div class="recipient-external-summary"><strong data-bind="text: beneficiaryName"></strong><span data-bind="text: mask(bankAccountNumber()) + ' · ' + ifsc()"></span></div>
+      <label class="recipient-external-check" for="external-beneficiary-reviewed"><input id="external-beneficiary-reviewed" type="checkbox" data-bind="checked: externalReviewed, disable: saving"><span>I have checked the recipient’s name, account number and IFSC.</span></label>
+    </div>
+    <div slot="footer" class="recipient-external-actions">
+      <button type="button" class="recipient-external-add" data-bind="click: function() { save(true); }, disable: saving() || !externalReviewed(), text: saving() ? 'Adding…' : 'Add beneficiary'"></button>
+      <button type="button" class="recipient-external-back" data-bind="click: dismissExternal, disable: saving">No, check details</button>
+    </div>
+  </oj-dialog>
 </section>

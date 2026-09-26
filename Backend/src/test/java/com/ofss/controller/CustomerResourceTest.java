@@ -70,7 +70,7 @@ class CustomerResourceTest extends WebSecuritySliceSupport {
         when(transactions.save(any())).thenAnswer(call -> call.getArgument(0));
         mvc.perform(post("/api/transactions").session(session).header("X-CSRF-TOKEN", csrf())
                 .header("Idempotency-Key", "new-risk").contentType("application/json")
-                .content(BODY.replace("5000", amount)).param("riskTier", "LOW"))
+                .content(BODY.replace("5000", amount).replace("}", "VERY_HIGH".equals(tier) ? ",\"category\":\"MEDICAL\"}" : "}")).param("riskTier", "LOW"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.riskTier").value(tier))
                 .andExpect(jsonPath("$.state").value(state))
                 .andExpect(jsonPath("$.protectionSeconds").value(seconds))
@@ -380,7 +380,7 @@ class CustomerResourceTest extends WebSecuritySliceSupport {
         when(transactions.pendingAmount(eq(1000001L), anyList())).thenReturn(new BigDecimal("18000"));
         mvc.perform(post("/api/transactions").session(session).header("X-CSRF-TOKEN", csrf())
                 .header("Idempotency-Key", "funds").contentType("application/json").content(BODY))
-                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.message").value("Insufficient available balance"));
+                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.startsWith("Insufficient available balance")));
         verify(transactions, never()).save(any());
     }
 

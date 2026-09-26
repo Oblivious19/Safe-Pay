@@ -18,22 +18,23 @@ public class ExpiredTransactionSettlementService {
     private final TransactionDao transactions;
     private final AccountDao accounts;
     private final AuditLogDao audits;
-    private final InternalPaymentRecipientResolver recipients;
 
     public ExpiredTransactionSettlementService(TransactionDao transactions, AccountDao accounts, AuditLogDao audits) {
         this.transactions = transactions;
         this.accounts = accounts;
         this.audits = audits;
-        this.recipients = new InternalPaymentRecipientResolver(accounts);
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public boolean settle(Long id) {
         Long accountId = transactions.findAccountId(id).orElse(null);
         if (accountId == null) return false;
-        Account account = accounts.findForSettlement(accountId).orElseThrow();
+        Long receiverId = accounts.findPaymentRecipientId(id).orElse(null);
+        Account account = TransferBalances.lockPair(accounts, accountId, receiverId);
         TransactionDb transaction = transactions.findById(id).orElseThrow();
         if (transaction.getState() != TransactionState.PROTECTED) return false;
+        if (account.getStatus() != AccountStatus.ACTIVE)
+            throw new InvalidStateTransitionException("Source account must be ACTIVE");
         LocalDateTime now = Objects.requireNonNull(transactions.currentDatabaseTime(accountId));
         if (transaction.getProtectionExpiresAt() == null) {
             throw new InvalidStateTransitionException("Protected transaction has no expiry");
@@ -54,9 +55,13 @@ public class ExpiredTransactionSettlementService {
         if (transactions.settleProtected(id, transaction.getVersion()) != 1) return false;
         // The bulk update cleared managed entities; reload under the same database lock.
         Account savedAccount = accounts.findForSettlement(accountId).orElseThrow();
-        savedAccount.setBalance(savedAccount.getBalance().subtract(amount));
-        accounts.save(savedAccount);
-        creditInternalRecipient(transaction, amount);
+        Account receiver = receiverId == null ? null : TransferBalances.lock(accounts, receiverId);
+        TransferBalances.move(accounts, savedAccount, receiver, amount, now);
+        if (receiver != null) {
+            TransactionDb settled = transactions.findById(id).orElseThrow();
+            settled.setToAccount(receiver);
+            transactions.save(settled);
+        }
         AuditLog audit = new AuditLog();
         audit.setTransactionId(id);
         audit.setUserId(ownerId);
@@ -66,16 +71,5 @@ public class ExpiredTransactionSettlementService {
         audit.setCreatedAt(now);
         audits.save(audit);
         return true;
-    }
-
-    private void creditInternalRecipient(TransactionDb transaction, BigDecimal amount) {
-        recipients.recipientAccountId(transaction.getBeneficiary()).ifPresent(recipientId -> {
-            Account recipient = accounts.findForSettlement(recipientId).orElseThrow();
-            if (recipient.getStatus() != AccountStatus.ACTIVE) {
-                throw new InvalidStateTransitionException("Recipient SafePay account must be ACTIVE");
-            }
-            recipient.setBalance(recipient.getBalance().add(amount));
-            accounts.save(recipient);
-        });
     }
 }

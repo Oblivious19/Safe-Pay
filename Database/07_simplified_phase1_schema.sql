@@ -22,11 +22,10 @@ CREATE TABLE users (
 CREATE TABLE account (
     account_id NUMBER PRIMARY KEY,
     user_id    NUMBER NOT NULL,
-    balance    NUMBER(18,2) DEFAULT 5000.00 NOT NULL,
+    balance    NUMBER(18,2) NOT NULL,
     created_at TIMESTAMP DEFAULT SYSTIMESTAMP NOT NULL,
     CONSTRAINT sp_fk_acct_user FOREIGN KEY (user_id) REFERENCES users(user_id),
-    CONSTRAINT sp_uq_account_user UNIQUE (user_id),
-    CONSTRAINT sp_ck_acct_min_bal CHECK (balance >= 5000.00)
+    CONSTRAINT sp_uq_account_user UNIQUE (user_id)
 );
 
 CREATE TABLE beneficiaries (
