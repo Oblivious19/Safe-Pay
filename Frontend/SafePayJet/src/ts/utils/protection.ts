@@ -149,18 +149,18 @@ export function paymentGauge(tx: PaymentTransaction | null | undefined, now: num
   if (tx?.state === "SETTLED") return {
     mode: "settled", label: "Settled", offset: 0,
     caption: (tx.protectionSeconds || 0) > 0
-      ? "This payment has settled after its protection window."
-      : "SafePay checked this payment and released it with no pause."
+      ? "Payment complete. The protection window has ended."
+      : "Payment complete. No protection pause was needed."
   };
   if (tx?.state === "CANCELLED" || tx?.state === "REJECTED") return {
     mode: "stopped", label: tx.state === "CANCELLED" ? "Cancelled" : "Not approved", offset: 0,
     caption: tx.state === "CANCELLED"
-      ? "This payment was cancelled before settlement. The amount never left your account."
-      : "This payment was not approved and has not settled."
+      ? "Payment cancelled. Your money stayed in your account."
+      : "Payment not approved. No money was sent."
   };
   if (tx?.state === "HARD_HOLD") return {
     mode: "waiting", label: "Awaiting review", offset: FLUX_ARC,
-    caption: "Awaiting administrator approval. You can cancel before approval. There is no countdown or automatic release. The status updates automatically."
+    caption: "Awaiting admin approval. You can cancel before approval. No timed release."
   };
   if (tx?.state === "PROTECTED") {
     const remaining = remainingFor(tx, now);
@@ -171,8 +171,8 @@ export function paymentGauge(tx: PaymentTransaction | null | undefined, now: num
     return {
       mode: "waiting", label: "Checking status", offset: FLUX_ARC,
       caption: Number.isFinite(remaining)
-        ? "The pause has ended. Waiting for the server to confirm the payment status."
-        : "The timer is unavailable. Checking the latest payment status."
+        ? "Pause ended. Confirming your payment status."
+        : "Timer unavailable. Checking your payment status."
     };
   }
   return { mode: "waiting", label: "Processing", offset: FLUX_ARC, caption: "Checking this payment before it can settle." };

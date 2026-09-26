@@ -15,7 +15,7 @@ test('all main brands share the new shield asset',()=>{
 test('footer has working information dialogs and no invented social destinations',()=>{
   const html=read('index.html');
   assert.match(html,/Every payment\. A little more peace of mind\./);
-  assert.match(html,/Simulated payments · No real money is moved\./);
+  assert.doesNotMatch(html,/Simulated payments · No real money is moved\./);
   assert.match(html,/<dialog id="footer-info"/);
   assert.match(html,/showFooterInfo\('about'\)/);
   assert.match(html,/showFooterInfo\('how'\)/);

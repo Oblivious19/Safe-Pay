@@ -1,6 +1,6 @@
 <!-- ko if: usersPage -->
 <section class="admin-page" aria-labelledby="users-title" data-bind="with: usersPage">
-<header class="admin-topbar"><a class="admin-brand safepay-brand" href="/admin/dashboard" aria-label="SafePay administration"><img class="brand-shield" src="css/images/safepay-brand-shield.png" width="48" height="48" alt=""><b class="brand-wordmark">SafePay<span class="brand-dot" aria-hidden="true">.</span><small>Administration</small></b></a><div class="admin-topbar-tools"><span class="admin-tag">Simulated Environment</span><button class="admin-button admin-button-quiet" type="button" data-bind="click: $parent.logout, disable: $parent.signingOut, text: $parent.signingOut() ? 'Signing out…' : 'Sign out'"></button></div></header>
+<header class="admin-topbar"><a class="admin-brand safepay-brand" href="/admin/dashboard" aria-label="SafePay administration"><img class="brand-shield" src="css/images/safepay-brand-shield.png" width="48" height="48" alt=""><b class="brand-wordmark">SafePay<span class="brand-dot" aria-hidden="true">.</span><small>Administration</small></b></a><div class="admin-topbar-tools"><button class="admin-button admin-button-quiet" type="button" data-bind="click: $parent.logout, disable: $parent.signingOut, text: $parent.signingOut() ? 'Signing out…' : 'Sign out'"></button></div></header>
 <nav class="admin-nav" aria-label="Administration">
   <a href="/admin/dashboard">Dashboard</a>
   <a href="/admin/transactions">Transactions</a>
@@ -32,7 +32,7 @@
 <!-- /ko -->
 <!-- ko if: holdsPage -->
 <section class="admin-page" data-bind="with: holdsPage" aria-labelledby="holds-title">
-<header class="admin-topbar"><a class="admin-brand safepay-brand" href="/admin/dashboard" aria-label="SafePay administration"><img class="brand-shield" src="css/images/safepay-brand-shield.png" width="48" height="48" alt=""><b class="brand-wordmark">SafePay<span class="brand-dot" aria-hidden="true">.</span><small>Administration</small></b></a><div class="admin-topbar-tools"><span class="admin-tag">Simulated Environment</span><button class="admin-button admin-button-quiet" type="button" data-bind="click: $parent.logout, disable: $parent.signingOut, text: $parent.signingOut() ? 'Signing out…' : 'Sign out'"></button></div></header>
+<header class="admin-topbar"><a class="admin-brand safepay-brand" href="/admin/dashboard" aria-label="SafePay administration"><img class="brand-shield" src="css/images/safepay-brand-shield.png" width="48" height="48" alt=""><b class="brand-wordmark">SafePay<span class="brand-dot" aria-hidden="true">.</span><small>Administration</small></b></a><div class="admin-topbar-tools"><button class="admin-button admin-button-quiet" type="button" data-bind="click: $parent.logout, disable: $parent.signingOut, text: $parent.signingOut() ? 'Signing out…' : 'Sign out'"></button></div></header>
 <nav class="admin-nav" aria-label="Administration">
   <a href="/admin/dashboard">Dashboard</a>
   <a href="/admin/transactions">Transactions</a>
@@ -59,7 +59,7 @@
 </section><!-- /ko -->
 <!-- ko if: transactionsOnly -->
 <section class="admin-page" aria-labelledby="transactions-title">
-<header class="admin-topbar"><a class="admin-brand safepay-brand" href="/admin/dashboard" aria-label="SafePay administration"><img class="brand-shield" src="css/images/safepay-brand-shield.png" width="48" height="48" alt=""><b class="brand-wordmark">SafePay<span class="brand-dot" aria-hidden="true">.</span><small>Administration</small></b></a><div class="admin-topbar-tools"><span class="admin-tag">Simulated Environment</span><button class="admin-button admin-button-quiet" type="button" data-bind="click: logout, disable: signingOut, text: signingOut() ? 'Signing out…' : 'Sign out'"></button></div></header>
+<header class="admin-topbar"><a class="admin-brand safepay-brand" href="/admin/dashboard" aria-label="SafePay administration"><img class="brand-shield" src="css/images/safepay-brand-shield.png" width="48" height="48" alt=""><b class="brand-wordmark">SafePay<span class="brand-dot" aria-hidden="true">.</span><small>Administration</small></b></a><div class="admin-topbar-tools"><button class="admin-button admin-button-quiet" type="button" data-bind="click: logout, disable: signingOut, text: signingOut() ? 'Signing out…' : 'Sign out'"></button></div></header>
 <nav class="admin-nav" aria-label="Administration">
   <a href="/admin/dashboard">Dashboard</a>
   <a href="/admin/transactions" aria-current="page">Transactions</a>
@@ -98,7 +98,7 @@
 <!-- /ko -->
 <!-- ko if: !usersPage() && !holdsPage() && !transactionsOnly() -->
 <section class="admin-page" aria-labelledby="admin-title">
-<header class="admin-topbar"><a class="admin-brand safepay-brand" href="/admin/dashboard" aria-label="SafePay administration"><img class="brand-shield" src="css/images/safepay-brand-shield.png" width="48" height="48" alt=""><b class="brand-wordmark">SafePay<span class="brand-dot" aria-hidden="true">.</span><small>Administration</small></b></a><div class="admin-topbar-tools"><span class="admin-tag">Simulated Environment · Oversight</span><button class="admin-button admin-button-quiet" type="button" data-bind="click: logout, disable: signingOut, text: signingOut() ? 'Signing out…' : 'Sign out'"></button></div></header>
+<header class="admin-topbar"><a class="admin-brand safepay-brand" href="/admin/dashboard" aria-label="SafePay administration"><img class="brand-shield" src="css/images/safepay-brand-shield.png" width="48" height="48" alt=""><b class="brand-wordmark">SafePay<span class="brand-dot" aria-hidden="true">.</span><small>Administration</small></b></a><div class="admin-topbar-tools"><button class="admin-button admin-button-quiet" type="button" data-bind="click: logout, disable: signingOut, text: signingOut() ? 'Signing out…' : 'Sign out'"></button></div></header>
 <nav class="admin-nav" aria-label="Administration">
   <a href="/admin/dashboard" aria-current="page">Dashboard</a>
   <a href="/admin/transactions">Transactions</a>
@@ -188,13 +188,13 @@
     <!-- /ko -->
   </article>
 </section>
-<section class="admin-panel admin-table-panel" aria-labelledby="admin-users-snap-title">
-  <div class="admin-panel-head"><div><h2 id="admin-users-snap-title">Users &amp; accounts</h2><p class="admin-muted">Your user directory. Open a profile to view linked accounts and balances.</p></div><a class="admin-button" href="/admin/users">View users &amp; accounts <span aria-hidden="true">↗</span></a></div>
-  <p role="alert" data-bind="visible:directoryError,text:directoryError,reveal:directoryError"></p>
-  <p class="admin-empty" data-bind="visible: !directoryError() && !people().length">No users found.</p>
-  <!-- ko if: !directoryError() && people().length -->
-  <div class="admin-table-scroll" tabindex="0" role="region" aria-label="User directory overview. Scroll for more rows and columns."><table class="admin-table admin-users-table"><caption class="send-off-screen">Registered users, roles and account status</caption><thead><tr><th scope="col">Name</th><th scope="col">Email</th><th scope="col">Role</th><th scope="col">Status</th></tr></thead><tbody data-bind="foreach:people"><tr><th scope="row" data-bind="text:name"></th><td class="admin-cell-email" data-bind="text:email"></td><td><span class="admin-table-tag" data-bind="text:role"></span></td><td><span class="admin-table-tag" data-bind="text:status"></span></td></tr></tbody></table></div>
-  <!-- /ko -->
+<section class="admin-panel admin-table-panel" aria-labelledby="admin-daily-title"><div class="admin-panel-head"><div><h2 id="admin-daily-title">Daily transaction summary</h2>
+<p class="admin-muted" data-bind="text: date(loadedFrom()) + ' – ' + date(loadedTo()) + ' · All amounts in INR'"></p></div><span class="admin-count" data-bind="text: daily().length + ' reported days'"></span></div>
+<!-- ko if: daily().length -->
+<div class="admin-table-scroll" tabindex="0" role="region" aria-label="Daily transactions. Scroll horizontally for more columns.">
+<table class="admin-table admin-daily-table"><caption class="send-off-screen">Daily counts and amounts for the selected dates, most recent first</caption><thead><tr><th scope="col">Date</th><th scope="col">Payments</th><th scope="col">Settled</th><th scope="col">Protected</th><th scope="col">Hard holds</th><th scope="col">Cancelled</th><th scope="col">Rejected</th><th scope="col">Total amount</th><th scope="col">Settled amount</th></tr></thead><tbody data-bind="foreach: daily"><tr><th scope="row" data-bind="text: $parent.date(date)"></th><td class="admin-cell-total" data-bind="text: $parent.count(summary.totalTransactions)"></td><td data-bind="text: $parent.count(summary.settledTransactions)"></td><td data-bind="text: $parent.count(summary.protectedTransactions)"></td><td data-bind="text: $parent.count(summary.hardHolds)"></td><td data-bind="text: $parent.count(summary.cancelledTransactions)"></td><td data-bind="text: $parent.count(summary.rejectedTransactions)"></td><td data-bind="text: $parent.money(summary.totalAmount)"></td><td data-bind="text: $parent.money(summary.settledAmount)"></td></tr></tbody></table></div>
+<!-- /ko -->
+<p class="admin-empty" role="status" data-bind="visible: !daily().length">No transactions were recorded in this date range.</p>
 </section>
 
 <section class="admin-panel admin-table-panel" aria-labelledby="admin-holds-snap-title">
@@ -222,14 +222,7 @@
   </div>
   <!-- /ko -->
 </section>
-<section class="admin-panel admin-table-panel" aria-labelledby="admin-daily-title"><div class="admin-panel-head"><div><h2 id="admin-daily-title">Daily transaction summary</h2>
-<p class="admin-muted" data-bind="text: date(loadedFrom()) + ' – ' + date(loadedTo()) + ' · All amounts in INR'"></p></div><span class="admin-count" data-bind="text: daily().length + ' reported days'"></span></div>
-<!-- ko if: daily().length -->
-<div class="admin-table-scroll" tabindex="0" role="region" aria-label="Daily transactions. Scroll horizontally for more columns.">
-<table class="admin-table admin-daily-table"><caption class="send-off-screen">Daily counts and amounts for the selected dates, most recent first</caption><thead><tr><th scope="col">Date</th><th scope="col">Payments</th><th scope="col">Settled</th><th scope="col">Protected</th><th scope="col">Hard holds</th><th scope="col">Cancelled</th><th scope="col">Rejected</th><th scope="col">Total amount</th><th scope="col">Settled amount</th></tr></thead><tbody data-bind="foreach: daily"><tr><th scope="row" data-bind="text: $parent.date(date)"></th><td class="admin-cell-total" data-bind="text: $parent.count(summary.totalTransactions)"></td><td data-bind="text: $parent.count(summary.settledTransactions)"></td><td data-bind="text: $parent.count(summary.protectedTransactions)"></td><td data-bind="text: $parent.count(summary.hardHolds)"></td><td data-bind="text: $parent.count(summary.cancelledTransactions)"></td><td data-bind="text: $parent.count(summary.rejectedTransactions)"></td><td data-bind="text: $parent.money(summary.totalAmount)"></td><td data-bind="text: $parent.money(summary.settledAmount)"></td></tr></tbody></table></div>
-<!-- /ko -->
-<p class="admin-empty" role="status" data-bind="visible: !daily().length">No transactions were recorded in this date range.</p>
-</section>
+
 <!-- /ko -->
 <!-- /ko -->
 </section>

@@ -33,12 +33,10 @@
         <!-- ko if: account -->
         <section class="balance-panel" aria-label="Account summary">
           <span class="dash-orb" aria-hidden="true"></span><span class="dash-orb dash-orb-slow" aria-hidden="true"></span>
-          <div class="balance-heading"><span>Current Balance</span><span class="simulation-label">Simulated Environment</span></div>
+          <div class="balance-heading"><span>Current Balance</span><span class="balance-held" role="status" aria-live="polite" aria-atomic="true" data-bind="attr: {title: heldPaymentCount() === null ? 'Held-payment count is temporarily unavailable.' : 'Protected and hard-held outgoing payments for this account. Updates every 3 seconds.'}"><span>On-Held Payments</span><strong data-bind="text: heldPaymentCount() === null ? '—' : heldPaymentCount(), attr: {'aria-label': heldPaymentCount() === null ? 'Count unavailable' : null}"></strong></span></div>
           <strong class="balance-amount" data-bind="text: funds() ? formatMoney(funds().availableToTransfer) : '—'"></strong>
           <div class="balance-account"><span data-bind="text: accountLabel(account().accountType)"></span><span class="account-mask" data-bind="text: maskAccount(account().accountNumber)"></span></div>
           <div class="balance-foot"><span class="account-state" data-bind="text: account().status === 'ACTIVE' ? '● Active' : account().status === 'BLOCKED' ? 'Account blocked' : 'Account closed'"></span><span>INR · Indian Rupee</span></div>
-          <!-- ko with: funds --><p class="balance-note">Account balance: <span data-bind="text: $parent.formatMoney(balance)"></span> · Reserved for pending payments: <span data-bind="text: $parent.formatMoney(reservedBalance)"></span></p><!-- /ko -->
-          <p class="balance-note" data-bind="visible: funds">Current Balance is the amount you can send after pending payments are reserved.</p>
           <p class="balance-note" role="status" data-bind="visible: fundsLoading() && !funds()">Checking current balance…</p>
           <!-- ko if: fundsError --><p class="balance-note" role="alert" data-bind="text: fundsError"></p><button type="button" class="dashboard-secondary" data-bind="click: refreshFunds, disable: fundsLoading">Try again</button><!-- /ko -->
           <!-- ko if: account().status !== 'ACTIVE' --><p class="account-notice">Payments are unavailable for this account. Please contact your SafePay team.</p><!-- /ko -->

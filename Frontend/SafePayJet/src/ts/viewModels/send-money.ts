@@ -63,7 +63,7 @@ class SendMoneyViewModel {
   pinOpen = ko.observable(false);
   sPin = ko.observable("");
   pinError = ko.observable("");
-  pinAmount = ko.pureComputed(() => this.pinOpen() ? this.money(Number(this.attempt?.body.amount || 0)) : "");
+  pinAmount = ko.pureComputed(() => this.pinOpen() || this.attemptLocked() ? this.money(Number(this.attempt?.body.amount || 0)) : this.amountPreview());
   result = ko.observable<PaymentTransaction | null>(null);
   attemptLocked = ko.observable(false);
   refreshing = ko.observable(false);
@@ -72,7 +72,7 @@ class SendMoneyViewModel {
   trainSteps = [
     { id: "beneficiary", label: "Recipient" },
     { id: "details", label: "Amount" },
-    { id: "review", label: "Review" },
+    { id: "review", label: "S PIN" },
     { id: "result", label: "Status" }
   ];
   paymentMessages = ko.pureComputed(() => this.paymentError()
@@ -163,6 +163,7 @@ class SendMoneyViewModel {
     if (this.attemptLocked()) {
       this.step("review");
       if (params.step !== "review") void this.context.router.go({ path: "send-money", params: { step: "review" } });
+      else if (!this.busy()) void this.confirm();
       return;
     }
     let target = "beneficiary";
@@ -173,6 +174,8 @@ class SendMoneyViewModel {
     this.step(target);
     if (params.step !== this.step()) void this.context.router.go({ path: "send-money", params: { step: this.step() } });
     this.notice("");
+    // Keep existing review URLs compatible, but show S PIN without a review card.
+    if (target === "review" && !this.busy()) void this.confirm();
   }
   load = async (): Promise<void> => {
     if (this.loading() || this.attemptLocked() || this.result() || this.pinOpen()) return;
@@ -252,7 +255,11 @@ class SendMoneyViewModel {
     finally { if (this.alive) this.busy(false); }
   };
   back = async (): Promise<void> => {
-    if (this.pinOpen() && !this.busy()) { this.closePin(); return; }
+    if (this.pinOpen() && !this.busy() && !this.attemptLocked()) {
+      this.closePin();
+      await this.context.router.go({ path: "send-money", params: { step: "details" } });
+      return;
+    }
     if (this.canLeave()) { await this.leave(); return; }
     if (this.busy() || this.attemptLocked()) return;
     await this.context.router.go(this.step() === "review"
@@ -321,6 +328,8 @@ class SendMoneyViewModel {
       }
       await this.context.router.go({ path: "send-money", params: { step: "review" } });
     } finally { if (this.alive) this.busy(false); }
+    // Opening S PIN does not submit; only its explicit Continue & Pay does.
+    await this.confirm();
   };
   private showPaymentError(error: unknown): void {
     if (error instanceof ApiError && error.status === 401) {

@@ -29,14 +29,17 @@ test('external recipient needs explicit confirmation; form-submit object is not 
  const f=fixture({create:async input=>{if(input.externalConfirmed!==true)throw new ApiError(409,'This recipient is not verified as a SafePay user. Confirm to add them as an external beneficiary.');return row;}});
  fill(f.model);await f.model.save({tagName:'FORM'});assert.equal(f.calls[0][1].externalConfirmed,undefined);
  assert.equal(f.model.confirmExternal(),true);assert.equal(f.model.error(),'');
+ await f.model.save(true);assert.equal(f.calls.length,1);
+ await f.model.save({tagName:"FORM"});assert.equal(f.calls.length,1);
+ f.model.externalReviewed(true);
  await f.model.save(true);assert.equal(f.calls[1][1].externalConfirmed,true);assert.equal(f.model.confirmExternal(),false);
  assert.equal(f.model.success(),'Beneficiary added successfully.');
 });
 test('editing or declining external recipient clears consent',async()=>{
  const f=fixture({create:async()=>{throw new ApiError(409,'This recipient is not verified as a SafePay user.');}});
- fill(f.model);await f.model.save();f.model.bankAccountNumber('777777');assert.equal(f.model.confirmExternal(),false);
+ fill(f.model);await f.model.save();f.model.externalReviewed(true);f.model.bankAccountNumber('777777');assert.equal(f.model.confirmExternal(),false);assert.equal(f.model.externalReviewed(),false);
  await f.model.save(true);assert.equal(f.calls[1][1].externalConfirmed,undefined);
- f.model.clearExternal();await f.model.save(true);assert.equal(f.calls[2][1].externalConfirmed,undefined);
+ f.model.externalReviewed(true);f.model.dismissExternal();assert.equal(f.model.externalReviewed(),false);await f.model.save(true);assert.equal(f.calls[2][1].externalConfirmed,undefined);
 });
 test('own-account and wrong-name errors stay visible without external bypass',async()=>{
  const f=fixture({create:async()=>{throw new ApiError(409,'You cannot add your own SafePay account as a beneficiary');}});
@@ -110,4 +113,22 @@ test('selecting a valid bank clears only its validation error',async()=>{
  const f=fixture();await f.model.save();assert.ok(f.model.fieldErrors().bank);
  f.model.selectedBank(banks.Bank.HDFC);f.model.clearBankError();
  assert.equal(f.model.fieldErrors().bank,undefined);assert.ok(f.model.fieldErrors().ifsc);
+});
+
+
+test('external confirmation failure closes the popup and preserves entered details',async()=>{
+ const f=fixture({create:async input=>{throw new ApiError(input.externalConfirmed ? 500 : 409,input.externalConfirmed ? 'Unavailable' : 'This recipient is not verified as a SafePay user.');}});
+ fill(f.model);await f.model.save();f.model.externalReviewed(true);await f.model.save(true);
+ assert.equal(f.model.confirmExternal(),false);assert.equal(f.model.externalReviewed(),false);
+ assert.equal(f.model.beneficiaryName(),'Recipient');assert.ok(f.model.error());
+});
+
+test('external modal cannot dismiss during save and double confirmation submits once',async()=>{
+ let complete;
+ const f=fixture({create:async input=>{if(!input.externalConfirmed)throw new ApiError(409,'This recipient is not verified as a SafePay user.');return new Promise(resolve=>{complete=resolve;});}});
+ fill(f.model);await f.model.save();f.model.externalReviewed(true);const saving=f.model.save(true);
+ f.model.dismissExternal();assert.equal(f.model.confirmExternal(),true);
+ let prevented=false;f.model.beforeExternalClose({preventDefault(){prevented=true;}});assert.equal(prevented,true);
+ await f.model.save(true);assert.equal(f.calls.filter(c=>c[0]==='create').length,2);
+ complete(row);await saving;assert.equal(f.model.confirmExternal(),false);assert.equal(f.model.externalReviewed(),false);
 });

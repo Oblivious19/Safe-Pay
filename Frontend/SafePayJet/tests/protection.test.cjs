@@ -75,7 +75,7 @@ test('payment cards have no manual Refresh status action', () => {
 
 test('medium and high risk share the same gauge with their actual remaining time',()=>{
   const now=100000;
-  for(const [riskTier,protectionSeconds,remaining] of [['MEDIUM',10,5],['HIGH',60,30]]) {
+  for(const [riskTier,protectionSeconds,remaining] of [['MEDIUM',10,5],['HIGH',30,15]]) {
     const tx={state:'PROTECTED',riskTier,protectionSeconds,protectionDeadline:now+remaining*1000};
     const gauge=p.paymentGauge(tx,now);
     assert.equal(gauge.mode,'timed');
@@ -88,7 +88,7 @@ test('very high risk waits for administrator review, never an invented countdown
   const tx={state:'HARD_HOLD',riskTier:'VERY_HIGH',protectionSeconds:0};
   const gauge=p.paymentGauge(tx,Date.now());
   assert.equal(gauge.mode,'waiting');assert.equal(gauge.label,'Awaiting review');
-  assert.match(gauge.caption,/no countdown or automatic release/);
+  assert.match(gauge.caption,/No timed release/);
   assert.equal(p.paymentGauge(tx,Date.now()+86400000).label,'Awaiting review');
 });
 

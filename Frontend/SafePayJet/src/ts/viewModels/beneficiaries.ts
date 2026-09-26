@@ -1,4 +1,5 @@
 import * as ko from "knockout";
+import "ojs/ojdialog";
 import { beneficiaryService, Beneficiary, BeneficiaryInput, validateBeneficiary } from "../services/beneficiaryService";
 import { accountService } from "../services/accountService";
 import { Account } from "../services/types";
@@ -30,9 +31,12 @@ class BeneficiariesViewModel {
   success = ko.observable("");
   confirmDeactivate = ko.observable(false);
   confirmExternal = ko.observable(false);
+  externalReviewed = ko.observable(false);
+  dismissExternal = (): void => { if (!this.saving()) this.clearExternal(); };
+  beforeExternalClose = (event: Event): void => { if (this.saving() && this.confirmExternal()) event.preventDefault(); };
   private externalDraft = "";
   private draft = (): string => JSON.stringify([this.selectedAccountId(), this.beneficiaryName(), this.bankAccountNumber(), this.ifsc(), this.selectedBank()]);
-  clearExternal = (): void => { this.confirmExternal(false); this.externalDraft = ""; };
+  clearExternal = (): void => { this.confirmExternal(false); this.externalReviewed(false); this.externalDraft = ""; };
   private draftSubscriptions = [
     this.selectedAccountId.subscribe(() => this.clearExternal()),
     this.beneficiaryName.subscribe(() => this.clearExternal()),
@@ -91,10 +95,11 @@ class BeneficiariesViewModel {
   };
   save = async (externalConfirmed: unknown = false): Promise<void> => {
     if (this.saving() || this.loading()) return;
+    if (this.confirmExternal() && (externalConfirmed !== true || !this.externalReviewed())) return;
     if(!this.selectedAccountId()){this.error("Select an account first.");return;}
     const draft = this.draft();
     const input: BeneficiaryInput = { accountId: this.selectedAccountId()!, beneficiaryName: this.beneficiaryName(), bankAccountNumber: this.bankAccountNumber(), ifsc: this.ifsc() };
-    if (externalConfirmed === true && this.confirmExternal() && this.externalDraft === draft) input.externalConfirmed = true;
+    if (externalConfirmed === true && this.confirmExternal() && this.externalReviewed() && this.externalDraft === draft) input.externalConfirmed = true;
     const errors: Partial<Record<keyof BeneficiaryInput | "bank", string>> = validateBeneficiary(input);
     if (!this.bankOptions.some(bank => bank.value === this.selectedBank())) errors.bank = "Choose a bank.";
     this.fieldErrors(errors); this.error(""); this.success("");
@@ -113,8 +118,8 @@ class BeneficiariesViewModel {
     } catch (error) {
       if (!this.alive) return;
       if (error instanceof ApiError && error.status === 409 && error.message.includes("not verified as a SafePay user") && draft === this.draft()) {
-        this.externalDraft = draft; this.confirmExternal(true);
-      } else this.handle(error);
+        this.externalDraft = draft; this.externalReviewed(false); this.confirmExternal(true);
+      } else { this.clearExternal(); this.handle(error); }
     }
     finally { if (this.alive) this.saving(false); }
   };

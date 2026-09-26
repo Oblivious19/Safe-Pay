@@ -62,7 +62,7 @@ test('dashboard charts render outcome bars, daily columns and a hold snapshot',a
   const html=fs.readFileSync(path.join(__dirname,'../src/ts/views/admin.html'),'utf8');
   const css=fs.readFileSync(path.join(__dirname,'../src/css/admin-dashboard.css'),'utf8');
   assert.match(html,/admin-charts/);assert.match(html,/outcomeBars/);assert.match(html,/dailyBars/);assert.match(html,/pendingHolds/);
-  assert.doesNotMatch(html,/admin-ledger-title/);assert.match(html,/highRiskRate/);assert.match(html,/foreach:\s*people/);
+  assert.doesNotMatch(html,/admin-ledger-title/);assert.match(html,/highRiskRate/);assert.doesNotMatch(html,/admin-users-snap-title/);
   assert.match(css,/admin-bar-track/);assert.match(css,/admin-columns/);
   const held={transactionId:9,transactionRef:'DEMO-9',customerName:'Anika Sharma',beneficiaryName:'Rohan Gupta',amount:105000,createdAt:'2026-09-16T10:00:00.000Z',verification:'OTP_SENT',decision:'PENDING'};
   const row={customerName:'Anika Sharma',customerEmail:'anika.demo@safepay.test',transactionId:9,transactionRef:'DEMO-9',amount:105000,purpose:'Property token',beneficiaryName:'Rohan Gupta',beneficiaryBankAccountNumber:'501234',state:'HARD_HOLD',riskTier:'VERY_HIGH',riskReason:'Amount above INR 1,00,000 (+6); Total score 6: VERY_HIGH',createdAt:'2026-09-16T10:00:00.000Z',settledAt:'',cancelledAt:'',protectionExpiresAt:''};
@@ -90,15 +90,17 @@ test('dashboard charts render outcome bars, daily columns and a hold snapshot',a
 test('all admin tables have captions, column scopes and keyboard-scrollable regions',()=>{
   const html=fs.readFileSync(path.join(__dirname,'../src/ts/views/admin.html'),'utf8');
   const tables=html.match(/<table\b[\s\S]*?<\/table>/g);
-  assert.equal(tables.length,6);
+  assert.equal(tables.length,5);
   for(const table of tables) {
     assert.match(table,/<caption/);
     assert.match(table,/<th scope="col"/);
     assert.match(table,/<th scope="row"/);
   }
-  assert.equal((html.match(/class="admin-table-scroll" tabindex="0" role="region"/g)||[]).length,6);
+  assert.equal((html.match(/class="admin-table-scroll" tabindex="0" role="region"/g)||[]).length,5);
   assert.match(html,/admin-daily-table/);
-  assert.match(html,/admin-panel-head[\s\S]*View users &amp; accounts/);
+  assert.match(html,/id="users-title">Users &amp; accounts/);
+  assert.ok(html.indexOf('id="admin-daily-title"') < html.indexOf('id="admin-holds-snap-title"'));
+  assert.equal((html.match(/id="admin-daily-title"/g)||[]).length,1);
 });
 
 test('admin navigation keeps the same labels and order with exactly one current page',()=>{

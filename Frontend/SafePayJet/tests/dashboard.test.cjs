@@ -116,3 +116,48 @@ test('dashboard signs and colours settled credits and debits without implying pe
   assert.match(html,/signedAmount\(\$data\)/);
   assert.match(html,/directionLabel\(\$data\)/);
 });
+
+
+test('held badge counts only protected and hard-held outgoing payments for the selected account',async()=>{
+ const f=fixture(undefined,()=>Promise.resolve([
+   {...payment(1,'PROTECTED'),fromAccountId:1},
+   {...payment(2,'HARD_HOLD'),fromAccountId:1},
+   {...payment(3,'SETTLED'),fromAccountId:1},
+   {...payment(4,'CANCELLED'),fromAccountId:1},
+   {...payment(5,'PROTECTED'),fromAccountId:2},
+   {...payment(6,'HARD_HOLD'),fromAccountId:2,toAccountId:1}
+ ]));
+ await f.model.load();assert.equal(f.model.heldPaymentCount(),2);
+ f.model.selectedAccountId(2);assert.equal(f.model.heldPaymentCount(),2);
+ f.model.selectedAccountId(3);assert.equal(f.model.heldPaymentCount(),0);
+ f.model.selectedAccountId(1);
+ f.model.transactions(f.model.transactions().map(t=>({...t,state:'SETTLED'})));
+ assert.equal(f.model.heldPaymentCount(),0);
+ f.model.transactionError('Live updates unavailable');assert.equal(f.model.heldPaymentCount(),null);
+ f.model.transactionError('');assert.equal(f.model.heldPaymentCount(),0);
+ f.model.loading(true);assert.equal(f.model.heldPaymentCount(),null);
+ f.model.disconnected();
+});
+
+test('held badge does not invent zero when transaction loading fails',async()=>{
+ const f=fixture(undefined,()=>Promise.reject(new ApiError(500)));
+ await f.model.load();assert.equal(f.model.heldPaymentCount(),null);
+ f.model.disconnected();
+});
+
+
+for (const [riskTier, protectionSeconds] of [['MEDIUM', 10], ['HIGH', 30]]) {
+  test(`${riskTier} dashboard bar tracks its own countdown and waits for server state`, () => {
+    const { model } = fixture();
+    const start = 100000;
+    const tx = { ...payment(1, 'PROTECTED', riskTier), protectionSeconds, protectionDeadline: start + protectionSeconds * 1000 };
+    for (const fraction of [0, .5, 1]) {
+      model.now(start + protectionSeconds * fraction * 1000);
+      assert.equal(model.fluxPercent(tx), `${fraction * 100}%`);
+      if (fraction < 1) assert.match(model.countdownText(tx), new RegExp(protection.formatCountdown(protectionSeconds * (1 - fraction))));
+    }
+    assert.equal(tx.state, 'PROTECTED');
+    assert.match(model.countdownText(tx), /Waiting for settlement/);
+    assert.equal(model.fluxPercent({ ...tx, state: 'HARD_HOLD' }), '0%');
+  });
+}

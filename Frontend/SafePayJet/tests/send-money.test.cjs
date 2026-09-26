@@ -29,13 +29,13 @@ test('category requires a valid choice above one lakh and Others requires a note
   f.model.category('OTHERS');f.model.purpose('  ');await f.model.continueDetails();assert.ok(f.model.purposeError());
   f.model.purpose('x'.repeat(141));await f.model.continueDetails();assert.ok(f.model.purposeError());
   f.model.purpose('x'.repeat(140));await f.model.continueDetails();assert.equal(f.model.step(),'review');
-  f.model.amount('100000.00');assert.equal(f.model.category(),undefined);assert.equal(f.model.highValue(),false);
+  await f.model.back();f.model.amount('100000.00');assert.equal(f.model.category(),undefined);assert.equal(f.model.highValue(),false);
   f.model.disconnected();
 });
 test('category and trimmed Others purpose survive the PIN step and an ambiguous retry unchanged',async()=>{
   const posts=[];let count=0;
   const f=await review({create:async(body,key)=>{posts.push({body:{...body},key});if(!count++)throw new ApiError(0);return {...result,amount:100001,state:'HARD_HOLD',category:'OTHERS'};}});
-  f.model.amount('100001');f.model.category('OTHERS');f.model.purpose('  Tuition  ');await f.model.confirm();
+  await f.model.back();f.model.amount('100001');f.model.category('OTHERS');f.model.purpose('  Tuition  ');await f.model.continueDetails();
   assert.equal(f.model.reviewCategory(),'OTHERS');assert.equal(posts.length,0);
   f.model.sPin('123456');await f.model.submitPin();assert.equal(posts.length,1);
   f.model.category('LOAN');f.model.purpose('Changed draft');await f.model.confirm();
@@ -128,11 +128,11 @@ test('purpose limit and exact Indian grouping', async () => {
   f.model.purpose('x'.repeat(256)); await f.model.continueDetails(); assert.ok(f.model.purposeError());
   f.model.amount('9999999999999999.99'); assert.equal(f.model.amountPreview(), '₹9,99,99,99,99,99,99,999.99');
 });
-test('valid details navigates to review, disables duplicate Continue and never posts', async () => {
+test('valid details opens S PIN directly, disables duplicate Continue and never posts', async () => {
   const f = fixture(); await f.model.load(); f.model.choose(recipient); f.model.amount('0.01');
   const pending = f.model.continueDetails(); assert.equal(f.model.busy(), true);
   await f.model.continueDetails(); await pending; assert.equal(f.model.busy(), false);
-  assert.equal(f.model.step(), 'review'); assert.equal(f.routes.length, 1);
+  assert.equal(f.model.step(), 'review'); assert.equal(f.model.pinOpen(), true); assert.equal(f.routes.length, 1);
   assert.equal(f.routes[0].params.step, 'review'); assert.equal(f.calls.length, 2);
   assert.doesNotMatch(f.source, /initiateTransaction|localStorage|sessionStorage|fetch\(/);
 });
@@ -163,10 +163,11 @@ test('review route cannot bypass invalid draft validation', async () => {
   const f=fixture(); await f.model.load(); f.model.choose(recipient); f.model.amount('-1');
   f.model.parametersChanged({step:'review'}); assert.equal(f.model.step(),'details');
 });
-test('review payment action is guarded by busy state', () => {
+test('PIN retry action is guarded and the intermediate review card is absent', () => {
   const html=fs.readFileSync(path.join(__dirname,'../src/ts/views/send-money.html'),'utf8');
   assert.match(html,/click: confirm, disable: busy/);
-  assert.match(html,/Go Back/); assert.match(html,/text: amountPreview/);
+  assert.match(html,/Back to details/); assert.match(html,/text: amountPreview/);
+  assert.doesNotMatch(html,/Confirm & Pay|Back to review|Next, review your payment/);
 });
 const result = {transactionId:123, transactionRef:'TXN-123',amount:50,state:'SETTLED',beneficiaryName:'Recipient',protectionExpiresAt:'',protectionSeconds:0};
 test('a verified hold stops asking for a call', async () => {
@@ -212,7 +213,7 @@ test('reserved funds reduce the spendable limit; exact balance allowed and corre
 test('fresh reservations block progression both before Review and before S PIN',async()=>{
   for(const phase of ['review','pin']) {
     const f=await review({create:async()=>{assert.fail('Must not submit');}});
-    if(phase==='review')await f.model.back();
+    if(phase==='review')await f.model.back();else f.model.closePin();
     f.setFundsCall(async id=>({accountId:id,balance:450000,reservedBalance:449999,minimumBalance:0,availableToTransfer:1}));
     if(phase==='review') {await f.model.continueDetails();assert.equal(f.model.step(),'details');}
     else {await f.model.confirm();assert.match(f.model.paymentError(),/Insufficient balance/);}
@@ -223,7 +224,7 @@ test('fresh reservations block progression both before Review and before S PIN',
 test('balance request failure fails closed before Review or PIN and can be retried',async()=>{
   for(const phase of ['review','pin']) {
     const f=await review({create:async()=>{assert.fail('Must not submit');}});
-    if(phase==='review')await f.model.back();
+    if(phase==='review')await f.model.back();else f.model.closePin();
     f.setFundsCall(async()=>{throw new Error('offline');});
     if(phase==='review')await f.model.continueDetails();else await f.model.confirm();
     assert.equal(f.model.pinOpen(),false);assert.equal(f.model.funds(),null);assert.equal(f.model.amountReady(),false);assert.ok(f.model.fundsError());
@@ -258,8 +259,8 @@ test('network retry uses frozen payload and same key',async()=>{
  const posts=[];const f=await review({create:async(body,key)=>{posts.push({body:JSON.stringify(body),key});if(posts.length===1)throw new ApiError(0);return result}});
  await pay(f.model);assert.equal(f.model.attemptLocked(),true);f.model.amount('900');await pay(f.model);assert.deepEqual(posts[0],posts[1]);
 });
-test('final local invalid data never posts and stays on review',async()=>{
- let posts=0;const f=await review({create:async()=>{posts++;return result}});f.model.amount('0');await pay(f.model);assert.equal(posts,0);assert.equal(f.model.step(),'review');assert.ok(f.model.paymentError());
+test('final local invalid data cannot reopen PIN or post',async()=>{
+ let posts=0;const f=await review({create:async()=>{posts++;return result}});f.model.closePin();f.model.amount('0');await pay(f.model);assert.equal(posts,0);assert.equal(f.model.step(),'review');assert.ok(f.model.paymentError());
 });
 test('cancel rereads server state before calling real service with a key',async()=>{
  const protectedResult={...result,state:'PROTECTED',canCancel:true,protectionDeadline:Date.now()+30000,protectionExpiresAt:new Date(Date.now()+30000).toISOString(),protectionSeconds:30};const calls=[];
@@ -312,7 +313,7 @@ test('development server supports review route', async () => {
   const config=await require('../scripts/hooks/before_serve')({}); const req={method:'GET',url:'/send-money/review'};
   config.preMiddleware[0](req,{},()=>{}); assert.equal(req.url,'/index.html');
 });
-test('choosing a recipient opens the sheet directly and retains payment review', async () => {
+test('choosing a recipient opens details with a direct S PIN action', async () => {
   const f = fixture(); await f.model.load();
   assert.equal(f.model.sheetOpen(), false);
   f.model.pick(recipient); await Promise.resolve();
@@ -321,7 +322,7 @@ test('choosing a recipient opens the sheet directly and retains payment review',
   assert.match(html,/pay-overlay/);
   assert.doesNotMatch(html,/oj-train/);
   assert.match(html,/click: \$parent\.pick/);
-  assert.match(html,/Review payment/);
+  assert.match(html,/Continue to S PIN/);
   assert.match(html,/click: confirm, disable: busy/);
   assert.match(html,/<footer class="pay-action-bar">/);
   assert.match(html,/paymentModal: \{open: sheetOpen, close: back\}/);
@@ -342,9 +343,9 @@ test('confirmation only opens the PIN card, not a payment request', async () => 
  await f.model.confirm();assert.equal(posts,0);assert.equal(f.model.pinOpen(),true);
  assert.equal(f.model.pinAmount(),'₹50.00');assert.equal(f.model.sPin(),'');
  f.model.amount('900');assert.equal(f.model.pinAmount(),'₹50.00');
- f.model.sPin('123');await f.model.back();assert.equal(f.model.step(),'review');
+ f.model.sPin('123');await f.model.back();assert.equal(f.model.step(),'details');
  assert.equal(f.model.pinOpen(),false);assert.equal(f.model.sPin(),'');
- await f.model.confirm();assert.equal(f.model.pinAmount(),'₹900.00');assert.equal(posts,0);
+ await f.model.continueDetails();assert.equal(f.model.pinAmount(),'₹900.00');assert.equal(posts,0);
 });
 for(const value of ['', '12345', '1234567', 'abcdef', '１２３４５６', ' 123456', '000000']) {
  test('invalid simulated PIN never posts: '+JSON.stringify(value),async()=>{
@@ -357,7 +358,7 @@ for(const value of ['', '12345', '1234567', 'abcdef', '１２３４５６', ' 12
 for(const [amount,state,riskTier] of [['50','SETTLED','LOW'],['15000','PROTECTED','MEDIUM'],['75000','PROTECTED','HIGH'],['150000','HARD_HOLD','VERY_HIGH']]) {
  test('correct six-digit input waits for explicit confirmation for '+riskTier,async()=>{
   const posts=[];const f=await review({create:async body=>{posts.push(body);return {...result,amount:Number(amount),state,riskTier};}});
-  f.model.amount(amount);if(riskTier==='VERY_HIGH')f.model.category('MEDICAL');await f.model.confirm();
+  await f.model.back();f.model.amount(amount);if(riskTier==='VERY_HIGH')f.model.category('MEDICAL');await f.model.continueDetails();
   f.model.onPinInput(null,{target:{value:'000000'}});await f.model.submitPin();assert.equal(posts.length,0);assert.ok(f.model.pinError());
   f.model.onPinInput(null,{target:{value:'123456'}});await new Promise(resolve=>setImmediate(resolve));
   assert.equal(posts.length,0);assert.equal(f.model.pinOpen(),true);await f.model.submitPin();
@@ -396,8 +397,8 @@ test('recipient, review and PIN navigation have no artificial timers or full-car
 
 test('PIN cannot submit before confirmation and is cleared on navigation/disconnect',async()=>{
  let posts=0;const f=await review({create:async()=>{posts++;return result;}});
- f.model.sPin('123456');await f.model.submitPin();assert.equal(posts,0);
- await f.model.confirm();f.model.sPin('123');f.model.parametersChanged({step:'details'});
+ await f.model.back();f.model.sPin('123456');await f.model.submitPin();assert.equal(posts,0);
+ await f.model.continueDetails();f.model.sPin('123');f.model.parametersChanged({step:'details'});
  assert.equal(f.model.pinOpen(),false);assert.equal(f.model.sPin(),'');
  await f.model.continueDetails();await f.model.confirm();f.model.sPin('123');f.model.disconnected();
  assert.equal(f.model.pinOpen(),false);assert.equal(f.model.sPin(),'');await f.model.submitPin();assert.equal(posts,0);
@@ -414,4 +415,23 @@ test('PIN card has a single masked field and a small simulation label',()=>{
  assert.match(html, /id="payment-s-pin" type="password" inputmode="numeric"/);
  assert.match(html,/<small[^>]*>Simulated S PIN<\/small>/);
  assert.doesNotMatch(html,/Confirm PIN|123456/);
+});
+
+
+test('returning through an existing review URL opens PIN directly without posting',async()=>{
+ const f=await review({create:async()=>assert.fail('Navigation must not pay')});
+ await f.model.back();assert.equal(f.model.step(),'details');
+ f.model.amount('75');f.model.parametersChanged({step:'review'});
+ await new Promise(resolve=>setImmediate(resolve));
+ assert.equal(f.model.pinOpen(),true);assert.equal(f.model.pinAmount(),'₹75.00');
+ f.model.disconnected();
+});
+
+test('Back from an uncertain PIN retry cannot discard the original payment',async()=>{
+ const posts=[];const f=await review({create:async(body,key)=>{posts.push({body:{...body},key});throw new ApiError(0);}});
+ await pay(f.model);await f.model.confirm();await f.model.back();
+ assert.equal(f.model.step(),'review');assert.equal(f.model.pinOpen(),true);
+ assert.equal(f.model.attemptLocked(),true);
+ f.model.sPin('123456');await f.model.submitPin();
+ assert.deepEqual(posts[1],posts[0]);f.model.disconnected();
 });

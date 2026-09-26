@@ -42,6 +42,10 @@ class DashboardViewModel {
     || t.fromAccountId === this.selectedAccountId() || t.toAccountId === this.selectedAccountId())
     .slice().sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 5));
   pending = ko.pureComputed(() => this.transactions().filter(t => t.state === "PROTECTED" || t.state === "HARD_HOLD"));
+  heldPaymentCount = ko.pureComputed<number | null>(() => {
+    if (this.loading() || this.transactionError() || !this.account() || !this.selectedAccountId()) return null;
+    return this.pending().filter(tx => tx.fromAccountId === this.selectedAccountId()).length;
+  });
   canSend = ko.pureComputed(() => !this.loading() && !this.sessionExpired() && this.account()?.status === "ACTIVE" && !this.transactionError() && !!this.funds() && !this.fundsError());
   formatMoney = (amount: number): string => new Intl.NumberFormat("en-IN", {
     style: "currency", currency: "INR", minimumFractionDigits: 2, maximumFractionDigits: 2
