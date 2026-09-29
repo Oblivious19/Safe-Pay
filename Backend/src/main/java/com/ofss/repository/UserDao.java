@@ -14,6 +14,16 @@ import com.ofss.beans.User;
 import com.ofss.beans.UserStatus;
 
 public interface UserDao extends JpaRepository<User, Long> {
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"role"})
+    @Query("select u from User u where lower(trim(u.email)) = :query order by u.userId")
+    java.util.List<User> searchExactEmail(@Param("query") String query);
+
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"role"})
+    @Query("select u from User u where lower(trim(u.name)) = :query or "
+            + "lower(substring(trim(u.name), 1, locate(' ', concat(trim(u.name), ' ')) - 1)) = :query "
+            + "order by u.userId")
+    java.util.List<User> searchExactName(@Param("query") String query);
+
     @Override
     @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"role"})
     java.util.List<User> findAll(org.springframework.data.domain.Sort sort);

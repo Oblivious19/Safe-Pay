@@ -36,6 +36,32 @@ public class AdminService {
                 .orElseThrow(() -> new ResourceNotFoundExcp("User not found")));
     }
 
+    @Transactional(readOnly = true)
+    public List<UserResponse> searchUsers(String by, String query) {
+        if (by == null || query == null || query.isBlank()) {
+            throw new IllegalArgumentException("Choose a search field and enter a value");
+        }
+        String value = query.strip();
+        if (value.length() > 150 || value.chars().anyMatch(Character::isISOControl)) {
+            throw new IllegalArgumentException("Search text must be at most 150 characters with no control characters");
+        }
+        List<User> matches;
+        switch (by) {
+            case "id" -> {
+                if (!value.matches("[0-9]{1,19}")) throw new IllegalArgumentException("Enter a valid positive user ID");
+                long id;
+                try { id = Long.parseLong(value); }
+                catch (NumberFormatException ex) { throw new IllegalArgumentException("Enter a valid positive user ID"); }
+                if (id <= 0) throw new IllegalArgumentException("Enter a valid positive user ID");
+                matches = users.findById(id).stream().toList();
+            }
+            case "email" -> matches = users.searchExactEmail(value.toLowerCase(java.util.Locale.ROOT));
+            case "name" -> matches = users.searchExactName(value.toLowerCase(java.util.Locale.ROOT));
+            default -> throw new IllegalArgumentException("Search by id, name or email");
+        }
+        return matches.stream().map(UserResponse::from).toList();
+    }
+
     @Transactional
     public UserResponse changeUserStatus(Long id, UserStatus target, Long actorId) {
         if (actorId == null) throw new IllegalArgumentException("Authenticated admin is required");

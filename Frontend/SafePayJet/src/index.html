@@ -66,7 +66,7 @@
           <details class="header-disclosure"><summary aria-label="Profile and menu"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 21v-2a7 7 0 0 1 14 0v2"/></svg><span class="profile-label" data-bind="text: profile() ? profile().name : 'My account'">My account</span><svg class="profile-chevron" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m5 7 5 5 5-5"/></svg></summary><div class="header-popover"><strong data-bind="text: profile() ? profile().name : 'Your SafePay'"></strong><p data-bind="text: profile() ? profile().email : profileLoading() ? 'Loading your profile…' : 'Profile unavailable. Please refresh to try again.'"></p><a href="/profile">Profile →</a><a href="/dashboard">Dashboard →</a><a href="/transactions">Transactions →</a></div></details>
         </div>
       </div>
-      <nav class="customer-nav" aria-label="Customer navigation"><div data-bind="foreach: navItems"><a data-bind="attr: {href: '/' + path, 'aria-current': $parent.selection.path() === path ? 'page' : null}"><span aria-hidden="true" data-bind="attr: {class: iconClass}"></span><span data-bind="text: label"></span></a></div></nav>
+      <nav class="customer-nav" aria-label="Customer navigation"><div data-bind="foreach: navItems"><a href="" data-bind="attr: {href: '/' + path, 'aria-current': $parent.selection.path() === path ? 'page' : null}"><span aria-hidden="true" data-bind="attr: {class: iconClass}"></span><span data-bind="text: label"></span></a></div></nav>
     </header>
     <p role="alert" class="login-message" data-bind="visible: logoutError, text: logoutError"></p>
     <main id="main-content" tabindex="-1" data-bind="attr: {inert: entryLoaderBusy() ? '' : null, 'aria-busy': entryLoaderBusy}"><oj-module config="[[moduleAdapter.koObservableConfig]]"></oj-module></main>
@@ -81,6 +81,7 @@
             <a href="/home">Home</a>
             <button type="button" data-bind="click: function() { showFooterInfo('about'); }" aria-haspopup="dialog">About SafePay</button>
             <button type="button" data-bind="click: function() { showFooterInfo('how'); }" aria-haspopup="dialog">How it works</button>
+            <button type="button" data-bind="click: showTeam" aria-haspopup="dialog" aria-controls="team-info">Meet the Team</button>
           </nav>
           <div class="footer-social"><p>Stay connected</p><div class="footer-social-icons">
             <!-- Add verified profile links here when the SafePay social URLs are available. -->
@@ -91,6 +92,31 @@
         <div class="footer-bottom"><span>© <span data-bind="text: copyrightYear"></span> SafePay</span></div>
       </div>
     </footer>
+    <dialog id="team-info" class="footer-info team-info" aria-labelledby="team-title" aria-describedby="team-intro">
+      <form method="dialog"><button class="footer-info-close" aria-label="Close Meet the Team" autofocus>×</button></form>
+      <header class="team-heading">
+        <span class="team-eyebrow">THE PEOPLE BEHIND SAFEPAY</span>
+        <h2 id="team-title">Four minds. One SafePay.</h2>
+        <p id="team-intro">Meet the team bringing thoughtful payments to life.</p>
+      </header>
+      <div id="team-track" class="team-track" tabindex="0" role="region" aria-roledescription="carousel" aria-label="Team members. Swipe or use the left and right arrow keys." data-bind="event: {scroll: syncTeam, keydown: teamKeyboard}, foreach: teamMembers">
+        <article class="team-card" role="group" aria-roledescription="slide" data-bind="attr: {'aria-label': ($index() + 1) + ' of 4: ' + name}">
+          <div class="team-portrait" aria-hidden="true"><span class="team-orbit"></span><span class="profile-avatar-ring team-avatar" data-bind="text: initial"></span><span class="team-portrait-caption">SAFEPAY / TEAM</span></div>
+          <div class="team-details">
+            <span class="team-member-number" data-bind="text: '0' + ($index() + 1) + ' / 04'"></span>
+            <h3 data-bind="text: name"></h3>
+            <span class="team-detail-rule" aria-hidden="true"></span>
+            <p class="team-role" data-bind="text: role"></p>
+            <p class="team-focus" data-bind="text: focus"></p>
+          </div>
+        </article>
+      </div>
+      <div class="team-controls">
+        <span class="team-position" role="status" aria-live="polite" aria-atomic="true" data-bind="text: (teamIndex() + 1) + ' of 4 · ' + teamMembers[teamIndex()].name"></span>
+        <div class="team-dots" aria-label="Choose a team member" data-bind="foreach: teamMembers"><button type="button" data-bind="click: function() { $parent.selectTeam($index()); }, css: {'is-selected': $parent.teamIndex() === $index()}, attr: {'aria-label': 'Show ' + name, 'aria-pressed': $parent.teamIndex() === $index()}"></button></div>
+        <div class="team-arrows"><button type="button" aria-label="Previous team member" data-bind="click: function() { selectTeam(teamIndex() - 1); }, disable: teamIndex() === 0">←</button><button type="button" aria-label="Next team member" data-bind="click: function() { selectTeam(teamIndex() + 1); }, disable: teamIndex() === 3">→</button></div>
+      </div>
+    </dialog>
     <dialog id="footer-info" class="footer-info" aria-labelledby="footer-info-title">
       <form method="dialog"><button class="footer-info-close" aria-label="Close information">×</button></form>
       <h2 id="footer-info-title" data-bind="text: footerSection() === 'about' ? 'About SafePay' : 'How it works'"></h2>

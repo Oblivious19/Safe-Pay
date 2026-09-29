@@ -23,7 +23,7 @@ import com.ofss.repository.UserDao;
 
 @Service
 public class UserServiceImpl implements UserService {
-    private static final BigDecimal NEW_ACCOUNT_OPENING_BALANCE = new BigDecimal("200000.00");
+    private static final BigDecimal NEW_ACCOUNT_OPENING_BALANCE = new BigDecimal("500000.00");
 
     private final UserDao userDao;
     private final AccountDao accountDao;

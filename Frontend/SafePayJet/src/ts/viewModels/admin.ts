@@ -243,7 +243,7 @@ class AdminViewModel {
     }
     if (this.context.params?.page === "users") {
       const model = new AdminUsersModel(); this.usersPage(model);
-      document.title = "Admin users | SafePay"; model.startLive(); void model.load(); return;
+      document.title = "Admin users | SafePay"; model.startLive(); return;
     }
     if (this.context.params?.page === "holds") {
       const model = new AdminHoldsModel(); this.holdsPage(model);

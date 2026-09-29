@@ -88,6 +88,23 @@ class AdminAuthorizationTest extends WebSecuritySliceSupport {
                 .andExpect(header().exists("X-CSRF-TOKEN"));
     }
 
+    @Test void searchRequiresAdminAndReturnsSafeExactIdMatch() throws Exception {
+        mvc.perform(get("/api/admin/users/search").param("by","id").param("query","103"))
+                .andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/admin/users/search").session(session("CUSTOMER")).param("by","id").param("query","103"))
+                .andExpect(status().isForbidden());
+        mvc.perform(get("/api/admin/users/search").session(admin).param("by","id").param("query","103"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].userId").value(103))
+                .andExpect(jsonPath("$[0].passwordHash").doesNotExist());
+        mvc.perform(get("/api/admin/users/search").session(admin).param("by","id").param("query","999"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(0));
+        mvc.perform(get("/api/admin/users/search").session(admin).param("by","id").param("query","1e2"))
+                .andExpect(status().isBadRequest());
+        mvc.perform(get("/api/admin/users/search").session(admin).param("by","name").param("query"," "))
+                .andExpect(status().isBadRequest());
+    }
+
     @ParameterizedTest
     @CsvSource({"ACTIVE,SUSPENDED", "SUSPENDED,ACTIVE", "ACTIVE,LOCKED", "ACTIVE,INACTIVE",
             "LOCKED,ACTIVE", "LOCKED,SUSPENDED", "LOCKED,INACTIVE", "SUSPENDED,INACTIVE", "INACTIVE,ACTIVE", "INACTIVE,SUSPENDED"})

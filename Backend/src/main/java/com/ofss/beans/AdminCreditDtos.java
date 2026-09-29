@@ -13,7 +13,8 @@ public final class AdminCreditDtos {
         }
     }
     /** Decimal strings preserve the full NUMBER(18,2) range in browsers. */
-    public record AccountView(Long accountId, String accountNumber, String accountType, String status, String balance) {}
+    public record AccountView(Long accountId, String accountNumber, String accountType, String status, String balance,
+            Long userId, LocalDateTime createdAt) {}
     public record Receipt(Long accountId, String amount, String balanceBefore, String balanceAfter,
             LocalDateTime createdAt, String description) {}
 }

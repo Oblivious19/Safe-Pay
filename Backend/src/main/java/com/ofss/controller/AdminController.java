@@ -23,6 +23,11 @@ public class AdminController {
     @GetMapping("/users")
     public List<UserResponse> users() { return service.getUsers(); }
 
+    @GetMapping("/users/search")
+    public List<UserResponse> searchUsers(@RequestParam String by, @RequestParam String query) {
+        return service.searchUsers(by, query);
+    }
+
     @GetMapping("/users/{id}")
     public UserResponse user(@PathVariable Long id) { return service.getUser(id); }
 

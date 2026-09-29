@@ -52,11 +52,14 @@ class AdminCreditAuthorizationTest extends WebSecuritySliceSupport {
         verify(service).credit(77L,200L,new BigDecimal("10.01"),"credit-key");
     }
     @Test void detailsListContainsEveryOwnedAccountAndNoCredentials() throws Exception {
-        when(service.accounts(103L)).thenReturn(List.of(new AccountView(1L,"500000000001","SAVINGS","ACTIVE","5000.00"),
-                new AccountView(2L,"500000000002","CURRENT","BLOCKED","10000.00")));
+        when(service.accounts(103L)).thenReturn(List.of(new AccountView(1L,"500000000001","SAVINGS","ACTIVE","5000.00",103L,LocalDateTime.of(2026,9,1,10,0)),
+                new AccountView(2L,"500000000002","CURRENT","BLOCKED","10000.00",103L,LocalDateTime.of(2026,9,1,10,0))));
         mvc.perform(get("/api/admin/users/103/accounts").session(admin)).andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2)).andExpect(jsonPath("$[1].accountId").value(2))
-                .andExpect(jsonPath("$[0].user").doesNotExist());
+                .andExpect(jsonPath("$[0].user").doesNotExist())
+                .andExpect(jsonPath("$[0].userId").value(103))
+                .andExpect(jsonPath("$[0].createdAt").value("2026-09-01T10:00:00"))
+                .andExpect(jsonPath("$[0].updatedAt").doesNotExist());
     }
     @Test void csrfAndIdempotencyHeaderAreRequired() throws Exception {
         mvc.perform(post("/api/admin/accounts/77/interest-credits").session(admin).header("Idempotency-Key","k")

@@ -4,6 +4,9 @@ import { ApiError } from "../services/apiError";
 
 export class AdminUsersModel {
   users = ko.observableArray<AdminUser>([]);
+  searchBy = ko.observable("id");
+  searchQuery = ko.observable("");
+  searched = ko.observable(false);
   selected = ko.observable<AdminUser | null>(null);
   accounts = ko.observableArray<AdminAccount>([]);
   selectedAccountId = ko.observable<number | null>(null);
@@ -36,6 +39,13 @@ export class AdminUsersModel {
     return "₹" + BigInt(whole).toLocaleString("en-IN") + "." + fraction.padEnd(2, "0");
   };
   masked = (number: string): string => "•••• " + number.slice(-4);
+  when = (value: string): string => value && Number.isFinite(Date.parse(value))
+    ? new Intl.DateTimeFormat("en-IN", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value)) : "—";
+
+  resetSearch = (): void => {
+    this.generation++; this.searchQuery(""); this.searched(false); this.users([]);
+    this.selected(null); this.clearAccounts(); this.noAccount(false); this.error(""); this.loading(false);
+  };
 
   private clearAccounts(): void {
     this.accounts([]); this.selectedAccountId(null); this.account(null);
@@ -50,12 +60,22 @@ export class AdminUsersModel {
     }
   }
   load = async (): Promise<void> => {
-    if (this.loading()) return;
+    if (this.loading() || this.forbidden() || !this.alive) return;
+    const by = this.searchBy();
+    const query = by === "email" ? this.searchQuery().trim().toLowerCase() : this.searchQuery().trim();
     const generation = ++this.generation;
+    this.users([]); this.selected(null); this.clearAccounts(); this.noAccount(false); this.searched(false);
+    if (!query || query.length > 150 || /[\u0000-\u001f\u007f]/.test(query)) {
+      this.error("Enter a user ID, exact first/full name or email (maximum 150 characters)."); return;
+    }
+    if (by === "id" && (!/^[0-9]+$/.test(query) || !Number.isSafeInteger(Number(query)) || Number(query) <= 0)) {
+      this.error("Enter a valid positive user ID."); return;
+    }
+    this.searchQuery(query);
     this.loading(true); this.error("");
     try {
-      const users = await adminUserService.users();
-      if (generation === this.generation) this.users(users);
+      const users = await adminUserService.searchUsers(by, query);
+      if (generation === this.generation) { this.users(users); this.searched(true); }
     } catch (error) {
       if (generation === this.generation) this.fail(error);
     } finally {

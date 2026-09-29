@@ -13,18 +13,33 @@
 <p role="alert" data-bind="text: error, visible: error, reveal: error"></p>
 <p class="load-row" role="status" data-bind="visible: loading"><span class="spin" aria-hidden="true"></span><span>Loading…</span></p>
 <!-- ko ifnot: forbidden -->
-<section class="admin-panel admin-table-panel"><div class="admin-panel-head"><div><h2>Choose a user</h2><p class="admin-muted">Select a user to view their linked accounts below.</p></div><span class="admin-count" data-bind="text: users().length + ' users'"></span></div>
-<p class="admin-empty" data-bind="visible: !loading() && !error() && !users().length">No users found.</p>
+<section class="admin-panel admin-table-panel"><div class="admin-panel-head"><div><h2>Find a user</h2><p class="admin-muted">Search first, then select a user to view their linked accounts below.</p></div><span class="admin-count" data-bind="visible: searched, text: users().length + ' users'"></span></div>
+<form class="admin-user-search" data-bind="submit: load">
+  <label for="admin-user-search-by">Search by<select id="admin-user-search-by" data-bind="value: searchBy, disable: loading, event: {change: resetSearch}"><option value="id">User ID</option><option value="name">Name</option><option value="email">Email</option></select></label>
+  <label class="admin-user-search-query" for="admin-user-search-query">Search value<input id="admin-user-search-query" type="text" maxlength="150" autocomplete="off" aria-describedby="admin-user-search-help" data-bind="textInput: searchQuery, disable: loading"></label>
+  <button class="admin-button" type="submit" data-bind="disable: loading">Search</button>
+  <button class="admin-button admin-button-quiet" type="button" data-bind="click: resetSearch, disable: loading">Clear</button>
+</form>
+<p id="admin-user-search-help" class="admin-muted">Use an exact user ID, first/full name or email. Names ignore case; email is trimmed and converted to lowercase.</p>
+<p class="admin-empty" data-bind="visible: !searched() && !loading() && !error()">Search for a user to see matching results.</p>
+<div class="admin-empty" role="status" data-bind="visible: searched() && !loading() && !error() && !users().length"><strong>No match found</strong><br><small>Check the user ID, name spelling or email ID and try again.</small></div>
 <!-- ko if: users().length -->
-<div class="admin-table-scroll" tabindex="0" role="region" aria-label="User directory. Scroll for more rows and columns."><table class="admin-table admin-users-table"><caption class="send-off-screen">Users and their account access</caption><thead><tr><th scope="col">Name</th><th scope="col">Email</th><th scope="col">Role</th><th scope="col">Status</th><th scope="col" class="admin-cell-action">Accounts</th></tr></thead>
-<tbody data-bind="foreach: users"><tr data-bind="css: {'is-selected': $parent.selected() && $parent.selected().userId === userId}"><th scope="row" data-bind="text: name"></th><td class="admin-cell-email" data-bind="text: email"></td><td><span class="admin-table-tag" data-bind="text: role"></span></td><td><span class="admin-table-tag" data-bind="text: status"></span></td><td class="admin-cell-action"><button class="admin-button admin-table-button" data-bind="click: $parent.select, disable: $parent.loading(), attr: {'aria-label': 'View accounts for ' + name}">View accounts <span aria-hidden="true">↗</span></button></td></tr></tbody></table></div><!-- /ko --></section>
+<div class="admin-table-scroll" tabindex="0" role="region" aria-label="User search results. Scroll for more rows and columns."><table class="admin-table admin-users-table"><caption class="send-off-screen">Matching users and their account access</caption><thead><tr><th scope="col">User ID</th><th scope="col">Name</th><th scope="col">Email</th><th scope="col">Role</th><th scope="col">Status</th><th scope="col" class="admin-cell-action">Accounts</th></tr></thead>
+<tbody data-bind="foreach: users"><tr data-bind="css: {'is-selected': $parent.selected() && $parent.selected().userId === userId}"><th scope="row" data-bind="text: userId"></th><td data-bind="text: name"></td><td class="admin-cell-email" data-bind="text: email"></td><td><span class="admin-table-tag" data-bind="text: role"></span></td><td><span class="admin-table-tag" data-bind="text: status"></span></td><td class="admin-cell-action"><button class="admin-button admin-table-button" data-bind="click: $parent.select, disable: $parent.loading(), attr: {'aria-label': 'View accounts for ' + name}">View accounts <span aria-hidden="true">↗</span></button></td></tr></tbody></table></div><!-- /ko --></section>
 <!-- ko if: selected -->
 <section class="admin-panel" data-bind="reveal: selected"><h2 data-bind="text: selected().name"></h2>
 <p data-bind="visible: noAccount">This user has no banking account. No account will be created.</p>
-<label class="integration-account">Account<select data-bind="options:accounts,optionsText:accountLabel,optionsValue:'accountId',value:selectedAccountId,event:{change:selectAccount},disable:loading()"></select></label>
+<label class="integration-account" data-bind="visible: accounts().length">Account<select data-bind="options:accounts,optionsText:accountLabel,optionsValue:'accountId',value:selectedAccountId,event:{change:selectAccount},disable:loading()"></select></label>
 <!-- ko if: account -->
-<p data-bind="text: account().accountType + ' · ' + masked(account().accountNumber) + ' · ' + account().status"></p>
-<p>Account balance: <strong data-bind="text: money(account().balance)"></strong></p>
+<dl class="admin-user-account-details">
+  <div><dt>Account ID</dt><dd data-bind="text: account().accountId"></dd></div>
+  <div><dt>User ID</dt><dd data-bind="text: account().userId"></dd></div>
+  <div><dt>Account number</dt><dd data-bind="text: account().accountNumber"></dd></div>
+  <div><dt>Account type</dt><dd data-bind="text: account().accountType"></dd></div>
+  <div><dt>Status</dt><dd><span class="admin-table-tag" data-bind="text: account().status"></span></dd></div>
+  <div><dt>Account balance</dt><dd data-bind="text: money(account().balance)"></dd></div>
+  <div><dt>Created at</dt><dd data-bind="text: when(account().createdAt)"></dd></div>
+</dl>
 <!-- /ko -->
 </section><!-- /ko -->
 <!-- /ko -->

@@ -58,24 +58,67 @@ test('hero offers login and registration without private account controls',()=>{
 test('home roadmap is interactive and stays in customer language',()=>{
  const html=fs.readFileSync('src/ts/views/home.html','utf8');
  const css=fs.readFileSync('src/css/home.css','utf8');
- assert.match(html,/Play the flow/);assert.match(html,/selectPath\('pause'\)/);
- assert.match(html,/home-scene/);assert.match(html,/home-story-scene/);
- assert.match(html,/From confirm to settled/);assert.match(html,/No automatic release/);
+ assert.match(html,/redoStory/);assert.match(html,/₹180 · sandwich/);
+ assert.doesNotMatch(html,/chai/);assert.match(html,/selectPath\('pause'\)/);
+ assert.match(html,/home-reel/);assert.match(html,/home-card/);assert.match(html,/home-segments/);
+ assert.match(html,/Watch a payment think/);assert.match(html,/No automatic release/);
+ assert.match(html,/>Cancel</);assert.match(html,/home-scene/);assert.match(html,/home-story-scene/);
  assert.doesNotMatch(html,/\b(LOW|MEDIUM|HIGH|VERY_HIGH|HARD_HOLD|AUTHORIZED)\b/);
  assert.match(css,/home-enter/);assert.match(css,/prefers-reduced-motion:reduce/);
+ assert.match(css,/overflow-wrap:\s*break-word/);
+ assert.match(css,/font-feature-settings:\s*normal/);
  const {model,disconnects}=homeModel();
  model.connected();
  assert.equal(model.activeStep(),'confirm');
+ model.nextCard();
+ assert.equal(model.activeStep(),'check');
+ model.redoStory();
+ assert.equal(model.activeStep(),'confirm');
+ assert.equal(model.storyMode(),'idle');
+ model.selectPath('instant');
+ assert.equal(model.slipAmount(),'₹180');
+ assert.match(model.slipPayee(),/sandwich/i);
+ assert.match(model.slipNote(),/sandwich/i);
  model.selectPath('hold');
- assert.equal(model.activeStep(),'decide');
+ assert.equal(model.activeStep(),'confirm');
  model.selectStep('done');
  assert.match(model.storyBody(),/held for extra review/i);
+ assert.equal(model.endLabel(),'Held');
  model.selectStep('protect');
  assert.equal(model.activeStep(),'protect');
  assert.match(model.storyBody(),/No timer/i);
  assert.match(model.storyBody(),/will not auto-release/i);
+ model.selectPath('pause');
+ assert.equal(model.storyMode(),'live');
+ model.cancelStory();
+ assert.equal(model.activeStep(),'done');
+ assert.equal(model.endLabel(),'Reversed');
+ assert.match(model.storyBody(),/never left/i);
+ model.storyMode('settled');
+ assert.match(model.storyBody(),/window closed/i);
+ model.nextCard();
+ assert.equal(model.activeStep(),'done');
  model.disconnected();
  assert.ok(disconnects.includes('scroll'));
+});
+test('window countdown ticks until cancel or the end', async () => {
+  const {model}=homeModel();
+  try {
+    model.connected();
+    model.selectStep('protect');
+    assert.equal(model.storyMode(),'live');
+    assert.equal(model.storyRemaining(),8);
+    assert.equal(model.activeStep(),'protect');
+    await new Promise((resolve)=>setTimeout(resolve,1200));
+    assert.ok(model.storyRemaining()<8);
+    assert.equal(model.activeStep(),'protect');
+    model.cancelStory();
+    assert.equal(model.endLabel(),'Reversed');
+    await new Promise((resolve)=>setTimeout(resolve,400));
+    assert.equal(model.activeStep(),'done');
+  } finally {
+    model.disconnected();
+  }
 });
 test('home supports clean route refresh',async()=>{
  const config=await require('../scripts/hooks/before_serve')({});const req={method:'GET',url:'/home'};

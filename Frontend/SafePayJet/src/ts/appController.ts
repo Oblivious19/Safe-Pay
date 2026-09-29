@@ -17,6 +17,39 @@ class RootViewModel {
   manner = ko.observable("polite");
   message = ko.observable<string>();
   copyrightYear = new Date().getFullYear();
+  teamMembers = [
+    { initial: "A", name: "Aditya Rao", role: "Product Research & Management", focus: "Backend Development" },
+    { initial: "S", name: "Shreya Ojha", role: "Project Lead", focus: "Backend Development" },
+    { initial: "R", name: "Ruchi Shree", role: "UI/UX Visual Design", focus: "Frontend Development" },
+    { initial: "G", name: "Gaurav Sahu", role: "Integrations and Deployment", focus: "Team Management" }
+  ];
+  teamIndex = ko.observable(0);
+  showTeam = (): void => {
+    const dialog = document.getElementById("team-info") as HTMLDialogElement | null;
+    if (!dialog || dialog.open) return;
+    dialog.showModal();
+    const track = document.getElementById("team-track");
+    if (track) track.scrollLeft = 0;
+    this.teamIndex(0);
+  };
+  selectTeam = (index: number): void => {
+    const track = document.getElementById("team-track");
+    if (!track) return;
+    const bounded = Math.max(0, Math.min(this.teamMembers.length - 1, index));
+    track.scrollTo({ left: bounded * track.clientWidth,
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+  };
+  syncTeam = (): void => {
+    const track = document.getElementById("team-track");
+    if (track && track.clientWidth) this.teamIndex(Math.max(0,
+      Math.min(this.teamMembers.length - 1, Math.round(track.scrollLeft / track.clientWidth))));
+  };
+  teamKeyboard = (_: unknown, event: KeyboardEvent): boolean => {
+    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return true;
+    this.selectTeam(this.teamIndex() + (event.key === "ArrowRight" ? 1 : -1));
+    event.preventDefault();
+    return false;
+  };
   footerSection = ko.observable<"about" | "how">("about");
   showFooterInfo = (section: "about" | "how"): void => {
     this.footerSection(section);

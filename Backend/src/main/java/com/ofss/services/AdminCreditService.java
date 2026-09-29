@@ -33,7 +33,8 @@ public class AdminCreditService {
         if (!users.existsById(userId)) throw new ResourceNotFoundExcp("User not found");
         return customerAccounts.findByUserUserIdOrderByAccountId(userId).stream()
                 .map(a -> new AccountView(a.getAccountId(), a.getAccountNumber(), a.getAccountType().name(),
-                        a.getStatus().name(), a.getBalance().setScale(2).toPlainString())).toList();
+                        a.getStatus().name(), a.getBalance().setScale(2).toPlainString(),
+                        a.getUserId(), a.getCreatedAt())).toList();
     }
 
     @Transactional
